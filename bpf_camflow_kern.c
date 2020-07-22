@@ -5,6 +5,5 @@
 SEC("lsm/bprm_committed_creds")
 int test_int_hook()
 {
-  bpf_printk("bprm_committed_creds was called");
   return 0;
 }
