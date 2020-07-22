@@ -17,3 +17,19 @@ libbpf: failed to load object 'bpf_camflow_kern'
 libbpf: failed to load BPF skeleton 'bpf_camflow_kern': -1
 Failed loading ...
 ```
+
+Adding this line in ` /etc/security/limits.conf` fix the issue:
+```
+*                -       memlock         unlimited
+```
+
+New problem:
+```
+sudo ./bpf_camflow_usr.o
+Starting...
+libbpf: load bpf program failed: Invalid argument
+libbpf: failed to load program 'lsm/bprm_committed_creds'
+libbpf: failed to load object 'bpf_camflow_kern'
+libbpf: failed to load BPF skeleton 'bpf_camflow_kern': -22
+Failed loading ...
+```
