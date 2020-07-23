@@ -64,3 +64,16 @@ libbpf: failed to load object 'bpf_camflow_kern'
 libbpf: failed to load BPF skeleton 'bpf_camflow_kern': -4010
 Failed loading ...
 ```
+
+Simpified code give:
+```
+sudo ./bpf_camflow_usr.o
+Starting...
+libbpf: load bpf program failed: Invalid argument
+libbpf: failed to load program '.text'
+libbpf: failed to load object 'bpf_camflow_kern'
+libbpf: failed to load BPF skeleton 'bpf_camflow_kern': -22
+Failed loading ...
+```
+
+It may be errors in the way the code to be loaded is compiled. Need to investigate.
