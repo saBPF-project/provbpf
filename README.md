@@ -91,3 +91,10 @@ Though this may not be the issue...
 Using `SEC(XXX)` seems to be the difference between error -4010 and error -22.
 
 Error: `4010` -> `LIBBPF_ERRNO__PROGTYPE` Kernel doesn't support this program type.
+
+# Example BCC Program
+
+The `sys_sync.py` program detects when the `sys_sync()` kernel function is called.
+The program can be run as follows:
+`sudo python sys_sync.py`
+, and, while tracing, run in another terminal the `sync` command.
