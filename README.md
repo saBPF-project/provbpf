@@ -103,7 +103,7 @@ Other potential issue:
 
 bpf_tracing.h online repo: https://github.com/libbpf/libbpf/blob/3b239425426e4fa1c204ea3c708d36ec3f509702/src/bpf_tracing.h
 
-installed on the machine:
+installed on the machine (i.e. cat /usr/include/bpf/bpf_tracing.h):
 ```
 /* SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause) */
 #ifndef __BPF_TRACING_H__
