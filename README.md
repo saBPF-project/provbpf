@@ -325,6 +325,9 @@ This code is also present here: https://github.com/torvalds/linux/blob/master/to
 
 The issue may be the libbpf we install via the package manager T_T.
 
+May need to build libbpf from source, see here:
+https://github.com/libbpf/libbpf
+
 # Example BCC Program
 
 The `sys_sync.py` program detects when the `sys_sync()` kernel function is called.
