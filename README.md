@@ -1,6 +1,7 @@
 # camflow-bpf
 
 Use this [vagrant VM](https://github.com/CamFlow/vagrant/tree/master/dev-fedora).
+No need to build CamFlow.
 
 `make all`
 
