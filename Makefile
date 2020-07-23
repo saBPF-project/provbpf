@@ -12,7 +12,7 @@ usr:
 run:
 	sudo ./$(target)_usr.o
 
-all: kern skel usr
+all: clean kern skel usr
 
 clean:
 	rm -f *.o
