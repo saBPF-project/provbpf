@@ -79,4 +79,10 @@ Failed loading ...
 It may be errors in the way the code to be loaded is compiled. Need to investigate.
 i.e. modify this `clang -O2 -Wall -target bpf -c $(target)_kern.c -o $(target)_kern.o`
 
-Potential direction, trying to make sense of this makefile: https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/tree/tools/testing/selftests/bpf/Makefile#n1
+Potential direction, trying to make sense of this makefile:
+https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/tree/tools/testing/selftests/bpf/Makefile#n1
+https://github.com/oracle/linux-blog-sample-code/blob/bpf-test/bpf-test/bpf/Makefile
+
+Though this may not be the issue...
+
+Using `SEC(XXX)` seems to be the difference between error -4010 and error -22.
