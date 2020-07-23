@@ -78,3 +78,5 @@ Failed loading ...
 
 It may be errors in the way the code to be loaded is compiled. Need to investigate.
 i.e. modify this `clang -O2 -Wall -target bpf -c $(target)_kern.c -o $(target)_kern.o`
+
+Potential direction, trying to make sense of this makefile: https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/tree/tools/testing/selftests/bpf/Makefile#n1

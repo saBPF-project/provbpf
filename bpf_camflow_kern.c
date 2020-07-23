@@ -6,3 +6,5 @@ int bpf_prog(void *ctx) {
   bpf_printk("Hello World!");
   return 0;
 }
+
+char _license[] SEC("license") = "GPL";
