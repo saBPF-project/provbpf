@@ -91,8 +91,10 @@ Though this may not be the issue...
 Using `SEC(XXX)` seems to be the difference between error -4010 and error -22.
 
 Error: `4010` -> `LIBBPF_ERRNO__PROGTYPE` Kernel doesn't support this program type.
+Comes from this: https://github.com/libbpf/libbpf/blob/master/src/libbpf.c#L5439
 
 Error: `22` -> `EINVAL` Invalid argument.
+Maybe from this: https://github.com/libbpf/libbpf/blob/master/src/libbpf.c#L5352
 
 # Example BCC Program
 
