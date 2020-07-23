@@ -89,3 +89,5 @@ https://github.com/oracle/linux-blog-sample-code/blob/bpf-test/bpf-test/bpf/Make
 Though this may not be the issue...
 
 Using `SEC(XXX)` seems to be the difference between error -4010 and error -22.
+
+Error: `4010` -> `LIBBPF_ERRNO__PROGTYPE` Kernel doesn't support this program type.
