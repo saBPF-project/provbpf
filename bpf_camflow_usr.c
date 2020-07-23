@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -14,7 +15,9 @@ int main(void)
 	skel = bpf_camflow_kern__open_and_load();
 	if (!skel) {
     printf("Failed loading ...\n");
-    goto close_prog;
+		printf("LIBBPF_ERRNO__PROGTYPE: %d\n", LIBBPF_ERRNO__PROGTYPE);
+		printf("Kernel doesn't support this program type.\n");
+		goto close_prog;
   }
 
 
