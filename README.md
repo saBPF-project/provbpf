@@ -3,6 +3,8 @@
 Use this [vagrant VM](https://github.com/CamFlow/vagrant/tree/master/dev-fedora).
 No need to build CamFlow.
 
+See here: https://www.kernel.org/doc/html/latest/bpf/bpf_lsm.html
+
 `make all`
 
 `make run`
