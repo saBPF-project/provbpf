@@ -340,6 +340,8 @@ Failed attach ...
 
 Ok vijay was right. It works now!
 
+Not sure what `bpf_printk` is not printing anything, but we are making progress.
+
 # Example BCC Program
 
 The `sys_sync.py` program detects when the `sys_sync()` kernel function is called.
