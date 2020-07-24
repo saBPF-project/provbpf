@@ -7,10 +7,10 @@ struct linux_binprm {
         int argc, envc;
 } __attribute__((preserve_access_index));
 
-SEC("lsm/bprm_committed_creds")
-int BPF_PROG(bprm_committed_creds, struct linux_binprm *bprm)
+SEC("lsm/bprm_committing_creds")
+int BPF_PROG(bprm_committing_creds, struct linux_binprm *bprm)
 {
-        bpf_printk("Fork!");
+        bpf_printk("exec!");
         return 0;
 }
 
