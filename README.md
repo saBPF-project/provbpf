@@ -328,6 +328,16 @@ The issue may be the libbpf we install via the package manager T_T.
 May need to build libbpf from source, see here:
 https://github.com/libbpf/libbpf
 
+Good news! Building from source fixed the problem with loading! (There were much joy)
+
+However, attach is now problematic:
+```
+sudo ./bpf_camflow_usr.o
+Starting...
+libbpf: Error in bpf_object__probe_global_data():Operation not permitted(1). Couldn't create simple array map.
+Failed attach ...
+```
+
 # Example BCC Program
 
 The `sys_sync.py` program detects when the `sys_sync()` kernel function is called.
