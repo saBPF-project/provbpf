@@ -14,7 +14,7 @@ struct vm_area_struct {
 } __attribute__((preserve_access_index));
 
 SEC("lsm/file_mprotect")
-int mprotect_audit(struct vm_area_struct *vma,
+int BPF_PROG(mprotect_audit, struct vm_area_struct *vma,
              unsigned long reqprot, unsigned long prot, int ret)
 {
         /* ret is the return value from the previous BPF program
