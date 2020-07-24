@@ -22,8 +22,8 @@ int main(void)
 
 
 	err = bpf_camflow_kern__attach(skel);
-	if (!err) {
-    printf("Failed attach ...\n");
+	if (err) {
+    printf("Failed attach ... %d\n", err);
     goto close_prog;
   }
 

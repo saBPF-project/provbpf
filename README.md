@@ -338,6 +338,8 @@ libbpf: Error in bpf_object__probe_global_data():Operation not permitted(1). Cou
 Failed attach ...
 ```
 
+Ok vijay was right. It works now!
+
 # Example BCC Program
 
 The `sys_sync.py` program detects when the `sys_sync()` kernel function is called.
