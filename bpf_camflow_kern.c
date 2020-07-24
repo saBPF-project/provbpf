@@ -10,7 +10,7 @@ struct linux_binprm {
 SEC("lsm/bprm_committing_creds")
 int BPF_PROG(bprm_committing_creds, struct linux_binprm *bprm)
 {
-        bpf_printk("exec!");
+        bpf_printk("exec!\n");
         return 0;
 }
 
