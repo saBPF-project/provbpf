@@ -1,4 +1,3 @@
-include/vmlinux.h
+vmlinux.h
 *.o
-usr/vmlinux.h
 *skel.h

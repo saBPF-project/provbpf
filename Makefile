@@ -1,5 +1,8 @@
 target := bpf_camflow
 
+btf:
+	bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
+
 kern:
 	clang -O2 -Wall \
 	-D__KERNEL__ -D__ASM_SYSREG_H \
@@ -19,8 +22,9 @@ usr:
 run:
 	sudo ./$(target)_usr.o
 
-all: clean kern skel usr
+all: clean btf kern skel usr
 
 clean:
 	rm -f *.o
 	rm -f *.skel.h
+	rm -rf vmlinux.h
