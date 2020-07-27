@@ -11,7 +11,7 @@ int main(void)
 	struct bpf_camflow_kern *skel = NULL;
   int err;
 	int map_fd;
-	int key = 0, value;
+	unsigned int key = 0, value;
 
   printf("Starting...\n");
 

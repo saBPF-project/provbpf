@@ -342,6 +342,21 @@ Ok vijay was right. It works now!
 
 Not sure what `bpf_printk` is not printing anything, but we are making progress.
 
+## 27/0/7/2020
+
+`make prepare` build the right version of libbpf.
+
+Program has of now is trying to write data to a map.
+User space read fine, kernel does not seem to be writing into it (though not sure I use it properly).
+The type of map is probably the wrong one (but we should get something working and it is weird it does not).
+
+The BPF program is loaded properly (to check `sudo bpftool prog`), the map seems to be there as well.
+
+The current "program" should trigger on task alloc (i.e. new process or thread).
+
+Some example here:
+https://elixir.bootlin.com/linux/latest/source/samples/bpf
+
 # Example BCC Program
 
 The `sys_sync.py` program detects when the `sys_sync()` kernel function is called.
