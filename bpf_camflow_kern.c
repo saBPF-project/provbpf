@@ -3,11 +3,22 @@
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
 
-SEC("lsm/bprm_committing_creds")
-int BPF_PROG(bprm_committing_creds, struct linux_binprm *bprm)
-{
-        bpf_printk("exec!\n");
-        return 0;
-}
-
 char _license[] SEC("license") = "GPL";
+
+struct bpf_map_def SEC("maps") my_map = {
+        .type = BPF_MAP_TYPE_HASH,
+        .key_size = sizeof(int),
+        .value_size = sizeof(int),
+        .max_entries = 1,
+};
+
+SEC("lsm/task_alloc")
+int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags)
+{
+  long loc = 0;
+	long init_val = 1;
+	long *value;
+
+  bpf_map_update_elem(&my_map, &loc, &init_val, BPF_ANY);
+	return 0;
+}

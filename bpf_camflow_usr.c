@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <bpf/bpf.h>
 
 #include "bpf_camflow.skel.h"
 
@@ -9,6 +10,8 @@ int main(void)
 {
 	struct bpf_camflow_kern *skel = NULL;
   int err;
+	int map_fd;
+	int key = 0, value;
 
   printf("Starting...\n");
 
@@ -26,10 +29,15 @@ int main(void)
     printf("Failed attach ... %d\n", err);
     goto close_prog;
   }
+	map_fd = bpf_object__find_map_fd_by_name(skel->obj, "my_map");
 
+	err = bpf_map_lookup_elem(map_fd, &key, &value);
+	printf("err: %d value: %d\n", err, value);
   printf("Sleeping...\n");
   sleep(20);
   printf("Slept.\n");
+	err = bpf_map_lookup_elem(map_fd, &key, &value);
+	printf("err: %d value: %d\n", err, value);
 
 close_prog:
 	bpf_camflow_kern__destroy(skel);

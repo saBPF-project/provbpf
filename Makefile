@@ -1,5 +1,12 @@
 target := bpf_camflow
 
+build_libbpf:
+	cd ~ && git clone https://github.com/libbpf/libbpf
+	cd ~/libbpf/src && make
+	cd ~/libbpf/src && sudo make install
+
+prepare: build_libbpf
+
 btf:
 	bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
 
