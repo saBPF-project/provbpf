@@ -357,6 +357,8 @@ The current "program" should trigger on task alloc (i.e. new process or thread).
 Some example here:
 https://elixir.bootlin.com/linux/latest/source/samples/bpf
 
+We may need a custom compiled kernel. That's a job for tomorrow!
+
 # Example BCC Program
 
 The `sys_sync.py` program detects when the `sys_sync()` kernel function is called.
