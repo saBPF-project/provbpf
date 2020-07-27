@@ -363,3 +363,8 @@ The `sys_sync.py` program detects when the `sys_sync()` kernel function is calle
 The program can be run as follows:
 `sudo python sys_sync.py`
 , and, while tracing, run in another terminal the `sync` command.
+
+# Example BCC LSM-BPF Test Program
+
+The `lsm_test.py` file contains an example program with an LSM hook.
+It runs only if `bcc` is build from source https://github.com/iovisor/bcc/blob/master/INSTALL.md#fedora---source
