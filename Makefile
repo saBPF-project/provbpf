@@ -3,9 +3,18 @@ target := bpf_camflow
 build_libbpf:
 	cd ~ && git clone https://github.com/libbpf/libbpf
 	cd ~/libbpf/src && make
-	cd ~/libbpf/src && sudo make install
+	cd ~/libbpf/src && sudo $(MAKE) install
 
-prepare: build_libbpf
+build_kernel:
+	cd ~ && git clone -b f32 --single-branch git://git.kernel.org/pub/scm/linux/kernel/git/jwboyer/fedora.git
+	cd ~/fedora && $(MAKE) olddefconfig
+	cd ~/fedora && sed -i -e "s/CONFIG_LSM=\"yama,loadpin,safesetid,integrity,selinux,smack,tomoyo,apparmor\"/CONFIG_LSM=\"yama,loadpin,safesetid,integrity,selinux,smack,tomoyo,apparmor,bpf\"/g" .config
+	cd ~/fedora && $(MAKE) -j16
+	cd ~/fedora && sudo $(MAKE) modules_install
+	cd ~/fedora && sudo $(MAKE) install
+	cd ~/fedora && sudo cp -f .config /boot/config-$(shell uname -r)
+
+prepare: build_libbpf build_kernel
 
 btf:
 	bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
