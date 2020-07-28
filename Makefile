@@ -12,7 +12,6 @@ build_kernel:
 	cd ~/fedora && $(MAKE) -j16
 	cd ~/fedora && sudo $(MAKE) modules_install
 	cd ~/fedora && sudo $(MAKE) install
-	cd ~/fedora && sudo cp -f .config /boot/config-$(shell uname -r)
 
 prepare: build_libbpf build_kernel
 
