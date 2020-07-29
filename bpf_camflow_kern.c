@@ -3,6 +3,11 @@
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
 
+#include <linux/limits.h>
+
+#include "sockaddr.h"
+#include "provenance.h"
+
 char _license[] SEC("license") = "GPL";
 
 struct bpf_map_def SEC("maps") my_map = {
