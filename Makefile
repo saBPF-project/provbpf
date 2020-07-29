@@ -15,6 +15,12 @@ build_kernel:
 
 prepare: build_libbpf build_kernel
 
+camflow-headers:
+	cd /tmp && git clone https://github.com/camflow/camflow-dev
+	cd /tmp/camflow-dev && git checkout dev
+	cp -r /tmp/camflow-dev/include ./
+	rm -rf /tmp/camflow-dev
+
 btf:
 	bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
 
@@ -26,6 +32,7 @@ kern:
   -Wno-gnu-variable-sized-type-not-at-end \
   -Wno-address-of-packed-member -Wno-tautological-compare \
   -Wno-unknown-warning-option \
+	-Iinclude/uapi \
 	-target bpf -c $(target)_kern.c -o $(target)_kern.o
 
 skel:
@@ -37,9 +44,10 @@ usr:
 run:
 	sudo ./$(target)_usr.o
 
-all: clean btf kern skel usr
+all: clean camflow-headers btf kern skel usr
 
 clean:
+	rm -rf include
 	rm -f *.o
 	rm -f *.skel.h
 	rm -rf vmlinux.h
