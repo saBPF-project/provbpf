@@ -12,22 +12,22 @@ char _license[] SEC("license") = "GPL";
 
 struct bpf_map_def SEC("maps") my_map = {
         .type = BPF_MAP_TYPE_ARRAY,
-        .key_size = sizeof(u32),
-        .value_size = sizeof(u32),
+        .key_size = sizeof(uint32_t),
+        .value_size = sizeof(uint32_t),
         .max_entries = 1,
 };
 
 struct bpf_map_def SEC("maps") task_map = {
         .type = BPF_MAP_TYPE_ARRAY,
-        .key_size = sizeof(u32), // probably wants to change
+        .key_size = sizeof(uint32_t), // probably wants to change
         .value_size = sizeof(struct task_prov_struct),
         .max_entries = 4096, // how to setup the size? is there as big as needed option?
 };
 
 static __always_inline void count(void *map)
 {
-	u32 key = 0;
-	u32 *value, init_val = 1;
+	uint32_t key = 0;
+	uint32_t *value, init_val = 1;
 
   // retrieve value of element 0
 	value = bpf_map_lookup_elem(map, &key);
