@@ -16,10 +16,11 @@ build_kernel:
 prepare: build_libbpf build_kernel
 
 camflow-headers:
-	rm -rf include
+	rm -rf camflow
+	mkdir -p camflow
 	cd /tmp && git clone https://github.com/camflow/camflow-dev
 	cd /tmp/camflow-dev && git checkout dev
-	cp -r /tmp/camflow-dev/include ./
+	cp -r /tmp/camflow-dev/include ./camflow
 	rm -rf /tmp/camflow-dev
 
 btf:
@@ -33,7 +34,8 @@ kern:
   -Wno-gnu-variable-sized-type-not-at-end \
   -Wno-address-of-packed-member -Wno-tautological-compare \
   -Wno-unknown-warning-option \
-	-Iinclude/uapi/linux \
+	-Icamflow/include/uapi/linux \
+	-Iinclude \
 	-target bpf -c $(target)_kern.c -o $(target)_kern.o
 
 skel:
