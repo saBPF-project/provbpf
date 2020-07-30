@@ -91,10 +91,10 @@ close_prog:
 ```
 
 ## Setup
-1. Run `make build_kernel` and `sudo reboot now`
+1. Run `make prepare` and `sudo reboot now`
 2. Boot into new kernel
 3. Run `make all` and `make run`
-4. While the `make run` command is executing open a new terminal and run a command (e.g. `sync`)
+4. While the `make run` command is executing open a new terminal and run a command (e.g. `ls`)
 5. The counter stored in the `BPF_MAP_TYPE_ARRAY` will increment
 
 ## Example Output
