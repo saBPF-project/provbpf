@@ -34,7 +34,7 @@ I would suggest trying to implement some sort of ring-buffer (or identifying som
 There is the perf one (thoug not sure if it can be used without providing a context pointer. Is that a problem?)
 
 There is this Linux patch:
-https://lwn.net/Articles/821456/
+https://lwn.net/ml/netdev/20200526063255.1675186-2-andriin@fb.com/
 
 It seems in theory possible, but will need some though.
 
