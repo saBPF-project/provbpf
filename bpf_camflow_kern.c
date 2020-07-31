@@ -18,7 +18,7 @@ struct bpf_map_def SEC("maps") my_map = {
 };
 
 struct bpf_map_def SEC("maps") task_map = {
-        .type = BPF_MAP_TYPE_ARRAY,
+        .type = BPF_MAP_TYPE_HASH,
         .key_size = sizeof(uint32_t), // probably wants to change
         .value_size = sizeof(struct task_prov_struct),
         .max_entries = 4096, // how to setup the size? is there as big as needed option?
