@@ -19,11 +19,24 @@ objects such as task, process, inode have alloc and free functions that would al
 
 I would suggest focusing on those three types to start with and identifying a minimum set of hooks to implement to demonstrate practicality.
 
+### 31/07/2020
+
+I have added an example of this yesterday. Seems a reasonable approach as long as we can identify unique identifiers for the lifetime of the object.
+
 ## Recording provenance
 
 I suggest to separate this state management to the actual recording following similar separation to the standard CamFlow code.
 
 I would suggest trying to implement some sort of ring-buffer (or identifying something equivalent such as perf events) where we record provenance graph elements as done in the normal CamFlow.
+
+### Need to identify BPF ringbuffer
+
+There is the perf one (thoug not sure if it can be used without providing a context pointer. Is that a problem?)
+
+There is this Linux patch:
+https://lwn.net/Articles/821456/
+
+It seems in theory possible, but will need some though.
 
 # Target/deadline
 
