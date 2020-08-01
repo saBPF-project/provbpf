@@ -18,10 +18,8 @@ prepare: build_libbpf build_kernel
 camflow-headers:
 	rm -rf camflow
 	mkdir -p camflow
-	cd /tmp && git clone https://github.com/camflow/camflow-dev
-	cd /tmp/camflow-dev && git checkout dev
-	cp -r /tmp/camflow-dev/include ./camflow
-	rm -rf /tmp/camflow-dev
+	cp -r camflow-dev/include ./camflow
+	rm -rf camflow-dev
 
 btf:
 	bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
@@ -29,11 +27,11 @@ btf:
 kern:
 	clang -O2 -Wall \
 	-D__KERNEL__ -D__ASM_SYSREG_H \
-  -Wno-unused-value -Wno-pointer-sign \
-  -Wno-compare-distinct-pointer-types \
-  -Wno-gnu-variable-sized-type-not-at-end \
-  -Wno-address-of-packed-member -Wno-tautological-compare \
-  -Wno-unknown-warning-option \
+	-Wno-unused-value -Wno-pointer-sign \
+	-Wno-compare-distinct-pointer-types \
+	-Wno-gnu-variable-sized-type-not-at-end \
+	-Wno-address-of-packed-member -Wno-tautological-compare \
+	-Wno-unknown-warning-option \
 	-Icamflow/include/uapi/linux \
 	-Iinclude \
 	-target bpf -c $(target)_kern.c -o $(target)_kern.o
