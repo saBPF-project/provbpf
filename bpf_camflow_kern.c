@@ -26,7 +26,7 @@ struct bpf_map_def SEC("maps") task_map = {
 
 struct bpf_map_def SEC("maps") inode_map = {
         .type = BPF_MAP_TYPE_HASH,
-        .key_size = sizeof(20), // probably wants to change
+        .key_size = sizeof(uint32_t) + sizeof(uuid_t), // 20 bytes, 4 bytes for the inode ino, 16 bytes for the superblock UUID
         .value_size = sizeof(struct inode_prov_struct),
         .max_entries = 4096, // how to setup the size? is there as big as needed option?
 };
