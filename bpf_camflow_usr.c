@@ -8,6 +8,7 @@
 
 int main(void) {
     struct bpf_camflow_kern *skel = NULL;
+    struct ring_buffer *ringbuf = NULL;
     int err;
     int map_fd;
     unsigned int key = 0, value;
@@ -28,9 +29,17 @@ int main(void) {
 	goto close_prog;
     }
     
-    map_fd = bpf_object__find_map_fd_by_name(skel->obj, "task_map");
+    //map_fd = bpf_object__find_map_fd_by_name(skel->obj, "task_map");
     //err = bpf_map_lookup_elem(map_fd, &key, &value);
     //printf("err: %d value: %d\n", err, value);
+
+    // Consume data from ring buffer (not tested)
+    // Reference: https://elixir.bootlin.com/linux/v5.8/source/tools/testing/selftests/bpf/benchs/bench_ringbufs.c
+    map_fd = bpf_object__find_map_fd_by_name(skel->obj, "ringbuf");
+    ringbuf = ring_buffer__new(map_fd, NULL, NULL, NULL);
+    while (ring_buffer__poll(ringbuf, -1) >= 0) {
+        printf("New data!\n");
+    }
 
 close_prog:
     bpf_camflow_kern__destroy(skel);
