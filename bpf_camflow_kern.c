@@ -30,7 +30,7 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
     struct task_prov_struct prov = {.pid = task->pid};
     bpf_map_update_elem(&task_map, &pid, &prov, BPF_NOEXIST);
     // Add an entry to the ring buffer (not tested)
-    bpf_ringbuf_output(&r_buf, &prov, sizeof(struct task_prov_struct), 0);
+    bpf_ringbuf_output(&r_buf, &pid, sizeof(uint32_t), 0);
     return 0;
 }
 

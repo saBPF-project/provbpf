@@ -6,6 +6,11 @@
 
 #include "bpf_camflow.skel.h"
 
+static int buf_process_sample(void *ctx, void *data, size_t len)
+{
+	return 0;
+}
+
 int main(void) {
   struct bpf_camflow_kern *skel = NULL;
   struct ring_buffer *ringbuf = NULL;
@@ -41,7 +46,7 @@ int main(void) {
     goto close_prog;
   }
   printf("Not sure what that does... (Michael?)\n");
-  ringbuf = ring_buffer__new(map_fd, NULL, NULL, NULL);
+  ringbuf = ring_buffer__new(map_fd, buf_process_sample, NULL, NULL);
   printf("Polling...\n");
   while (ring_buffer__poll(ringbuf, -1) >= 0) {
     printf("New data!\n");
