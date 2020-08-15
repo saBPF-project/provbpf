@@ -33,7 +33,6 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
     uint32_t pid  = task->pid;
     union prov_elt prov = {.task_info.pid = task->pid};
     bpf_map_update_elem(&task_map, &pid, &prov, BPF_NOEXIST);
-    // Add an entry to the ring buffer (not tested)
     record_provenance(&prov);
     return 0;
 }
