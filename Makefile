@@ -26,7 +26,7 @@ build_mainline:
 
 prepare: build_libbpf build_kernel
 
-camflow-headers:
+camflow_headers:
 	rm -rf camflow
 	mkdir -p camflow
 	cp -r camflow-dev/include ./camflow
