@@ -14,7 +14,7 @@ char _license[] SEC("license") = "GPL";
 // https://elixir.bootlin.com/linux/v5.8/source/tools/testing/selftests/bpf/progs/test_ringbuf.c
 struct bpf_map_def SEC("maps") r_buf = {
     .type = BPF_MAP_TYPE_RINGBUF,
-    .max_entries = 1 << 2,
+    .max_entries = 4096 * 64,
 };
 
 struct bpf_map_def SEC("maps") task_map = {
