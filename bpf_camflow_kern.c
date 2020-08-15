@@ -41,10 +41,18 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
      * reserving some space in the ring buffer. */
     prov_entry = bpf_ringbuf_reserve(&r_buf, sizeof(*prov_entry), 0);
     /* Reserving space failed. */
-    if (!prov_entry)
+    if (!prov_entry) {
+	/* bpf_trace_printk() is used for debugging. 
+	 * Check for output through:
+	 * cat /sys/kernel/debug/tracing/trace_pipe */
+	char err[] = "Reserving space in the ring buffer for pid failed: %u\n";
+	bpf_trace_printk(err, sizeof(err), pid);
         return 1;
+    }
     /* Populate the entry with data. */
     prov_entry->pid = pid;
+    char fmt[] = "Submitting pid to the ring buffer: %u\n";
+    bpf_trace_printk(fmt, sizeof(fmt), prov_entry->pid);
     /* prov_entry is ready to be committed. */
     bpf_ringbuf_submit(prov_entry, 0);
     return 0;
