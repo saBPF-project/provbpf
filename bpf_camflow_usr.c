@@ -6,8 +6,9 @@
 
 #include "bpf_camflow.skel.h"
 
-static int buf_process_sample(void *ctx, void *data, size_t len)
+static int buf_process_entry(void *ctx, void *data, size_t len)
 {
+  printf("Read data of size %zu\n", len);
 	return 0;
 }
 
@@ -46,11 +47,9 @@ int main(void) {
     goto close_prog;
   }
   printf("Not sure what that does... (Michael?)\n");
-  ringbuf = ring_buffer__new(map_fd, buf_process_sample, NULL, NULL);
+  ringbuf = ring_buffer__new(map_fd, buf_process_entry, NULL, NULL);
   printf("Polling...\n");
-  while (ring_buffer__poll(ringbuf, -1) >= 0) {
-    printf("New data!\n");
-  }
+  while (ring_buffer__poll(ringbuf, -1) >= 0);
 
 close_prog:
   bpf_camflow_kern__destroy(skel);
