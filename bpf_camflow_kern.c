@@ -10,11 +10,14 @@
 
 char _license[] SEC("license") = "GPL";
 
-// NOTE: example reference:
+// NOTE: ring buffer reference:
 // https://elixir.bootlin.com/linux/v5.8/source/tools/testing/selftests/bpf/progs/test_ringbuf.c
 struct bpf_map_def SEC("maps") r_buf = {
     .type = BPF_MAP_TYPE_RINGBUF,
-    .max_entries = 4096 * 64, // NOTE: size seems to matter. previous value not ok
+    /* NOTE: The minimum size seems to be 1 << 12.
+     * Any value smaller than this results in
+     * runtime error. */
+    .max_entries = 1 << 12,
 };
 
 struct bpf_map_def SEC("maps") task_map = {
@@ -24,13 +27,26 @@ struct bpf_map_def SEC("maps") task_map = {
     .max_entries = 4096, // NOTE: set as big as possible; real size is dynamically adjusted
 };
 
+struct entry {
+    uint32_t pid;
+};
+
 SEC("lsm/task_alloc")
 int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
+    struct entry *prov_entry;
     uint32_t pid  = task->pid;
     struct task_prov_struct prov = {.pid = task->pid};
     bpf_map_update_elem(&task_map, &pid, &prov, BPF_NOEXIST);
-    // Add an entry to the ring buffer (not tested)
-    bpf_ringbuf_output(&r_buf, &pid, sizeof(uint32_t), 0);
+    /* Add an entry to the ring buffer by first
+     * reserving some space in the ring buffer. */
+    prov_entry = bpf_ringbuf_reserve(&r_buf, sizeof(*prov_entry), 0);
+    /* Reserving space failed. */
+    if (!prov_entry)
+        return 1;
+    /* Populate the entry with data. */
+    prov_entry->pid = pid;
+    /* prov_entry is ready to be committed. */
+    bpf_ringbuf_submit(prov_entry, 0);
     return 0;
 }
 
