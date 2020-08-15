@@ -51,7 +51,7 @@ skel:
 	bpftool gen skeleton $(target)_kern.o > $(target).skel.h
 
 usr:
-	clang $(target)_usr.c -lbpf -o $(target)_usr.o
+	clang $(target)_usr.c -lbpf -o $(target)_usr.o -Icamflow/include/uapi/linux
 
 run:
 	sudo ./$(target)_usr.o

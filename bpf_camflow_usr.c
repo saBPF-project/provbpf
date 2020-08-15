@@ -5,10 +5,13 @@
 #include <bpf/bpf.h>
 
 #include "bpf_camflow.skel.h"
+#include "provenance.h"
 
 static int buf_process_entry(void *ctx, void *data, size_t len)
 {
   printf("Read data of size %zu\n", len);
+  union prov_elt *prov = (union prov_elt*)data;
+  printf("Task id is %u\n", prov->task_info.pid);
 	return 0;
 }
 
@@ -34,19 +37,13 @@ int main(void) {
     goto close_prog;
   }
 
-  //map_fd = bpf_object__find_map_fd_by_name(skel->obj, "task_map");
-  //err = bpf_map_lookup_elem(map_fd, &key, &value);
-  //printf("err: %d value: %d\n", err, value);
-
-  // Consume data from ring buffer (not tested)
-  // Reference: https://elixir.bootlin.com/linux/v5.8/source/tools/testing/selftests/bpf/benchs/bench_ringbufs.c
   printf("Locating map...\n");
   map_fd = bpf_object__find_map_fd_by_name(skel->obj, "r_buf");
   if (map_fd < 0) {
     printf("Failed loading map ... %d\n", map_fd);
     goto close_prog;
   }
-  printf("Not sure what that does... (Michael?)\n");
+  printf("Setting up the ring buffer...\n");
   ringbuf = ring_buffer__new(map_fd, buf_process_entry, NULL, NULL);
   printf("Polling...\n");
   while (ring_buffer__poll(ringbuf, -1) >= 0);
