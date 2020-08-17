@@ -6,6 +6,7 @@
 
 #include "bpf_camflow.skel.h"
 #include "provenance.h"
+#include "camflow_bpf_record.h"
 
 static int buf_process_entry(void *ctx, void *data, size_t len)
 {
@@ -13,6 +14,7 @@ static int buf_process_entry(void *ctx, void *data, size_t len)
   union prov_elt *prov = (union prov_elt*)data;
   printf("Task id is %u\n", prov->task_info.pid);
   printf("Unique is %lu\n", prov->task_info.utime);
+  prov_record(prov);
 	return 0;
 }
 

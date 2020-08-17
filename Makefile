@@ -51,10 +51,12 @@ skel:
 	bpftool gen skeleton $(target)_kern.o > $(target).skel.h
 
 usr:
-	clang $(target)_usr.c -lbpf -o $(target)_usr.o -Icamflow/include/uapi/linux
+	clang $(target)_usr.c -o $(target)_usr.o -Icamflow/include/uapi/linux -Iinclude -c
+	clang camflow_bpf_record.c -o camflow_bpf_record.o -Icamflow/include/uapi/linux -Iinclude -c
+	clang -o bpf_camflow $(target)_usr.o camflow_bpf_record.o -lbpf
 
 run:
-	sudo ./$(target)_usr.o
+	sudo ./bpf_camflow
 
 all: clean btf kern skel usr
 
