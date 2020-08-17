@@ -33,14 +33,8 @@ static __always_inline void record_provenance(union prov_elt* prov){
 
 SEC("lsm/task_alloc")
 int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
-    uint32_t pid;
-    uint64_t unique;
-    bpf_probe_read(&unique,
-               sizeof(unique),
-               &task);
-    bpf_probe_read(&pid,
-               sizeof(pid),
-               &task->pid);
+    uint32_t pid = task->pid;
+    uint64_t unique = (uint64_t)task;
     union prov_elt prov = {.task_info.pid = pid,.task_info.utime = unique};
     //bpf_map_update_elem(&task_map, &pid, &prov, BPF_NOEXIST);
     record_provenance(&prov);
@@ -49,14 +43,8 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
 
 SEC("lsm/task_free")
 int BPF_PROG(task_free, struct task_struct *task) {
-    uint32_t pid;
-    uint64_t unique;
-    bpf_probe_read(&unique,
-               sizeof(unique),
-               &task);
-    bpf_probe_read(&pid,
-               sizeof(pid),
-               &task->pid);
+    uint32_t pid = task->pid;
+    uint64_t unique = (uint64_t)task;
     union prov_elt prov = {.task_info.pid = pid,.task_info.utime = unique};
     record_provenance(&prov);
     //bpf_map_delete_elem(&task_map, &pid);
