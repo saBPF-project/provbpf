@@ -28,21 +28,31 @@ struct bpf_map_def SEC("maps") task_map = {
 };
 
 static __always_inline void record_provenance(union prov_elt* prov){
-  bpf_ringbuf_output(&r_buf, prov, sizeof(union prov_elt), 0);
+    bpf_ringbuf_output(&r_buf, prov, sizeof(union prov_elt), 0);
 }
 
-// this very nasty. We may want to change this
+//TODO: is there a better way to assign a key to a kernel object?
 static __always_inline uint64_t get_key(void* object) {
-  return (uint64_t)object;
+    return (uint64_t)object;
 }
-
 
 SEC("lsm/task_alloc")
 int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
     uint32_t pid = task->pid;
     uint64_t unique = get_key(task);
-    union prov_elt prov = {.task_info.pid = pid,.task_info.utime = unique};
-    //bpf_map_update_elem(&task_map, &pid, &prov, BPF_NOEXIST);
+    /* populate the provenance record for the new task */
+    //TODO: more information needs to be added to the structure
+    union prov_elt prov = {
+        .task_info.pid = pid,
+        .task_info.utime = unique
+    };
+    /* TODO: CODE HERE
+     * Update the task map here to save the task provenance state.
+     *
+     * bpf_map_update_elem(&task_map, &pid, &prov, BPF_NOEXIST);
+     */
+
+    /* Record the provenance to the ring buffer */
     record_provenance(&prov);
     return 0;
 }
@@ -51,8 +61,17 @@ SEC("lsm/task_free")
 int BPF_PROG(task_free, struct task_struct *task) {
     uint32_t pid = task->pid;
     uint64_t unique = get_key(task);
-    union prov_elt prov = {.task_info.pid = pid,.task_info.utime = unique};
+    union prov_elt prov = {
+        .task_info.pid = pid,
+        .task_info.utime = unique
+    };
+    /* TODO: CODE HERE
+     * Update the task map here to remove the task provenance state.
+     *
+     * bpf_map_delete_elem(&task_map, &pid);
+     */
+
+    /* Record the provenance to the ring buffer */
     record_provenance(&prov);
-    //bpf_map_delete_elem(&task_map, &pid);
     return 0;
 }

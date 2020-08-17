@@ -6,16 +6,24 @@
 
 #include "bpf_camflow.skel.h"
 #include "provenance.h"
+
 #include "camflow_bpf_record.h"
 
-static int buf_process_entry(void *ctx, void *data, size_t len)
-{
-  printf("Read data of size %zu\n", len);
-  union prov_elt *prov = (union prov_elt*)data;
-  printf("Task id is %u\n", prov->task_info.pid);
-  printf("Unique is %lu\n", prov->task_info.utime);
-  prov_record(prov);
-	return 0;
+/* Callback function called whenever a new ring
+ * buffer entry is polled from the buffer. */
+static int buf_process_entry(void *ctx, void *data, size_t len) {
+    printf("Read data of size %zu\n", len);
+    /* Every entry from the ring buffer should
+     * be of type union prov_elt.
+     */
+    union prov_elt *prov = (union prov_elt*)data;
+
+    printf("Task id is %u\n", prov->task_info.pid);
+    printf("Unique is %lu\n", prov->task_info.utime);
+    /* Userspace processing the provenance record. */
+    prov_record(prov);
+
+    return 0;
 }
 
 int main(void) {
@@ -44,16 +52,23 @@ int main(void) {
     //err = bpf_map_lookup_elem(map_fd, &key, &value);
     //printf("err: %d value: %d\n", err, value);
 
-  printf("Locating map...\n");
-  map_fd = bpf_object__find_map_fd_by_name(skel->obj, "r_buf");
-  if (map_fd < 0) {
-    printf("Failed loading map ... %d\n", map_fd);
-    goto close_prog;
-  }
-  printf("Setting up the ring buffer...\n");
-  ringbuf = ring_buffer__new(map_fd, buf_process_entry, NULL, NULL);
-  printf("Polling...\n");
-  while (ring_buffer__poll(ringbuf, -1) >= 0);
+    /* Locate ring buffer */
+    printf("Locating the ring buffer...\n");
+    map_fd = bpf_object__find_map_fd_by_name(skel->obj, "r_buf");
+    if (map_fd < 0) {
+        printf("Failed loading ring buffer (%d)\n", map_fd);
+        goto close_prog;
+    }
+    printf("Setting up the ring buffer in userspace...\n");
+    /* Create a new ring buffer handle in the userspace.
+     * buf_process_entry is the callback function that
+     * process the entry in the ring buffer. */
+    ringbuf = ring_buffer__new(map_fd, buf_process_entry, NULL, NULL);
+    printf("Start polling forever...\n");
+    /* ring_buffer__poll polls for available data and consume records,
+     * if any are available. Returns number of records consumed, or
+     * negative number, if any of the registered callbacks returned error. */
+    while (ring_buffer__poll(ringbuf, -1) >= 0);
 
 close_prog:
     bpf_camflow_kern__destroy(skel);
