@@ -31,10 +31,16 @@ static __always_inline void record_provenance(union prov_elt* prov){
   bpf_ringbuf_output(&r_buf, prov, sizeof(union prov_elt), 0);
 }
 
+// this very nasty. We may want to change this
+static __always_inline uint64_t get_key(void* object) {
+  return (uint64_t)object;
+}
+
+
 SEC("lsm/task_alloc")
 int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
     uint32_t pid = task->pid;
-    uint64_t unique = (uint64_t)task;
+    uint64_t unique = get_key(task);
     union prov_elt prov = {.task_info.pid = pid,.task_info.utime = unique};
     //bpf_map_update_elem(&task_map, &pid, &prov, BPF_NOEXIST);
     record_provenance(&prov);
@@ -44,7 +50,7 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
 SEC("lsm/task_free")
 int BPF_PROG(task_free, struct task_struct *task) {
     uint32_t pid = task->pid;
-    uint64_t unique = (uint64_t)task;
+    uint64_t unique = get_key(task);
     union prov_elt prov = {.task_info.pid = pid,.task_info.utime = unique};
     record_provenance(&prov);
     //bpf_map_delete_elem(&task_map, &pid);
