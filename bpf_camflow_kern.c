@@ -6,114 +6,74 @@
 #include <linux/limits.h>
 
 #include "sockaddr.h"
-#include "provenance.h"
+#include "linux/provenance.h"
 
 char _license[] SEC("license") = "GPL";
 
-#define BUFFER_SIZE 10
-
-// BPF Ring Buffer Map
-struct bpf_map_def SEC("maps") ring_buffer_map = {
-        .type = BPF_MAP_TYPE_ARRAY,
-        .key_size = sizeof(uint32_t),
-        .value_size = sizeof(uint32_t),
-        .max_entries = BUFFER_SIZE + 2, // number of buffer entries, head pointer and tail pointer
-};
-
-struct bpf_map_def SEC("maps") my_map = {
-        .type = BPF_MAP_TYPE_ARRAY,
-        .key_size = sizeof(uint32_t),
-        .value_size = sizeof(uint32_t),
-        .max_entries = 1,
+// NOTE: ring buffer reference:
+// https://elixir.bootlin.com/linux/v5.8/source/tools/testing/selftests/bpf/progs/test_ringbuf.c
+struct bpf_map_def SEC("maps") r_buf = {
+    .type = BPF_MAP_TYPE_RINGBUF,
+    /* NOTE: The minimum size seems to be 1 << 12.
+     * Any value smaller than this results in
+     * runtime error. */
+    .max_entries = 1 << 12,
 };
 
 struct bpf_map_def SEC("maps") task_map = {
-        .type = BPF_MAP_TYPE_HASH,
-        .key_size = sizeof(uint32_t), // probably wants to change
-        .value_size = sizeof(struct task_prov_struct),
-        .max_entries = 4096, // how to setup the size? is there as big as needed option?
+    .type = BPF_MAP_TYPE_HASH,
+    .key_size = sizeof(uint32_t),
+    .value_size = sizeof(union prov_elt),
+    .max_entries = 4096, // NOTE: set as big as possible; real size is dynamically adjusted
 };
 
-struct bpf_map_def SEC("maps") inode_map = {
-        .type = BPF_MAP_TYPE_HASH,
-        .key_size = sizeof(uint32_t) + sizeof(uuid_t), // 20 bytes, 4 bytes for the inode ino, 16 bytes for the superblock UUID
-        .value_size = sizeof(struct inode_prov_struct),
-        .max_entries = 4096, // how to setup the size? is there as big as needed option?
-};
-
-// Initialise BPF Ring Buffer Map
-static __always_inline void bpf_ring_buffer_init(void* map) {
-  uint32_t head_key = BUFFER_SIZE;
-  uint32_t tail_key = BUFFER_SIZE + 1;
-  uint32_t init_val = 0;
-
-  bpf_map_update_elem(map, &head_key, &init_val, BPF_NOEXIST);
-  bpf_map_update_elem(map, &tail_key, &init_val, BPF_NOEXIST);
+static __always_inline void record_provenance(union prov_elt* prov){
+    bpf_ringbuf_output(&r_buf, prov, sizeof(union prov_elt), 0);
 }
 
-// Add item to BPF Ring Buffer Map
-static __always_inline void bpf_ring_buffer_put(void* map, uint32_t data) {
-  uint32_t head_key = BUFFER_SIZE;
-  uint32_t tail_key = BUFFER_SIZE + 1;
-  uint32_t* head_pointer;
-  uint32_t* tail_pointer;
-  uint32_t new_head_pointer = 0, new_tail_pointer = 0;
-  uint32_t new_entry = 100;
-
-  head_pointer = bpf_map_lookup_elem(map, &head_key);
-  if (head_pointer) {
-    new_head_pointer = *head_pointer;
-  }
-  tail_pointer = bpf_map_lookup_elem(map, &tail_key);
-  if (tail_pointer) {
-    new_tail_pointer = *tail_pointer;
-  }
-
-  bpf_map_update_elem(map, &new_head_pointer, &new_entry, BPF_ANY);
-
-  new_head_pointer = (new_head_pointer + 1) % BUFFER_SIZE;
-  bpf_map_update_elem(map, &head_key, &new_head_pointer, BPF_ANY);
-
-  if (new_head_pointer == new_tail_pointer) {
-      new_tail_pointer = (new_tail_pointer + 1) % BUFFER_SIZE;
-      bpf_map_update_elem(map, &tail_key, &new_tail_pointer, BPF_ANY);
-  }
-}
-
-static __always_inline void count(void *map)
-{
-	uint32_t key = 0;
-	uint32_t *value, init_val = 1;
-
-  // retrieve value of element 0
-	value = bpf_map_lookup_elem(map, &key);
-  // increment if exists, otherwise insert
-	if (value)
-		*value += 1;
-	else
-		bpf_map_update_elem(map, &key, &init_val, BPF_NOEXIST);
+//TODO: is there a better way to assign a key to a kernel object?
+static __always_inline uint64_t get_key(void* object) {
+    return (uint64_t)object;
 }
 
 SEC("lsm/task_alloc")
-int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags)
-{
-  bpf_ring_buffer_init(&ring_buffer_map);
-  bpf_ring_buffer_put(&ring_buffer_map, 100);
+int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
+    uint32_t pid = task->pid;
+    uint64_t unique = get_key(task);
+    /* populate the provenance record for the new task */
+    //TODO: more information needs to be added to the structure
+    union prov_elt prov = {
+        .task_info.pid = pid,
+        .task_info.utime = unique
+    };
+    /* TODO: CODE HERE
+     * Update the task map here to save the task provenance state.
+     *
+     * bpf_map_update_elem(&task_map, &pid, &prov, BPF_NOEXIST);
+     */
 
-  uint32_t pid  = task->pid;
-  /* it needs to be initialised */
-  struct task_prov_struct prov = {.pid = task->pid};
-  bpf_map_update_elem(&task_map, &pid, &prov, BPF_NOEXIST);
-  count(&my_map);
-	return 0;
+    /* Record the provenance to the ring buffer */
+    record_provenance(&prov);
+    return 0;
 }
 
 SEC("lsm/task_free")
-int BPF_PROG(task_free, struct task_struct *task)
-{
-  uint32_t pid  = 0;
-  bpf_map_delete_elem(&task_map, &pid);
-  return 0;
+int BPF_PROG(task_free, struct task_struct *task) {
+    uint32_t pid = task->pid;
+    uint64_t unique = get_key(task);
+    union prov_elt prov = {
+        .task_info.pid = pid,
+        .task_info.utime = unique
+    };
+    /* TODO: CODE HERE
+     * Update the task map here to remove the task provenance state.
+     *
+     * bpf_map_delete_elem(&task_map, &pid);
+     */
+
+    /* Record the provenance to the ring buffer */
+    record_provenance(&prov);
+    return 0;
 }
 
 SEC("lsm/inode_alloc_security")
