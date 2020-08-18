@@ -44,6 +44,7 @@ int main(void) {
         return err;
     }
 
+    printf("Open and loading...\n");
     skel = bpf_camflow_kern__open_and_load();
     if (!skel) {
         printf("Failed loading ...\n");
@@ -51,6 +52,7 @@ int main(void) {
         goto close_prog;
     }
 
+    printf("Attaching BPF programs ...\n");
     err = bpf_camflow_kern__attach(skel);
     if (err) {
         printf("Failed attach ... %d\n", err);
