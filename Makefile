@@ -26,12 +26,6 @@ build_mainline:
 
 prepare: build_libbpf build_kernel
 
-camflow_headers:
-	rm -rf camflow
-	mkdir -p camflow
-	cp -r camflow-dev/include ./camflow
-	rm -rf camflow-dev
-
 btf:
 	bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
 
