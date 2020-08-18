@@ -20,6 +20,19 @@ Building mainline vanilla kernel:
 make build_mainline
 ```
 
-`make all`
+Getting dependencies:
+```
+git submodule update --init
+```
 
-`make run`
+## Building and running
+
+Building bpf kernel and user space program:
+```
+make all
+```
+
+Running bpf program:
+```
+make run
+```
