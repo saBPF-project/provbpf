@@ -6,7 +6,7 @@
 #include <sys/resource.h>
 
 #include "bpf_camflow.skel.h"
-#include "provenance.h"
+#include "linux/provenance.h"
 
 #include "camflow_bpf_record.h"
 

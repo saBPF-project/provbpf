@@ -43,7 +43,7 @@ kern:
 	-Wno-gnu-variable-sized-type-not-at-end \
 	-Wno-address-of-packed-member -Wno-tautological-compare \
 	-Wno-unknown-warning-option \
-	-Icamflow/include/uapi/linux \
+	-Icamflow/include/uapi \
 	-Iinclude \
 	-target bpf -c $(target)_kern.c -o $(target)_kern.o
 
@@ -51,8 +51,8 @@ skel:
 	bpftool gen skeleton $(target)_kern.o > $(target).skel.h
 
 usr:
-	clang $(target)_usr.c -o $(target)_usr.o -Icamflow/include/uapi/linux -Iinclude -c
-	clang camflow_bpf_record.c -o camflow_bpf_record.o -Icamflow/include/uapi/linux -Iinclude -c
+	clang $(target)_usr.c -o $(target)_usr.o -Icamflow/include/uapi -Iinclude -c
+	clang camflow_bpf_record.c -o camflow_bpf_record.o -Icamflow/include/uapi -Iinclude -c
 	clang -o bpf_camflow $(target)_usr.o camflow_bpf_record.o -lbpf
 
 run:

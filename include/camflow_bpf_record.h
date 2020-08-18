@@ -3,7 +3,7 @@
 #ifndef __PROVENANCE_BPF_RECORD_H
 #define __PROVENANCE_BPF_RECORD_H
 
-#include "provenance.h"
+#include "linux/provenance.h"
 
 void prov_record(union prov_elt* msg);
 

@@ -6,7 +6,7 @@
 #include <linux/limits.h>
 
 #include "sockaddr.h"
-#include "provenance.h"
+#include "linux/provenance.h"
 
 char _license[] SEC("license") = "GPL";
 
