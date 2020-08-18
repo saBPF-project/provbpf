@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <bpf/bpf.h>
+#include <sys/resource.h>
 
 #include "bpf_camflow.skel.h"
 #include "provenance.h"
@@ -30,22 +31,30 @@ int main(void) {
     struct bpf_camflow_kern *skel = NULL;
     struct ring_buffer *ringbuf = NULL;
     int err, map_fd;
+    struct rlimit r = {RLIM_INFINITY, RLIM_INFINITY};
     pid_t pid;
     unsigned int key = 0, value;
 
     printf("Starting...\n");
 
+    printf("Setting rlimit...\n");
+    err = setrlimit(RLIMIT_MEMLOCK, &r);
+    if (err) {
+        printf("Error while setting rlimit %d\n", err);
+        return err;
+    }
+
     skel = bpf_camflow_kern__open_and_load();
     if (!skel) {
         printf("Failed loading ...\n");
-	printf("Kernel doesn't support this program type.\n");
-	goto close_prog;
+        printf("Kernel doesn't support this program type.\n");
+        goto close_prog;
     }
 
     err = bpf_camflow_kern__attach(skel);
     if (err) {
         printf("Failed attach ... %d\n", err);
-	goto close_prog;
+        goto close_prog;
     }
 
     //map_fd = bpf_object__find_map_fd_by_name(skel->obj, "task_map");
