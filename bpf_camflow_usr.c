@@ -81,19 +81,6 @@ int main(void) {
      * negative number, if any of the registered callbacks returned error. */
     while (ring_buffer__poll(ringbuf, -1) >= 0);
 
-	// Print final head pointer position
-	err = bpf_map_lookup_elem(ring_buffer_fd, &head_key, &head_pointer_value);
-	printf("ring_buf_err: %d head_pointer_value: %d\n", err, head_pointer_value);
-	// Print final tail pointer position
-	err = bpf_map_lookup_elem(ring_buffer_fd, &tail_key, &tail_pointer_value);
-	printf("ring_buf_err: %d tail_pointer_value: %d\n", err, tail_pointer_value);
-
-	// Print entry extracted from BPF Ring Buffer Map and tail pointer position
-	entry = bpf_ring_buffer_get(ring_buffer_fd);
-	printf("Extracted entry value from ring buffer: %d\n", entry);
-	err = bpf_map_lookup_elem(ring_buffer_fd, &tail_key, &tail_pointer_value);
-	printf("ring_buf_err: %d tail_pointer_value: %d\n", err, tail_pointer_value);
-
 close_prog:
     bpf_camflow_kern__destroy(skel);
     return 0;
