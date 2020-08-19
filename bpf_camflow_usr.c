@@ -74,6 +74,7 @@ int main(void) {
     /* Create a new ring buffer handle in the userspace.
      * buf_process_entry is the callback function that
      * process the entry in the ring buffer. */
+    prov_init();
     ringbuf = ring_buffer__new(map_fd, buf_process_entry, NULL, NULL);
     printf("Start polling forever...\n");
     /* ring_buffer__poll polls for available data and consume records,

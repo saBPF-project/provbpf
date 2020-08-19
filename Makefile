@@ -47,8 +47,11 @@ skel:
 usr:
 	clang $(target)_usr.c -o $(target)_usr.o -Icamflow-dev/include/uapi \
 	-Iinclude -c
+	clang ./include/libprovenance/provenanceW3CJSON.c -o ./include/libprovenance/provenanceW3CJSON.o \
+	-Icamflow-dev/include/uapi -Iinclude -c
 	clang camflow_bpf_record.c -o camflow_bpf_record.o \
 	-Icamflow-dev/include/uapi -Iinclude -c
+	clang -o camflow_bpf_rec.o camflow_bpf_record.o ./include/libprovenance/provenanceW3CJSON.o
 	clang -o bpf_camflow $(target)_usr.o camflow_bpf_record.o -lbpf
 
 run:

@@ -22,7 +22,7 @@ struct bpf_map_def SEC("maps") r_buf = {
 
 struct bpf_map_def SEC("maps") task_map = {
     .type = BPF_MAP_TYPE_HASH,
-    .key_size = sizeof(uint32_t),
+    .key_size = sizeof(uint64_t),
     .value_size = sizeof(union prov_elt),
     .max_entries = 4096, // NOTE: set as big as possible; real size is dynamically adjusted
 };
@@ -51,6 +51,7 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
      *
      * bpf_map_update_elem(&task_map, &pid, &prov, BPF_NOEXIST);
      */
+    bpf_map_update_elem(&task_map, &unique, &prov, BPF_NOEXIST);
 
     /* Record the provenance to the ring buffer */
     record_provenance(&prov);
@@ -70,6 +71,7 @@ int BPF_PROG(task_free, struct task_struct *task) {
      *
      * bpf_map_delete_elem(&task_map, &pid);
      */
+    bpf_map_delete_elem(&task_map, &unique);
 
     /* Record the provenance to the ring buffer */
     record_provenance(&prov);
