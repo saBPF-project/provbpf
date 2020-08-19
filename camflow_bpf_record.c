@@ -7,10 +7,10 @@ void init( void ){
   syslog(LOG_INFO, "Init audit thread (%d)", (int) tid);
 }
 
-void w3c_str(struct str_struct* data){
-  append_entity(str_msg_to_json(data));
-  return;
-}
+// void w3c_str(struct str_struct* data){
+//   append_entity(str_msg_to_json(data));
+//   return;
+// }
 
 // void w3c_derived(struct relation_struct* relation){
 //   append_derived(derived_to_json(relation));
