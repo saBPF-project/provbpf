@@ -8,6 +8,7 @@ jobs:
     working_directory: ~/build
     steps:
       - checkout
+      - run: 'sudo dnf -y -v groupinstall 'Development Tools''
       - run: 'sudo dnf install -y cmake clang gcc-c++ wget git pesign grubby'
       - run: 'sudo dnf install -y openssl-devel bc nano patch mosquitto sparse'
       - run: 'sudo dnf install -y llvm bpftool libbpf libbpf-devel elfutils-libelf libcap'
