@@ -25,7 +25,11 @@ build_mainline:
 	cd ~/linux-stable && sudo $(MAKE) install
 
 build_libprovenance:
-	
+	cd libprovenance/src && sed -i -e "s/INCLUDES = -I..\/include/INCLUDES = -I..\/include -I..\/..\/camflow-dev\/include\/uapi/g" Makefile
+	cd libprovenance && $(MAKE) prepare
+	cd libprovenance && $(MAKE) all
+	cd libprovenance && $(MAKE) install
+	cd libprovenance/src && sed -i -e "s/INCLUDES = -I..\/include -I..\/..\/camflow-dev\/include\/uapi/INCLUDES = -I..\/include/g" Makefile
 
 prepare: build_libbpf build_kernel build_libprovenance
 
@@ -52,7 +56,7 @@ usr:
 	-Iinclude -c
 	clang camflow_bpf_record.c -o camflow_bpf_record.o \
 	-Icamflow-dev/include/uapi -Iinclude -c
-	clang -o bpf_camflow $(target)_usr.o camflow_bpf_record.o -lbpf
+	clang -o bpf_camflow $(target)_usr.o camflow_bpf_record.o -lbpf -lprovenance -lpthread
 
 run:
 	sudo ./bpf_camflow
