@@ -58,7 +58,6 @@ usr:
 	-Iinclude -c
 	clang -o bpf_camflow $(target)_usr.o camflow_bpf_record.o -lbpf -lprovenance -lpthread
 
-
 run:
 	sudo ./bpf_camflow
 

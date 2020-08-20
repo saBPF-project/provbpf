@@ -81,7 +81,9 @@ int main(void) {
     /* ring_buffer__poll polls for available data and consume records,
      * if any are available. Returns number of records consumed, or
      * negative number, if any of the registered callbacks returned error. */
-    while (ring_buffer__poll(ringbuf, -1) >= 0);
+    while (ring_buffer__poll(ringbuf, -1) >= 0) {
+        prov_refresh_records();
+    }
 
 close_prog:
     bpf_camflow_kern__destroy(skel);

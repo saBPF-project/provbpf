@@ -44,7 +44,7 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
     /* populate the provenance record for the new task */
     //TODO: more information needs to be added to the structure
     union prov_elt prov = {
-        .task_info.node_id.type=ACT_TASK;
+        .task_info.identifier.node_id.type=ACT_TASK,
         .task_info.pid = pid,
         .task_info.utime = unique
     };
@@ -65,7 +65,7 @@ int BPF_PROG(task_free, struct task_struct *task) {
     uint32_t pid = task->pid;
     uint64_t unique = get_key(task);
     union prov_elt prov = {
-        .task_info.node_id.type=ACT_TASK;
+        .task_info.identifier.node_id.type=ACT_TASK,
         .task_info.pid = pid,
         .task_info.utime = unique
     };
