@@ -1,3 +1,6 @@
 [submodule "camflow-dev"]
 	path = camflow-dev
 	url = https://github.com/camflow/camflow-dev
+[submodule "libprovenance"]
+	path = libprovenance
+	url = https://github.com/camflow/libprovenance
