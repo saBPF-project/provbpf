@@ -24,7 +24,14 @@ build_mainline:
 	cd ~/linux-stable && sudo $(MAKE) modules_install
 	cd ~/linux-stable && sudo $(MAKE) install
 
-prepare: build_libbpf build_kernel
+build_libprovenance:
+	cd libprovenance/src && sed -i -e "s/INCLUDES = -I..\/include/INCLUDES = -I..\/include -I..\/..\/camflow-dev\/include\/uapi/g" Makefile
+	cd libprovenance && $(MAKE) prepare
+	cd libprovenance && $(MAKE) all
+	cd libprovenance && $(MAKE) install
+	cd libprovenance/src && sed -i -e "s/INCLUDES = -I..\/include -I..\/..\/camflow-dev\/include\/uapi/INCLUDES = -I..\/include/g" Makefile
+
+prepare: build_libbpf build_kernel build_libprovenance
 
 btf:
 	bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
@@ -49,7 +56,7 @@ usr:
 	-Icamflow-dev/include/uapi -Iinclude -c
 	clang $(target)_usr.c -o $(target)_usr.o -Icamflow-dev/include/uapi \
 	-Iinclude -c
-	clang -o bpf_camflow $(target)_usr.o camflow_bpf_record.o -lbpf -lpthread -linih -lz -lpaho-mqtt3c 
+	clang -o bpf_camflow $(target)_usr.o camflow_bpf_record.o -lbpf -lprovenance -lpthread
 
 
 run:
