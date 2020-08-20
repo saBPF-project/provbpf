@@ -24,7 +24,10 @@ build_mainline:
 	cd ~/linux-stable && sudo $(MAKE) modules_install
 	cd ~/linux-stable && sudo $(MAKE) install
 
-prepare: build_libbpf build_kernel
+build_libprovenance:
+	
+
+prepare: build_libbpf build_kernel build_libprovenance
 
 btf:
 	bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
