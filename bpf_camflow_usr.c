@@ -21,7 +21,7 @@ static int buf_process_entry(void *ctx, void *data, size_t len) {
     union prov_elt *prov = (union prov_elt*)data;
 
     printf("Task id is %u\n", prov->task_info.pid);
-    printf("Unique is %lu\n", prov->task_info.utime);
+    printf("Unique is %lu\n", prov->task_info.identifier.node_id.id);
     /* Userspace processing the provenance record. */
     prov_record(prov);
 

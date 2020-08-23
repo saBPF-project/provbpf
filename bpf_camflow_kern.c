@@ -11,6 +11,8 @@
 
 char _license[] SEC("license") = "GPL";
 
+#define KB 1024
+
 // NOTE: ring buffer reference:
 // https://elixir.bootlin.com/linux/v5.8/source/tools/testing/selftests/bpf/progs/test_ringbuf.c
 struct bpf_map_def SEC("maps") r_buf = {
@@ -41,12 +43,17 @@ SEC("lsm/task_alloc")
 int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
     uint32_t pid = task->pid;
     uint64_t unique = get_key(task);
+    struct mm_struct *mm = task->mm;
     /* populate the provenance record for the new task */
     //TODO: more information needs to be added to the structure
     union prov_elt prov = {
         .task_info.identifier.node_id.type=ACT_TASK,
+        .task_info.identifier.node_id.id=unique,
         .task_info.pid = pid,
-        .task_info.utime = unique
+        .task_info.vpid = task->tgid,
+        .task_info.utime = task->utime,
+        .task_info.stime = task->stime,
+        .task_info.vm = mm->total_vm * IOC_PAGE_SIZE / KB
     };
     /* TODO: CODE HERE
      * Update the task map here to save the task provenance state.
@@ -64,10 +71,15 @@ SEC("lsm/task_free")
 int BPF_PROG(task_free, struct task_struct *task) {
     uint32_t pid = task->pid;
     uint64_t unique = get_key(task);
+    struct mm_struct *mm = task->mm;
     union prov_elt prov = {
         .task_info.identifier.node_id.type=ACT_TASK,
+        .task_info.identifier.node_id.id=unique,
         .task_info.pid = pid,
-        .task_info.utime = unique
+        .task_info.vpid = task->tgid,
+        .task_info.utime = task->utime,
+        .task_info.stime = task->stime,
+        .task_info.vm = mm->total_vm * IOC_PAGE_SIZE / KB
     };
     /* TODO: CODE HERE
      * Update the task map here to remove the task provenance state.

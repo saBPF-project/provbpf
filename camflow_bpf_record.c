@@ -230,7 +230,7 @@ void node_record(union prov_elt *msg){
 }
 
 static inline void log_print(char* json){
-    printf("%s", json);
+    printf("%s\n", json);
 }
 
 void prov_init() {
