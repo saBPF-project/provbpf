@@ -12,6 +12,7 @@
 char _license[] SEC("license") = "GPL";
 
 #define KB 1024
+#define KB_MASK         (~(KB - 1))
 
 // NOTE: ring buffer reference:
 // https://elixir.bootlin.com/linux/v5.8/source/tools/testing/selftests/bpf/progs/test_ringbuf.c
@@ -39,6 +40,10 @@ static __always_inline uint64_t get_key(void* object) {
     return (uint64_t)object;
 }
 
+static __always_inline uint64_t u64_max(uint64_t a, uint64_t b) {
+    return (a > b) ? a : b;
+}
+
 SEC("lsm/task_alloc")
 int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
     uint32_t pid = task->pid;
@@ -55,6 +60,21 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
         .task_info.stime = task->stime,
         .task_info.vm = mm->total_vm * IOC_PAGE_SIZE / KB
     };
+    prov.task_info.rss = (mm->rss_stat.count[MM_FILEPAGES].counter +
+                         mm->rss_stat.count[MM_ANONPAGES].counter +
+                         mm->rss_stat.count[MM_SHMEMPAGES].counter) * IOC_PAGE_SIZE / KB;
+    prov.task_info.hw_vm = u64_max(mm->hiwater_vm, mm->total_vm) * IOC_PAGE_SIZE / KB;
+    prov.task_info.hw_rss = u64_max(mm->hiwater_rss, prov.task_info.rss) * IOC_PAGE_SIZE / KB;
+    #ifdef CONFIG_TASK_IO_ACCOUNTING
+      prov.task_info.rbytes = task->ioac.read_bytes & KB_MASK;
+      prov.task_info.wbytes = task->ioac.write_bytes & KB_MASK;
+      prov.task_info.cancel_wbytes = task->ioac.cancelled_write_bytes & KB_MASK;
+    #else
+      prov.task_info.rbytes = task->ioac.rchar & KB_MASK;
+      prov.task_info.wbytes = task->ioac.wchar & KB_MASK;
+      prov.task_info.cancel_wbytes = 0;
+    #endif
+
     /* TODO: CODE HERE
      * Update the task map here to save the task provenance state.
      *
@@ -79,8 +99,22 @@ int BPF_PROG(task_free, struct task_struct *task) {
         .task_info.vpid = task->tgid,
         .task_info.utime = task->utime,
         .task_info.stime = task->stime,
-        .task_info.vm = mm->total_vm * IOC_PAGE_SIZE / KB
+        .task_info.vm = mm->total_vm * IOC_PAGE_SIZE / KB,
     };
+    prov.task_info.rss = (mm->rss_stat.count[MM_FILEPAGES].counter +
+                         mm->rss_stat.count[MM_ANONPAGES].counter +
+                         mm->rss_stat.count[MM_SHMEMPAGES].counter) * IOC_PAGE_SIZE / KB;
+    prov.task_info.hw_vm = u64_max(mm->hiwater_vm, mm->total_vm) * IOC_PAGE_SIZE / KB;
+    prov.task_info.hw_rss = u64_max(mm->hiwater_rss, prov.task_info.rss) * IOC_PAGE_SIZE / KB;
+    #ifdef CONFIG_TASK_IO_ACCOUNTING
+      prov.task_info.rbytes = task->ioac.read_bytes & KB_MASK;
+      prov.task_info.wbytes = task->ioac.write_bytes & KB_MASK;
+      prov.task_info.cancel_wbytes = task->ioac.cancelled_write_bytes & KB_MASK;
+    #else
+      prov.task_info.rbytes = task->ioac.rchar & KB_MASK;
+      prov.task_info.wbytes = task->ioac.wchar & KB_MASK;
+      prov.task_info.cancel_wbytes = 0;
+    #endif
     /* TODO: CODE HERE
      * Update the task map here to remove the task provenance state.
      *
