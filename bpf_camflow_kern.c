@@ -100,7 +100,7 @@ int BPF_PROG(task_free, struct task_struct *task) {
     if (!prov)
         goto out; // we are not tracking since the begining of time. We may need to handle situation when we haven't gone through alloc.
 
-    /* populate the provenance record for the new task */
+    /* update the content of the structure */
     update_task_prov(task, prov);
 
     /* Record the provenance to the ring buffer */
