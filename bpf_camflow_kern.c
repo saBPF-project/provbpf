@@ -98,7 +98,7 @@ int BPF_PROG(task_free, struct task_struct *task) {
     // we retrieve the provenance that was created in alloc
     prov = bpf_map_lookup_elem(&task_map, &key);
     if (!prov)
-        goto out;
+        goto out; // we are not tracking since the begining of time. We may need to handle situation when we haven't gone through alloc.
 
     /* populate the provenance record for the new task */
     update_task_prov(task, prov);
