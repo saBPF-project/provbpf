@@ -16,7 +16,11 @@ jobs:
       - run: 'git submodule update --init --recursive -j 8'
       - run: 'make build_libbpf'
       - run: 'make build_libprovenance'
-      - run: 'make all'
+      - run: 'make clean'
+      - run: 'make btf'
+      - run: 'make kern'
+      - run: 'make skel'
+      - run: 'make usr'
 workflows:
   build_and_deploy:
     jobs:
