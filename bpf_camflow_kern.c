@@ -47,13 +47,13 @@ static __always_inline uint64_t u64_max(uint64_t a, uint64_t b) {
 SEC("lsm/task_alloc")
 int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
     uint32_t pid = task->pid;
-    uint64_t unique = get_key(task);
+    uint64_t key = get_key(task);
     struct mm_struct *mm = task->mm;
     /* populate the provenance record for the new task */
     //TODO: more information needs to be added to the structure
     union prov_elt prov = {
         .task_info.identifier.node_id.type=ACT_TASK,
-        .task_info.identifier.node_id.id=unique,
+        .task_info.identifier.node_id.id=key,
         .task_info.pid = pid,
         .task_info.vpid = task->tgid,
         .task_info.utime = task->utime,
@@ -80,7 +80,7 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
      *
      * bpf_map_update_elem(&task_map, &pid, &prov, BPF_NOEXIST);
      */
-    bpf_map_update_elem(&task_map, &unique, &prov, BPF_NOEXIST);
+    bpf_map_update_elem(&task_map, &key, &prov, BPF_NOEXIST);
 
     /* Record the provenance to the ring buffer */
     record_provenance(&prov);
@@ -90,11 +90,11 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
 SEC("lsm/task_free")
 int BPF_PROG(task_free, struct task_struct *task) {
     uint32_t pid = task->pid;
-    uint64_t unique = get_key(task);
+    uint64_t key = get_key(task);
     struct mm_struct *mm = task->mm;
     union prov_elt prov = {
         .task_info.identifier.node_id.type=ACT_TASK,
-        .task_info.identifier.node_id.id=unique,
+        .task_info.identifier.node_id.id=key,
         .task_info.pid = pid,
         .task_info.vpid = task->tgid,
         .task_info.utime = task->utime,
@@ -120,7 +120,7 @@ int BPF_PROG(task_free, struct task_struct *task) {
      *
      * bpf_map_delete_elem(&task_map, &pid);
      */
-    bpf_map_delete_elem(&task_map, &unique);
+    bpf_map_delete_elem(&task_map, &key);
 
     /* Record the provenance to the ring buffer */
     record_provenance(&prov);
