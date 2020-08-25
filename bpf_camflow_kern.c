@@ -44,36 +44,39 @@ static __always_inline uint64_t u64_max(uint64_t a, uint64_t b) {
     return (a > b) ? a : b;
 }
 
-SEC("lsm/task_alloc")
-int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
-    uint32_t pid = task->pid;
-    uint64_t key = get_key(task);
+static __always_inline void update_task_prov(struct task_struct *task,
+                                                union prov_elt *prov){
     struct mm_struct *mm = task->mm;
-    /* populate the provenance record for the new task */
-    //TODO: more information needs to be added to the structure
-    union prov_elt prov = {
-        .task_info.identifier.node_id.type=ACT_TASK,
-        .task_info.identifier.node_id.id=key,
-        .task_info.pid = pid,
-        .task_info.vpid = task->tgid,
-        .task_info.utime = task->utime,
-        .task_info.stime = task->stime,
-        .task_info.vm = mm->total_vm * IOC_PAGE_SIZE / KB
-    };
-    prov.task_info.rss = (mm->rss_stat.count[MM_FILEPAGES].counter +
+
+    prov->task_info.identifier.node_id.type=ACT_TASK;
+    prov->task_info.pid = task->pid;
+    prov->task_info.vpid = task->tgid;
+    prov->task_info.utime = task->utime;
+    prov->task_info.stime = task->stime;
+    prov->task_info.vm = mm->total_vm * IOC_PAGE_SIZE / KB;
+    prov->task_info.rss = (mm->rss_stat.count[MM_FILEPAGES].counter +
                          mm->rss_stat.count[MM_ANONPAGES].counter +
                          mm->rss_stat.count[MM_SHMEMPAGES].counter) * IOC_PAGE_SIZE / KB;
-    prov.task_info.hw_vm = u64_max(mm->hiwater_vm, mm->total_vm) * IOC_PAGE_SIZE / KB;
-    prov.task_info.hw_rss = u64_max(mm->hiwater_rss, prov.task_info.rss) * IOC_PAGE_SIZE / KB;
+    prov->task_info.hw_vm = u64_max(mm->hiwater_vm, mm->total_vm) * IOC_PAGE_SIZE / KB;
+    prov->task_info.hw_rss = u64_max(mm->hiwater_rss, prov->task_info.rss) * IOC_PAGE_SIZE / KB;
     #ifdef CONFIG_TASK_IO_ACCOUNTING
-      prov.task_info.rbytes = task->ioac.read_bytes & KB_MASK;
-      prov.task_info.wbytes = task->ioac.write_bytes & KB_MASK;
-      prov.task_info.cancel_wbytes = task->ioac.cancelled_write_bytes & KB_MASK;
+      prov->task_info.rbytes = task->ioac.read_bytes & KB_MASK;
+      prov->task_info.wbytes = task->ioac.write_bytes & KB_MASK;
+      prov->task_info.cancel_wbytes = task->ioac.cancelled_write_bytes & KB_MASK;
     #else
-      prov.task_info.rbytes = task->ioac.rchar & KB_MASK;
-      prov.task_info.wbytes = task->ioac.wchar & KB_MASK;
-      prov.task_info.cancel_wbytes = 0;
+      prov->task_info.rbytes = task->ioac.rchar & KB_MASK;
+      prov->task_info.wbytes = task->ioac.wchar & KB_MASK;
+      prov->task_info.cancel_wbytes = 0;
     #endif
+}
+
+SEC("lsm/task_alloc")
+int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
+    uint64_t key = get_key(task);
+    union prov_elt prov;
+    __builtin_memset(&prov, 0, sizeof(union prov_elt));
+    /* populate the provenance record for the new task */
+    update_task_prov(task, &prov);
 
     /* TODO: CODE HERE
      * Update the task map here to save the task provenance state.
@@ -89,32 +92,12 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
 
 SEC("lsm/task_free")
 int BPF_PROG(task_free, struct task_struct *task) {
-    uint32_t pid = task->pid;
     uint64_t key = get_key(task);
-    struct mm_struct *mm = task->mm;
-    union prov_elt prov = {
-        .task_info.identifier.node_id.type=ACT_TASK,
-        .task_info.identifier.node_id.id=key,
-        .task_info.pid = pid,
-        .task_info.vpid = task->tgid,
-        .task_info.utime = task->utime,
-        .task_info.stime = task->stime,
-        .task_info.vm = mm->total_vm * IOC_PAGE_SIZE / KB,
-    };
-    prov.task_info.rss = (mm->rss_stat.count[MM_FILEPAGES].counter +
-                         mm->rss_stat.count[MM_ANONPAGES].counter +
-                         mm->rss_stat.count[MM_SHMEMPAGES].counter) * IOC_PAGE_SIZE / KB;
-    prov.task_info.hw_vm = u64_max(mm->hiwater_vm, mm->total_vm) * IOC_PAGE_SIZE / KB;
-    prov.task_info.hw_rss = u64_max(mm->hiwater_rss, prov.task_info.rss) * IOC_PAGE_SIZE / KB;
-    #ifdef CONFIG_TASK_IO_ACCOUNTING
-      prov.task_info.rbytes = task->ioac.read_bytes & KB_MASK;
-      prov.task_info.wbytes = task->ioac.write_bytes & KB_MASK;
-      prov.task_info.cancel_wbytes = task->ioac.cancelled_write_bytes & KB_MASK;
-    #else
-      prov.task_info.rbytes = task->ioac.rchar & KB_MASK;
-      prov.task_info.wbytes = task->ioac.wchar & KB_MASK;
-      prov.task_info.cancel_wbytes = 0;
-    #endif
+    union prov_elt prov;
+    __builtin_memset(&prov, 0, sizeof(union prov_elt));
+    /* populate the provenance record for the new task */
+    update_task_prov(task, &prov);
+
     /* TODO: CODE HERE
      * Update the task map here to remove the task provenance state.
      *
