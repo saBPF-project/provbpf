@@ -93,19 +93,22 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
 SEC("lsm/task_free")
 int BPF_PROG(task_free, struct task_struct *task) {
     uint64_t key = get_key(task);
-    union prov_elt prov;
-    __builtin_memset(&prov, 0, sizeof(union prov_elt));
-    /* populate the provenance record for the new task */
-    update_task_prov(task, &prov);
+    union prov_elt *prov;
 
-    /* TODO: CODE HERE
-     * Update the task map here to remove the task provenance state.
-     *
-     * bpf_map_delete_elem(&task_map, &pid);
-     */
-    bpf_map_delete_elem(&task_map, &key);
+    // we retrieve the provenance that was created in alloc
+    prov = bpf_map_lookup_elem(&task_map, &key);
+    if (!prov)
+        goto out;
+
+    /* populate the provenance record for the new task */
+    update_task_prov(task, prov);
 
     /* Record the provenance to the ring buffer */
-    record_provenance(&prov);
+    record_provenance(prov);
+    // TODO record more
+
+out:
+    /* we delete the provenance associated to the task */
+    bpf_map_delete_elem(&task_map, &key);
     return 0;
 }
