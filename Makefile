@@ -35,6 +35,10 @@ prepare: build_libbpf build_kernel build_libprovenance
 
 btf:
 	bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
+	cp -f vmlinux.h .circleci/_vmlinux.h
+
+btf_circle:
+	cp -f .circleci/_vmlinux.h vmlinux.h
 
 kern:
 	clang -O2 -Wall \
