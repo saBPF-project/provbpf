@@ -59,15 +59,15 @@ static __always_inline void update_task_prov(struct task_struct *task,
                          mm->rss_stat.count[MM_SHMEMPAGES].counter) * IOC_PAGE_SIZE / KB;
     prov->task_info.hw_vm = u64_max(mm->hiwater_vm, mm->total_vm) * IOC_PAGE_SIZE / KB;
     prov->task_info.hw_rss = u64_max(mm->hiwater_rss, prov->task_info.rss) * IOC_PAGE_SIZE / KB;
-    #ifdef CONFIG_TASK_IO_ACCOUNTING
-      prov->task_info.rbytes = task->ioac.read_bytes & KB_MASK;
-      prov->task_info.wbytes = task->ioac.write_bytes & KB_MASK;
-      prov->task_info.cancel_wbytes = task->ioac.cancelled_write_bytes & KB_MASK;
-    #else
-      prov->task_info.rbytes = task->ioac.rchar & KB_MASK;
-      prov->task_info.wbytes = task->ioac.wchar & KB_MASK;
-      prov->task_info.cancel_wbytes = 0;
-    #endif
+#ifdef CONFIG_TASK_IO_ACCOUNTING
+    prov->task_info.rbytes = task->ioac.read_bytes & KB_MASK;
+    prov->task_info.wbytes = task->ioac.write_bytes & KB_MASK;
+    prov->task_info.cancel_wbytes = task->ioac.cancelled_write_bytes & KB_MASK;
+#else
+    prov->task_info.rbytes = task->ioac.rchar & KB_MASK;
+    prov->task_info.wbytes = task->ioac.wchar & KB_MASK;
+    prov->task_info.cancel_wbytes = 0;
+#endif
 }
 
 SEC("lsm/task_alloc")
