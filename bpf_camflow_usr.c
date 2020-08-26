@@ -10,6 +10,7 @@
 #include "linux/provenance.h"
 
 #include "camflow_bpf_record.h"
+#include "camflow_bpf_id.h"
 
 /* Callback function called whenever a new ring
  * buffer entry is polled from the buffer. */
@@ -26,6 +27,14 @@ static int buf_process_entry(void *ctx, void *data, size_t len) {
     prov_record(prov);
 
     return 0;
+}
+
+void set_id(struct bpf_camflow_kern *skel, uint32_t index, uint64_t value) {
+    int map_fd;
+    struct id_elem id;
+    map_fd = bpf_object__find_map_fd_by_name(skel->obj, "ids_map");
+    id.id = value;
+    bpf_map_update_elem(map_fd, &index, &id, BPF_ANY);
 }
 
 int main(void) {
@@ -59,6 +68,10 @@ int main(void) {
         printf("Failed attach ... %d\n", err);
         goto close_prog;
     }
+
+    // TODO copy existing CamFlow code to get those values.
+    set_id(skel, BOOT_ID_INDEX, 43);
+    set_id(skel, MACHINE_ID_INDEX, 44);
 
     //map_fd = bpf_object__find_map_fd_by_name(skel->obj, "task_map");
     //err = bpf_map_lookup_elem(map_fd, &key, &value);

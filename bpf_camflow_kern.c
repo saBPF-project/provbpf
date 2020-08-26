@@ -32,10 +32,6 @@ struct bpf_map_def SEC("maps") task_map = {
     .max_entries = 4096, // NOTE: set as big as possible; real size is dynamically adjusted
 };
 
-struct id_elem {
-    uint64_t id;
-};
-
 struct bpf_map_def SEC("maps") ids_map = {
       .type = BPF_MAP_TYPE_ARRAY,
       .key_size = sizeof(uint32_t),
