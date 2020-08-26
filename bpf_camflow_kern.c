@@ -75,7 +75,7 @@ SEC("lsm/task_alloc")
 int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
     uint64_t key = get_key(task);
     union prov_elt prov;
-    __builtin_memset(&prov, 0, sizeof(union prov_elt));
+    __builtin_memset(&prov, 0, sizeof(union prov_elt)); // this is needed
     /* Populate a provenance record for the new task */
     //TODO: is it necessary to populate everything in update_task_prov?
     //      It is perhaps a good idea to refactor update_task_prov.
@@ -116,6 +116,7 @@ int BPF_PROG(task_free, struct task_struct *task) {
 
     /* Update task provenance */
     //TODO: is it necessary to repopulate everything here?
+    // No it is not, but we need to figure out what needs to be
     update_task_prov(task, prov);
 
     /* Record the provenance to the ring buffer */
