@@ -45,7 +45,7 @@ static __always_inline uint64_t u64_max(uint64_t a, uint64_t b) {
 }
 
 static __always_inline void update_task_prov(struct task_struct *task,
-                                                union prov_elt *prov){
+                                             union prov_elt *prov) {
     struct mm_struct *mm = task->mm;
 
     prov->task_info.identifier.node_id.type=ACT_TASK;
@@ -94,21 +94,36 @@ SEC("lsm/task_free")
 int BPF_PROG(task_free, struct task_struct *task) {
     uint64_t key = get_key(task);
     union prov_elt *prov;
-
-    // we retrieve the provenance that was created in alloc
+    /* Retrieve the provenance created in task_alloc. */
     prov = bpf_map_lookup_elem(&task_map, &key);
-    if (!prov)
-        goto out; // we are not tracking since the begining of time. We may need to handle situation when we haven't gone through alloc.
+    if (!prov) {
+#ifdef CONFIG_DEBUG
+        /* bpf_trace_printk() is used for debugging.
+	 * Check for output through:
+	 * cat /sys/kernel/debug/tracing/trace_pipe */
+        /* We may not have the provenance of a task since
+	 * we are not tracking provenance from the very
+	 * beginning of time.
+	 * TODO: we simply log this issue for now, but
+	 * we may want to come up with a better idea. */
+        char err[] = "task_free cannot be logged because the task does not exist\n";
+	bpf_trace_printk(err, sizeof(err));
+#endif
+        return 0;
+    }
 
-    /* update the content of the structure */
+    /* Update task provenance */
+    //TODO: is it necessary to repopulate everything here?
     update_task_prov(task, prov);
 
     /* Record the provenance to the ring buffer */
     record_provenance(prov);
-    // TODO record more
+    /* TODO: CODE HERE
+     * Record the task_free relation.
+     */
 
-out:
-    /* we delete the provenance associated to the task */
+    /* Delete task provenance since the task no longer exists */
     bpf_map_delete_elem(&task_map, &key);
+
     return 0;
 }
