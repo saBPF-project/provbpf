@@ -44,12 +44,18 @@ static __always_inline uint64_t u64_max(uint64_t a, uint64_t b) {
     return (a > b) ? a : b;
 }
 
+static __always_inline void prov_init(union prov_elt *prov, uint64_t type) {
+    prov->node_info.identifier.node_id.type=type;
+    prov->node_info.identifier.node_id.id = 0;
+	prov->node_info.identifier.node_id.boot_id = 0;
+	prov->node_info.identifier.node_id.machine_id = 0;
+}
+
 //TODO: Need to further refactor this function.
-static __always_inline void update_task_prov(struct task_struct *task,
+static __always_inline void prov_update_task(struct task_struct *task,
                                              union prov_elt *prov) {
     struct mm_struct *mm = task->mm;
 
-    prov->task_info.identifier.node_id.type=ACT_TASK;
     prov->task_info.pid = task->pid;
     prov->task_info.vpid = task->tgid;
     prov->task_info.utime = task->utime;
@@ -76,10 +82,13 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
     uint64_t key = get_key(task);
     union prov_elt prov;
     __builtin_memset(&prov, 0, sizeof(union prov_elt)); // this is needed
+
+    prov_init(&prov, ACT_TASK);
+
     /* Populate a provenance record for the new task */
-    //TODO: is it necessary to populate everything in update_task_prov?
-    //      It is perhaps a good idea to refactor update_task_prov.
-    update_task_prov(task, &prov);
+    //TODO: is it necessary to populate everything in prov_update_task?
+    //      It is perhaps a good idea to refactor prov_update_task.
+    prov_update_task(task, &prov);
 
     /* Update the task map here to save the task provenance state */
     bpf_map_update_elem(&task_map, &key, &prov, BPF_NOEXIST);
@@ -117,7 +126,7 @@ int BPF_PROG(task_free, struct task_struct *task) {
     /* Update task provenance */
     //TODO: is it necessary to repopulate everything here?
     // No it is not, but we need to figure out what needs to be
-    update_task_prov(task, prov);
+    prov_update_task(task, prov);
 
     /* Record the provenance to the ring buffer */
     record_provenance(prov);
