@@ -44,6 +44,7 @@ static __always_inline uint64_t u64_max(uint64_t a, uint64_t b) {
     return (a > b) ? a : b;
 }
 
+//TODO: Need to further refactor this function.
 static __always_inline void update_task_prov(struct task_struct *task,
                                              union prov_elt *prov) {
     struct mm_struct *mm = task->mm;
@@ -75,18 +76,19 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
     uint64_t key = get_key(task);
     union prov_elt prov;
     __builtin_memset(&prov, 0, sizeof(union prov_elt));
-    /* populate the provenance record for the new task */
+    /* Populate a provenance record for the new task */
+    //TODO: is it necessary to populate everything in update_task_prov?
+    //      It is perhaps a good idea to refactor update_task_prov.
     update_task_prov(task, &prov);
 
-    /* TODO: CODE HERE
-     * Update the task map here to save the task provenance state.
-     *
-     * bpf_map_update_elem(&task_map, &pid, &prov, BPF_NOEXIST);
-     */
+    /* Update the task map here to save the task provenance state */
     bpf_map_update_elem(&task_map, &key, &prov, BPF_NOEXIST);
 
     /* Record the provenance to the ring buffer */
     record_provenance(&prov);
+    /* TODO: CODE HERE
+     * Record provenance relations as the result of task allocation.
+     */
     return 0;
 }
 
