@@ -62,16 +62,17 @@ int main(void) {
         goto close_prog;
     }
 
+    /* we set parameters before attaching programs */
+    // TODO copy existing CamFlow code to get those values.
+    set_id(skel, BOOT_ID_INDEX, 43);
+    set_id(skel, MACHINE_ID_INDEX, 44);
+
     printf("Attaching BPF programs ...\n");
     err = bpf_camflow_kern__attach(skel);
     if (err) {
         printf("Failed attach ... %d\n", err);
         goto close_prog;
     }
-
-    // TODO copy existing CamFlow code to get those values.
-    set_id(skel, BOOT_ID_INDEX, 43);
-    set_id(skel, MACHINE_ID_INDEX, 44);
 
     //map_fd = bpf_object__find_map_fd_by_name(skel->obj, "task_map");
     //err = bpf_map_lookup_elem(map_fd, &key, &value);
