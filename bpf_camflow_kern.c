@@ -8,6 +8,7 @@
 #include "sockaddr.h"
 #include "linux/provenance.h"
 #include "linux/provenance_types.h"
+#include "camflow_bpf_id.h"
 
 char _license[] SEC("license") = "GPL";
 
@@ -31,6 +32,34 @@ struct bpf_map_def SEC("maps") task_map = {
     .max_entries = 4096, // NOTE: set as big as possible; real size is dynamically adjusted
 };
 
+struct id_elem {
+    uint64_t id;
+};
+
+struct bpf_map_def SEC("maps") ids_map = {
+      .type = BPF_MAP_TYPE_ARRAY,
+      .key_size = sizeof(uint32_t),
+      .value_size = sizeof(struct id_elem),
+      .max_entries = ID_MAX_ENTRY,
+};
+
+static __always_inline uint64_t prov_next_id(uint32_t key)	{
+    struct id_elem *val = bpf_map_lookup_elem(&ids_map, &key);
+    if(!val)
+        return 0;
+    __sync_fetch_and_add(&val->id, 1);
+    // this is wrong but cannot return value directly from __sync_fetch_and_add
+    // someone needs to inv
+    return val->id;
+}
+
+static __always_inline uint64_t prov_get_id(uint32_t key) {
+    struct id_elem *val = bpf_map_lookup_elem(&ids_map, &key);
+    if(!val)
+        return 0;
+    return val->id;
+}
+
 static __always_inline void record_provenance(union prov_elt* prov){
     bpf_ringbuf_output(&r_buf, prov, sizeof(union prov_elt), 0);
 }
@@ -46,9 +75,9 @@ static __always_inline uint64_t u64_max(uint64_t a, uint64_t b) {
 
 static __always_inline void prov_init(union prov_elt *prov, uint64_t type) {
     prov->node_info.identifier.node_id.type=type;
-    prov->node_info.identifier.node_id.id = 0;
-	prov->node_info.identifier.node_id.boot_id = 0;
-	prov->node_info.identifier.node_id.machine_id = 0;
+    prov->node_info.identifier.node_id.id = prov_next_id(NODE_ID_INDEX);
+	prov->node_info.identifier.node_id.boot_id = prov_get_id(BOOT_ID_INDEX);
+	prov->node_info.identifier.node_id.machine_id = prov_get_id(MACHINE_ID_INDEX);
 }
 
 //TODO: Need to further refactor this function.
