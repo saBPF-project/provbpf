@@ -247,10 +247,8 @@ void prov_record(union prov_elt* msg){
 
     if (prov_is_relation(msg)) {
       relation_record(msg);
-      printf("Relation provenance recorded\n");
     } else {
       node_record(msg);
-      printf("Node provenance recorded\n");
     }
 }
 

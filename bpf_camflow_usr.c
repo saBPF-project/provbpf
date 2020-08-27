@@ -15,14 +15,11 @@
 /* Callback function called whenever a new ring
  * buffer entry is polled from the buffer. */
 static int buf_process_entry(void *ctx, void *data, size_t len) {
-    printf("Read data of size %zu\n", len);
     /* Every entry from the ring buffer should
      * be of type union prov_elt.
      */
     union prov_elt *prov = (union prov_elt*)data;
 
-    printf("Task id is %u\n", prov->task_info.pid);
-    printf("Unique is %lu\n", prov->task_info.identifier.node_id.id);
     /* Userspace processing the provenance record. */
     prov_record(prov);
 
