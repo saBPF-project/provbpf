@@ -14,4 +14,11 @@ struct id_elem {
 
 #define ID_MAX_ENTRY 4
 
+#define CAMFLOW_MACHINE_ID_FILE "/etc/camflow-machine_id"
+#define CAMFLOW_BOOT_ID_FILE "/etc/camflow-boot_id"
+
+// implemented for user space
+uint32_t get_boot_id(void);
+uint32_t get_machine_id(void);
+
 #endif

@@ -64,8 +64,8 @@ int main(void) {
 
     /* we set parameters before attaching programs */
     // TODO copy existing CamFlow code to get those values.
-    set_id(skel, BOOT_ID_INDEX, 43);
-    set_id(skel, MACHINE_ID_INDEX, 44);
+    set_id(skel, BOOT_ID_INDEX, get_boot_id());
+    set_id(skel, MACHINE_ID_INDEX, get_machine_id());
 
     printf("Attaching BPF programs ...\n");
     err = bpf_camflow_kern__attach(skel);

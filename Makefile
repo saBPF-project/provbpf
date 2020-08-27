@@ -58,9 +58,11 @@ skel:
 usr:
 	clang camflow_bpf_record.c -o camflow_bpf_record.o \
 	-Icamflow-dev/include/uapi -Iinclude -c
+	clang camflow_bpf_id.c -o camflow_bpf_id.o \
+	-Icamflow-dev/include/uapi -Iinclude -c
 	clang $(target)_usr.c -o $(target)_usr.o -Icamflow-dev/include/uapi \
 	-Iinclude -c
-	clang -o bpf_camflow $(target)_usr.o camflow_bpf_record.o -lbpf -lprovenance -lpthread
+	clang -o bpf_camflow $(target)_usr.o camflow_bpf_record.o camflow_bpf_id.o -lbpf -lprovenance -lpthread
 
 run:
 	sudo ./bpf_camflow
