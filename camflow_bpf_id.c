@@ -24,7 +24,7 @@ uint32_t get_boot_id(void){
   }else{
     rc = fread(&boot_id, sizeof(uint32_t), 1, fptr);
     if(rc<0 && ferror(fptr))
-        return rc;
+        exit(rc);
     boot_id+=1;
     fseek(fptr, 0, SEEK_SET);
     fwrite(&boot_id, sizeof(uint32_t), 1, fptr);
@@ -55,7 +55,7 @@ uint32_t get_machine_id(void){
   }else{
     rc = fread(&machine_id, sizeof(uint32_t), 1, fptr);
     if(rc<0 && ferror(fptr))
-        return rc;
+        exit(rc);
   }
   if(fptr)
     fclose(fptr);
