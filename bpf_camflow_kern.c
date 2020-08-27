@@ -33,10 +33,10 @@ struct bpf_map_def SEC("maps") task_map = {
 };
 
 struct bpf_map_def SEC("maps") ids_map = {
-      .type = BPF_MAP_TYPE_ARRAY,
-      .key_size = sizeof(uint32_t),
-      .value_size = sizeof(struct id_elem),
-      .max_entries = ID_MAX_ENTRY,
+    .type = BPF_MAP_TYPE_ARRAY,
+    .key_size = sizeof(uint32_t),
+    .value_size = sizeof(struct id_elem),
+    .max_entries = ID_MAX_ENTRY,
 };
 
 static __always_inline uint64_t prov_next_id(uint32_t key)	{
@@ -46,6 +46,7 @@ static __always_inline uint64_t prov_next_id(uint32_t key)	{
     __sync_fetch_and_add(&val->id, 1);
     // this is wrong but cannot return value directly from __sync_fetch_and_add
     // someone needs to inv
+    // Perhaps a lock is needed to avoid race conditions?
     return val->id;
 }
 
@@ -72,8 +73,8 @@ static __always_inline uint64_t u64_max(uint64_t a, uint64_t b) {
 static __always_inline void prov_init(union prov_elt *prov, uint64_t type) {
     prov->node_info.identifier.node_id.type=type;
     prov->node_info.identifier.node_id.id = prov_next_id(NODE_ID_INDEX);
-	prov->node_info.identifier.node_id.boot_id = prov_get_id(BOOT_ID_INDEX);
-	prov->node_info.identifier.node_id.machine_id = prov_get_id(MACHINE_ID_INDEX);
+    prov->node_info.identifier.node_id.boot_id = prov_get_id(BOOT_ID_INDEX);
+    prov->node_info.identifier.node_id.machine_id = prov_get_id(MACHINE_ID_INDEX);
 }
 
 //TODO: Need to further refactor this function.
