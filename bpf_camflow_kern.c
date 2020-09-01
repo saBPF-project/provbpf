@@ -115,47 +115,36 @@ static __always_inline void prov_update_task(struct task_struct *task,
 #endif
 }
 
+static __always_inline union prov_elt* get_or_create_task_prov(
+                                                struct task_struct *task,
+                                                union prov_elt *new_prov) {
+    uint64_t key = get_key(task);
+    union prov_elt *old_prov = bpf_map_lookup_elem(&task_map, &key);
+    // provenance already tracked
+    if (old_prov) {
+        prov_update_task(task, old_prov);
+        return old_prov;
+    } else { // new task
+        __builtin_memset(new_prov, 0, sizeof(union prov_elt));
+        prov_init(new_prov, ACT_TASK);
+        prov_update_task(task, new_prov);
+        bpf_map_update_elem(&task_map, &key, new_prov, BPF_NOEXIST);
+        return new_prov;
+    }
+}
+
 SEC("lsm/task_alloc")
 int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
-    uint64_t key = get_key(task);
-    uint64_t current_task_key;
-    union prov_elt prov, prov_current_task;
-
-    // Record provenance for current task
-    __builtin_memset(&prov_current_task, 0, sizeof(union prov_elt));
-    prov_init(&prov_current_task, ACT_TASK);
-
+    union prov_elt prov, prov_current;
+    union prov_elt *ptr_prov, *ptr_prov_current;
     struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
 
-    current_task_key = get_key(current_task);
+    ptr_prov_current = get_or_create_task_prov(current_task, &prov_current);
+    ptr_prov = get_or_create_task_prov(task, &prov);
 
-    prov_update_task(current_task, &prov_current_task);
-
-    union prov_elt *prov_val = bpf_map_lookup_elem(&task_map, &current_task_key);
-
-    if (prov_val) {
-      // If the current task is in the map, use the entry for provenance
-      record_provenance(prov_val);
-    } else {
-      // If the current task is not in the map, create an new entry in the map and use it for provenance
-      bpf_map_update_elem(&task_map, &current_task_key, &prov_current_task, BPF_NOEXIST);
-      record_provenance(&prov_current_task);
-    }
-
-    __builtin_memset(&prov, 0, sizeof(union prov_elt)); // this is needed
-
-    prov_init(&prov, ACT_TASK);
-
-    /* Populate a provenance record for the new task */
-    //TODO: is it necessary to populate everything in prov_update_task?
-    //      It is perhaps a good idea to refactor prov_update_task.
-    prov_update_task(task, &prov);
-
-    /* Update the task map here to save the task provenance state */
-    bpf_map_update_elem(&task_map, &key, &prov, BPF_NOEXIST);
-
-    /* Record the provenance to the ring buffer */
-    record_provenance(&prov);
+    /* Record the tasks provenance to the ring buffer */
+    record_provenance(ptr_prov_current);
+    record_provenance(ptr_prov);
 
     /* TODO: CODE HERE
      * Record provenance relations as the result of task allocation.
@@ -166,32 +155,13 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
 SEC("lsm/task_free")
 int BPF_PROG(task_free, struct task_struct *task) {
     uint64_t key = get_key(task);
-    union prov_elt *prov;
-    /* Retrieve the provenance created in task_alloc. */
-    prov = bpf_map_lookup_elem(&task_map, &key);
-    if (!prov) {
-#ifdef CONFIG_DEBUG
-        /* bpf_trace_printk() is used for debugging.
-	 * Check for output through:
-	 * cat /sys/kernel/debug/tracing/trace_pipe */
-        /* We may not have the provenance of a task since
-	 * we are not tracking provenance from the very
-	 * beginning of time.
-	 * TODO: we simply log this issue for now, but
-	 * we may want to come up with a better idea. */
-        char err[] = "task_free cannot be logged because the task does not exist\n";
-	bpf_trace_printk(err, sizeof(err));
-#endif
-        return 0;
-    }
+    union prov_elt prov;
+    union prov_elt *ptr_prov;
 
-    /* Update task provenance */
-    //TODO: is it necessary to repopulate everything here?
-    // No it is not, but we need to figure out what needs to be
-    prov_update_task(task, prov);
+    ptr_prov = get_or_create_task_prov(task, &prov);
 
     /* Record the provenance to the ring buffer */
-    record_provenance(prov);
+    record_provenance(ptr_prov);
     /* TODO: CODE HERE
      * Record the task_free relation.
      */
