@@ -80,25 +80,37 @@ static __always_inline void prov_init(union prov_elt *prov, uint64_t type) {
 //TODO: Need to further refactor this function.
 static __always_inline void prov_update_task(struct task_struct *task,
                                              union prov_elt *prov) {
-    struct mm_struct *mm = task->mm;
 
-    prov->task_info.pid = task->pid;
-    prov->task_info.vpid = task->tgid;
-    prov->task_info.utime = task->utime;
-    prov->task_info.stime = task->stime;
-    prov->task_info.vm = mm->total_vm * IOC_PAGE_SIZE / KB;
-    prov->task_info.rss = (mm->rss_stat.count[MM_FILEPAGES].counter +
-                         mm->rss_stat.count[MM_ANONPAGES].counter +
-                         mm->rss_stat.count[MM_SHMEMPAGES].counter) * IOC_PAGE_SIZE / KB;
-    prov->task_info.hw_vm = u64_max(mm->hiwater_vm, mm->total_vm) * IOC_PAGE_SIZE / KB;
-    prov->task_info.hw_rss = u64_max(mm->hiwater_rss, prov->task_info.rss) * IOC_PAGE_SIZE / KB;
+    bpf_probe_read(&prov->task_info.pid, sizeof(prov->task_info.pid), &task->pid);
+    bpf_probe_read(&prov->task_info.vpid, sizeof(prov->task_info.vpid), &task->tgid);
+    bpf_probe_read(&prov->task_info.utime, sizeof(prov->task_info.utime), &task->utime);
+    bpf_probe_read(&prov->task_info.stime, sizeof(prov->task_info.stime), &task->stime);
+    struct mm_struct *mm;
+    bpf_probe_read(&mm, sizeof(mm), &task->mm);
+    bpf_probe_read(&prov->task_info.vm, sizeof(prov->task_info.vm), &mm->total_vm);
+    prov->task_info.vm = prov->task_info.vm * IOC_PAGE_SIZE / KB;
+    struct mm_rss_stat rss_stat;
+    bpf_probe_read(&rss_stat, sizeof(rss_stat), &mm->rss_stat);
+    prov->task_info.rss = (rss_stat.count[MM_FILEPAGES].counter +
+                                       rss_stat.count[MM_ANONPAGES].counter +
+                                       rss_stat.count[MM_SHMEMPAGES].counter) * IOC_PAGE_SIZE / KB;
+    uint64_t current_task_hw_vm, current_task_hw_rss;
+    bpf_probe_read(&current_task_hw_vm, sizeof(current_task_hw_vm), &mm->hiwater_vm);
+    prov->task_info.hw_vm = u64_max(current_task_hw_vm, prov->task_info.vm) * IOC_PAGE_SIZE / KB;
+    bpf_probe_read(&current_task_hw_rss, sizeof(current_task_hw_rss), &mm->hiwater_rss);
+    prov->task_info.hw_rss = u64_max(current_task_hw_rss, prov->task_info.rss) * IOC_PAGE_SIZE / KB;
 #ifdef CONFIG_TASK_IO_ACCOUNTING
-    prov->task_info.rbytes = task->ioac.read_bytes & KB_MASK;
-    prov->task_info.wbytes = task->ioac.write_bytes & KB_MASK;
-    prov->task_info.cancel_wbytes = task->ioac.cancelled_write_bytes & KB_MASK;
+    bpf_probe_read(&prov->task_info.rbytes, sizeof(prov->task_info.rbytes), &task->ioac.read_bytes);
+    prov->task_info.rbytes &= KB_MASK;
+    bpf_probe_read(&prov->task_info.wbytes, sizeof(prov->task_info.wbytes), &task->ioac.write_bytes);
+    prov->task_info.wbytes &= KB_MASK;
+    bpf_probe_read(&prov->task_info.cancel_wbytes, sizeof(prov->task_info.cancel_wbytes), &task->ioac.cancelled_write_bytes);
+    prov->task_info.cancel_wbytes &= KB_MASK;
 #else
-    prov->task_info.rbytes = task->ioac.rchar & KB_MASK;
-    prov->task_info.wbytes = task->ioac.wchar & KB_MASK;
+    bpf_probe_read(&prov->task_info.rbytes, sizeof(prov->task_info.rbytes), &task->ioac.rchar);
+    prov->task_info.rbytes &= KB_MASK;
+    bpf_probe_read(&prov->task_info.wbytes, sizeof(prov->task_info.wbytes), &task->ioac.wchar);
+    prov->task_info.wbytes &= KB_MASK;
     prov->task_info.cancel_wbytes = 0;
 #endif
 }
@@ -117,39 +129,7 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
 
     current_task_key = get_key(current_task);
 
-    // Dereference all the necessary fields from current_task
-    bpf_probe_read(&prov_current_task.task_info.pid, sizeof(prov_current_task.task_info.pid), &current_task->pid);
-    bpf_probe_read(&prov_current_task.task_info.vpid, sizeof(prov_current_task.task_info.vpid), &current_task->tgid);
-    bpf_probe_read(&prov_current_task.task_info.utime, sizeof(prov_current_task.task_info.utime), &current_task->utime);
-    bpf_probe_read(&prov_current_task.task_info.stime, sizeof(prov_current_task.task_info.stime), &current_task->stime);
-    struct mm_struct *mm;
-    bpf_probe_read(&mm, sizeof(mm), &current_task->mm);
-    bpf_probe_read(&prov_current_task.task_info.vm, sizeof(prov_current_task.task_info.vm), &mm->total_vm);
-    prov_current_task.task_info.vm = prov_current_task.task_info.vm * IOC_PAGE_SIZE / KB;
-    struct mm_rss_stat rss_stat;
-    bpf_probe_read(&rss_stat, sizeof(rss_stat), &mm->rss_stat);
-    prov_current_task.task_info.rss = (rss_stat.count[MM_FILEPAGES].counter +
-                                      rss_stat.count[MM_ANONPAGES].counter +
-                                      rss_stat.count[MM_SHMEMPAGES].counter) * IOC_PAGE_SIZE / KB;
-    uint64_t current_task_hw_vm, current_task_hw_rss;
-    bpf_probe_read(&current_task_hw_vm, sizeof(current_task_hw_vm), &mm->hiwater_vm);
-    prov_current_task.task_info.hw_vm = u64_max(current_task_hw_vm, prov_current_task.task_info.vm) * IOC_PAGE_SIZE / KB;
-    bpf_probe_read(&current_task_hw_rss, sizeof(current_task_hw_rss), &mm->hiwater_rss);
-    prov_current_task.task_info.hw_rss = u64_max(current_task_hw_rss, prov_current_task.task_info.rss) * IOC_PAGE_SIZE / KB;
-#ifdef CONFIG_TASK_IO_ACCOUNTING
-    bpf_probe_read(&prov_current_task.task_info.rbytes, sizeof(prov_current_task.task_info.rbytes), &current_task->ioac.read_bytes);
-    prov_current_task.task_info.rbytes &= KB_MASK;
-    bpf_probe_read(&prov_current_task.task_info.wbytes, sizeof(prov_current_task.task_info.wbytes), &current_task->ioac.write_bytes);
-    prov_current_task.task_info.wbytes &= KB_MASK;
-    bpf_probe_read(&prov_current_task.task_info.cancel_wbytes, sizeof(prov_current_task.task_info.cancel_wbytes), &current_task->ioac.cancelled_write_bytes);
-    prov_current_task.task_info.cancel_wbytes &= KB_MASK;
-#else
-    bpf_probe_read(&prov_current_task.task_info.rbytes, sizeof(prov_current_task.task_info.rbytes), &current_task->ioac.rchar);
-    prov_current_task.task_info.rbytes &= KB_MASK;
-    bpf_probe_read(&prov_current_task.task_info.wbytes, sizeof(prov_current_task.task_info.wbytes), &current_task->ioac.wchar);
-    prov_current_task.task_info.wbytes &= KB_MASK;
-    prov_current_task.task_info.cancel_wbytes = 0;
-#endif
+    prov_update_task(current_task, &prov_current_task);
 
     union prov_elt *prov_val = bpf_map_lookup_elem(&task_map, &current_task_key);
 
