@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
 
-#ifndef __PROVENANCE_BPF_RECORD_H
-#define __PROVENANCE_BPF_RECORD_H
+#ifndef __CAMFLOW_BPF_RECORD_H
+#define __CAMFLOW_BPF_RECORD_H
 
 #include "linux/provenance.h"
 
