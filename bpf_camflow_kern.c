@@ -14,6 +14,7 @@
 #include "kern_bpf_common.h"
 #include "kern_bpf_node.h"
 #include "kern_bpf_task.h"
+#include "kern_bpf_inode.h"
 
 char _license[] SEC("license") = "GPL";
 
@@ -53,5 +54,31 @@ int BPF_PROG(task_free, struct task_struct *task) {
     /* Delete task provenance since the task no longer exists */
     bpf_map_delete_elem(&task_map, &key);
 
+    return 0;
+}
+
+SEC("lsm/inode_alloc_security")
+int BPF_PROG(inode_alloc_security, struct inode *inode) {
+    union prov_elt prov;
+    union prov_elt *ptr_prov;
+
+    ptr_prov = get_or_create_inode_prov(inode, &prov);
+
+    record_provenance(ptr_prov);
+
+    return 0;
+}
+
+SEC("lsm/inode_free_security")
+int BPF_PROG(inode_free_security, struct inode *inode) {
+    uint64_t key = get_key(inode);
+    union prov_elt prov;
+    union prov_elt *ptr_prov;
+
+    ptr_prov = get_or_create_inode_prov(inode, &prov);
+
+    record_provenance(ptr_prov);
+
+    bpf_map_delete_elem(&inode_map, &key);
     return 0;
 }
