@@ -55,9 +55,10 @@ static __always_inline void prov_update_task(struct task_struct *task,
 #endif
 }
 
-/* Create a provenance entry for a task if it does not exist;
- * otherwise, updates its existing provenance. Return either
- * the new provenance entry pointer or updated provenance entry. */
+/* Create a provenance entry for a task if it does not exist
+ * and insert it into the @task_map; otherwise, updates its
+ * existing provenance. Return either the new provenance entry
+ * pointer or the updated provenance entry pointer. */
 static __always_inline union prov_elt* get_or_create_task_prov(struct task_struct *task,
                                                                union prov_elt *new_prov) {
     uint32_t key;
