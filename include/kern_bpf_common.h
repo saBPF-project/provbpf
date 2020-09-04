@@ -10,9 +10,9 @@ static __always_inline uint64_t prov_next_id(uint32_t key)	{
     if(!val)
         return 0;
     __sync_fetch_and_add(&val->id, 1);
-    // this is wrong but cannot return value directly from __sync_fetch_and_add
-    // someone needs to inv
-    // Perhaps a lock is needed to avoid race conditions?
+    // TODO: eBPF seems to have issue with __sync_fetch_and_add
+    // TODO: we cannot obtain the return value of the function.
+    // TODO: Perhaps we need a lock to avoid race conditions.
     return val->id;
 }
 
@@ -27,8 +27,9 @@ static __always_inline void record_provenance(union prov_elt* prov){
     bpf_ringbuf_output(&r_buf, prov, sizeof(union prov_elt), 0);
 }
 
-//TODO: is there a better way to assign a key to a kernel object?
-static __always_inline uint64_t get_key(void* object) {
+// TODO: this function is deprecated. Avoid using
+// TODO: it to assign a unique key to object.
+static __always_inline __attribute__((deprecated)) uint64_t get_key(void* object) {
     return (uint64_t)object;
 }
 
