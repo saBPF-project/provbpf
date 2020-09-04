@@ -8,12 +8,16 @@
 #define KB 1024
 #define KB_MASK         (~(KB - 1))
 
+/* A task's key in the @task_map is its real PID.
+ * This function reads the task's kernel struct,
+ * gets its PID and stores it in @key argument. */
 static __always_inline void get_task_key(struct task_struct *task, pid_t *key) {
     bpf_probe_read(key, sizeof(key), &task->pid);
     return;
 }
 
-//TODO: Need to further refactor this function.
+/* Update fields in a task's provenance */
+// TODO: further refactor this function.
 static __always_inline void prov_update_task(struct task_struct *task,
                                              union prov_elt *prov) {
 
@@ -28,8 +32,8 @@ static __always_inline void prov_update_task(struct task_struct *task,
     struct mm_rss_stat rss_stat;
     bpf_probe_read(&rss_stat, sizeof(rss_stat), &mm->rss_stat);
     prov->task_info.rss = (rss_stat.count[MM_FILEPAGES].counter +
-                                       rss_stat.count[MM_ANONPAGES].counter +
-                                       rss_stat.count[MM_SHMEMPAGES].counter) * IOC_PAGE_SIZE / KB;
+                           rss_stat.count[MM_ANONPAGES].counter +
+                           rss_stat.count[MM_SHMEMPAGES].counter) * IOC_PAGE_SIZE / KB;
     uint64_t current_task_hw_vm, current_task_hw_rss;
     bpf_probe_read(&current_task_hw_vm, sizeof(current_task_hw_vm), &mm->hiwater_vm);
     prov->task_info.hw_vm = u64_max(current_task_hw_vm, prov->task_info.vm) * IOC_PAGE_SIZE / KB;
@@ -51,17 +55,20 @@ static __always_inline void prov_update_task(struct task_struct *task,
 #endif
 }
 
-static __always_inline union prov_elt* get_or_create_task_prov(
-                                                struct task_struct *task,
-                                                union prov_elt *new_prov) {
+/* Create a provenance entry for a task if it does not exist;
+ * otherwise, updates its existing provenance. Return either
+ * the new provenance entry pointer or updated provenance entry. */
+static __always_inline union prov_elt* get_or_create_task_prov(struct task_struct *task,
+                                                               union prov_elt *new_prov) {
     uint32_t key;
     get_task_key(task, &key);
     union prov_elt *old_prov = bpf_map_lookup_elem(&task_map, &key);
-    // provenance already tracked
+    // provenance is already tracked
     if (old_prov) {
+        // update the task's provenance since it may have changed
         prov_update_task(task, old_prov);
         return old_prov;
-    } else { // new task
+    } else { // a new task
         __builtin_memset(new_prov, 0, sizeof(union prov_elt));
         prov_init_node(new_prov, ACT_TASK);
         prov_update_task(task, new_prov);
