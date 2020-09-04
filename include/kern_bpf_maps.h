@@ -15,16 +15,16 @@ struct bpf_map_def SEC("maps") r_buf = {
 
 struct bpf_map_def SEC("maps") task_map = {
     .type = BPF_MAP_TYPE_HASH,
-    .key_size = sizeof(uint64_t),
+    .key_size = sizeof(pid_t),
     .value_size = sizeof(union prov_elt),
     .max_entries = 4096, // NOTE: set as big as possible; real size is dynamically adjusted
 };
 
 struct bpf_map_def SEC("maps") inode_map = {
     .type = BPF_MAP_TYPE_HASH,
-    .key_size = sizeof(uint64_t),
+    .key_size = sizeof(struct inode_key),
     .value_size = sizeof(union prov_elt),
-    .max_entries = 4096, 
+    .max_entries = 4096,
 };
 
 struct bpf_map_def SEC("maps") ids_map = {

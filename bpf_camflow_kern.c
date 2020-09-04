@@ -39,7 +39,8 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
 
 SEC("lsm/task_free")
 int BPF_PROG(task_free, struct task_struct *task) {
-    uint64_t key = get_key(task);
+    uint32_t key;
+    get_task_key(task, &key);
     union prov_elt prov;
     union prov_elt *ptr_prov;
 
@@ -71,7 +72,7 @@ int BPF_PROG(inode_alloc_security, struct inode *inode) {
 
 SEC("lsm/inode_free_security")
 int BPF_PROG(inode_free_security, struct inode *inode) {
-    uint64_t key = get_key(inode);
+    struct inode_key key = get_inode_key(inode);
     union prov_elt prov;
     union prov_elt *ptr_prov;
 

@@ -8,6 +8,11 @@
 #define KB 1024
 #define KB_MASK         (~(KB - 1))
 
+static __always_inline void get_task_key(struct task_struct *task, pid_t *key) {
+    bpf_probe_read(key, sizeof(key), &task->pid);
+    return;
+}
+
 //TODO: Need to further refactor this function.
 static __always_inline void prov_update_task(struct task_struct *task,
                                              union prov_elt *prov) {
@@ -49,7 +54,8 @@ static __always_inline void prov_update_task(struct task_struct *task,
 static __always_inline union prov_elt* get_or_create_task_prov(
                                                 struct task_struct *task,
                                                 union prov_elt *new_prov) {
-    uint64_t key = get_key(task);
+    uint32_t key;
+    get_task_key(task, &key);
     union prov_elt *old_prov = bpf_map_lookup_elem(&task_map, &key);
     // provenance already tracked
     if (old_prov) {
