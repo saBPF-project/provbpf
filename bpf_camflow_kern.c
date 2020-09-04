@@ -18,6 +18,11 @@
 
 char _license[] SEC("license") = "GPL";
 
+/* LSM hooks names can be reference here:
+ * https://elixir.bootlin.com/linux/v5.8/source/include/linux/lsm_hook_defs.h
+ * Template is: SEC("lsm/HOOK_NAMES")
+ */
+
 SEC("lsm/task_alloc")
 int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
     union prov_elt prov, prov_current;
@@ -67,6 +72,10 @@ int BPF_PROG(inode_alloc_security, struct inode *inode) {
 
     record_provenance(ptr_prov);
 
+    /* TODO: CODE HERE
+     * Record the inode_alloc relation.
+     */
+
     return 0;
 }
 
@@ -79,6 +88,10 @@ int BPF_PROG(inode_free_security, struct inode *inode) {
     ptr_prov = get_or_create_inode_prov(inode, &prov);
 
     record_provenance(ptr_prov);
+
+    /* TODO: CODE HERE
+     * Record the inode_free relation.
+     */
 
     bpf_map_delete_elem(&inode_map, &key);
     return 0;
