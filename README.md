@@ -5,6 +5,11 @@ No need to build CamFlow.
 
 ## Setting things up
 
+Getting submodules:
+```
+make submodule
+```
+
 Building libbpf:
 ```
 make build_libbpf
@@ -15,19 +20,14 @@ Building latest fedora kernel:
 make build_kernel
 ```
 
-Building mainline vanilla kernel:
-```
-make build_mainline
-```
-
-Getting submodules:
-```
-make submodule
-```
-
 Building libprovenance:
 ```
 make build_libprovenance
+```
+
+All of the build in one go:
+```
+make prepare
 ```
 
 ## Building and running

@@ -18,15 +18,6 @@ build_kernel:
 	cd ~/fedora && sudo $(MAKE) modules_install
 	cd ~/fedora && sudo $(MAKE) install
 
-build_mainline:
-	cd ~ && git clone -b v$(kernel-version) --single-branch git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
-	cd ~/linux-stable && $(MAKE) olddefconfig
-	cd ~/linux-stable && sed -i -e "s/CONFIG_LSM=\"yama,loadpin,safesetid,integrity,selinux,smack,tomoyo,apparmor\"/CONFIG_LSM=\"yama,loadpin,safesetid,integrity,selinux,smack,tomoyo,apparmor,bpf\"/g" .config
-	cd ~/linux-stable && sed -i -e "s/# CONFIG_BPF_LSM is not set/CONFIG_BPF_LSM=y/g" .config
-	cd ~/linux-stable && $(MAKE) -j16
-	cd ~/linux-stable && sudo $(MAKE) modules_install
-	cd ~/linux-stable && sudo $(MAKE) install
-
 build_libprovenance:
 	cd libprovenance/src && sed -i -e "s/INCLUDES = -I..\/include/INCLUDES = -I..\/include -I..\/..\/camflow-dev\/include\/uapi/g" Makefile
 	cd libprovenance && $(MAKE) prepare
@@ -34,7 +25,7 @@ build_libprovenance:
 	cd libprovenance && $(MAKE) install
 	cd libprovenance/src && sed -i -e "s/INCLUDES = -I..\/include -I..\/..\/camflow-dev\/include\/uapi/INCLUDES = -I..\/include/g" Makefile
 
-prepare: submodule build_libbpf build_kernel build_libprovenance
+prepare: build_libbpf build_kernel build_libprovenance
 
 btf:
 	bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
