@@ -37,9 +37,8 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
     record_provenance(ptr_prov_current);
     record_provenance(ptr_prov);
 
-    /* TODO: CODE HERE
-     * Record provenance relations as the result of task allocation.
-     */
+    // return stack error at compilation, need to figure how to fix this
+    //record_relation(RL_CLONE, ptr_prov_current, ptr_prov, NULL, clone_flags);
     return 0;
 }
 
