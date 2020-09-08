@@ -5,6 +5,9 @@
 
 #include "kern_bpf_maps.h"
 
+// probably bad, find where it is defined
+#define NULL 0
+
 static __always_inline uint64_t prov_next_id(uint32_t key)	{
     struct id_elem *val = bpf_map_lookup_elem(&ids_map, &key);
     if(!val)
