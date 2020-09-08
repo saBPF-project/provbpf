@@ -20,9 +20,14 @@ Building mainline vanilla kernel:
 make build_mainline
 ```
 
-Getting dependencies:
+Getting submodules:
 ```
-git submodule update --init
+make submodule
+```
+
+Building libprovenance:
+```
+make build_libprovenance
 ```
 
 ## Building and running
