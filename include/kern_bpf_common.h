@@ -27,12 +27,6 @@ static __always_inline void record_provenance(union prov_elt* prov){
     bpf_ringbuf_output(&r_buf, prov, sizeof(union prov_elt), 0);
 }
 
-// TODO: this function is deprecated. Avoid using
-// TODO: it to assign a unique key to object.
-static __always_inline __attribute__((deprecated)) uint64_t get_key(void* object) {
-    return (uint64_t)object;
-}
-
 static __always_inline uint64_t u64_max(uint64_t a, uint64_t b) {
     return (a > b) ? a : b;
 }
