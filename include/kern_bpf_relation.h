@@ -46,6 +46,8 @@ static __always_inline void record_relation(uint64_t type,
 
     /*
         TODO handle versioning
+        original logic:
+        https://github.com/CamFlow/camflow-dev/blob/master/security/provenance/include/provenance_record.h#L52
     */
 
     // set send node
