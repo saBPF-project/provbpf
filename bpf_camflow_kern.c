@@ -15,6 +15,7 @@
 #include "kern_bpf_node.h"
 #include "kern_bpf_task.h"
 #include "kern_bpf_inode.h"
+#include "kern_bpf_relation.h"
 
 char _license[] SEC("license") = "GPL";
 
@@ -51,11 +52,8 @@ int BPF_PROG(task_free, struct task_struct *task) {
 
     ptr_prov = get_or_create_task_prov(task, &prov);
 
-    /* Record the provenance to the ring buffer */
-    record_provenance(ptr_prov);
-    /* TODO: CODE HERE
-     * Record the task_free relation.
-     */
+    /* Record task terminate */
+    record_terminate(RL_TERMINATE_TASK, ptr_prov);
 
     /* Delete task provenance since the task no longer exists */
     bpf_map_delete_elem(&task_map, &key);
@@ -87,11 +85,8 @@ int BPF_PROG(inode_free_security, struct inode *inode) {
 
     ptr_prov = get_or_create_inode_prov(inode, &prov);
 
-    record_provenance(ptr_prov);
-
-    /* TODO: CODE HERE
-     * Record the inode_free relation.
-     */
+    /* Record inode freed */
+    record_terminate(RL_FREED, ptr_prov);
 
     bpf_map_delete_elem(&inode_map, &key);
     return 0;
