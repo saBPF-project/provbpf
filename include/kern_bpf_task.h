@@ -63,18 +63,19 @@ static __always_inline union prov_elt* get_or_create_task_prov(struct task_struc
                                                                union prov_elt *new_prov) {
     uint32_t key;
     get_task_key(task, &key);
-    union prov_elt *old_prov = bpf_map_lookup_elem(&task_map, &key);
+    union prov_elt *prov_on_map = bpf_map_lookup_elem(&task_map, &key);
     // provenance is already tracked
-    if (old_prov) {
+    if (prov_on_map) {
         // update the task's provenance since it may have changed
-        prov_update_task(task, old_prov);
-        return old_prov;
+        prov_update_task(task, prov_on_map);
     } else { // a new task
         __builtin_memset(new_prov, 0, sizeof(union prov_elt));
         prov_init_node(new_prov, ACT_TASK);
         prov_update_task(task, new_prov);
+        // this function does not return the pointer that sucks
         bpf_map_update_elem(&task_map, &key, new_prov, BPF_NOEXIST);
-        return new_prov;
+        prov_on_map = bpf_map_lookup_elem(&task_map, &key);
     }
+    return prov_on_map;
 }
 #endif

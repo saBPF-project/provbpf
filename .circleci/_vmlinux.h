@@ -45394,6 +45394,7 @@ struct simple_attr {
 struct wb_writeback_work {
 	long int nr_pages;
 	struct super_block *sb;
+	long unsigned int *older_than_this;
 	enum writeback_sync_modes sync_mode;
 	unsigned int tagged_writepages: 1;
 	unsigned int for_kupdate: 1;
@@ -45695,7 +45696,7 @@ typedef void (*btf_trace_writeback_bdi_register)(void *, struct backing_dev_info
 
 typedef void (*btf_trace_wbc_writepage)(void *, struct writeback_control *, struct backing_dev_info *);
 
-typedef void (*btf_trace_writeback_queue_io)(void *, struct bdi_writeback *, struct wb_writeback_work *, long unsigned int, int);
+typedef void (*btf_trace_writeback_queue_io)(void *, struct bdi_writeback *, struct wb_writeback_work *, int);
 
 typedef void (*btf_trace_global_dirty_state)(void *, long unsigned int, long unsigned int);
 
@@ -49580,7 +49581,6 @@ struct ext4_inode_info {
 	struct jbd2_inode *jinode;
 	spinlock_t i_raw_lock;
 	struct timespec64 i_crtime;
-	atomic_t i_prealloc_active;
 	struct list_head i_prealloc_list;
 	spinlock_t i_prealloc_lock;
 	struct ext4_es_tree i_es_tree;
@@ -49798,7 +49798,6 @@ struct ext4_sb_info {
 	unsigned int s_mb_stats;
 	unsigned int s_mb_order2_reqs;
 	unsigned int s_mb_group_prealloc;
-	unsigned int s_mb_max_inode_prealloc;
 	unsigned int s_max_dir_size_kb;
 	long unsigned int s_mb_last_group;
 	long unsigned int s_mb_last_start;
@@ -49847,8 +49846,7 @@ struct ext4_sb_info {
 	struct fscrypt_dummy_context s_dummy_enc_ctx;
 	struct percpu_rw_semaphore s_writepages_rwsem;
 	struct dax_device *s_daxdev;
-	errseq_t s_bdev_wb_err;
-	spinlock_t s_bdev_wb_lock;
+	long: 64;
 	long: 64;
 };
 
@@ -50800,8 +50798,6 @@ struct trace_event_raw_ext4_discard_preallocations {
 	struct trace_entry ent;
 	dev_t dev;
 	ino_t ino;
-	unsigned int len;
-	unsigned int needed;
 	char __data[0];
 };
 
@@ -51653,7 +51649,7 @@ typedef void (*btf_trace_ext4_mb_release_inode_pa)(void *, struct ext4_prealloc_
 
 typedef void (*btf_trace_ext4_mb_release_group_pa)(void *, struct super_block *, struct ext4_prealloc_space *);
 
-typedef void (*btf_trace_ext4_discard_preallocations)(void *, struct inode *, unsigned int, unsigned int);
+typedef void (*btf_trace_ext4_discard_preallocations)(void *, struct inode *);
 
 typedef void (*btf_trace_ext4_mb_discard_preallocations)(void *, struct super_block *, int);
 
