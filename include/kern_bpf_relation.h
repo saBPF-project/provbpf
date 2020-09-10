@@ -39,10 +39,11 @@ static __always_inline void record_relation(uint64_t type,
                                             union prov_elt *from,
                                             union prov_elt *to,
                                             const struct file *file,
-                                            const uint64_t flags) {
-    union prov_elt relation;
-    __builtin_memset(&relation, 0, sizeof(union prov_elt));
-    prov_init_relation(&relation, type, file, flags);
+                                            const uint64_t flags,
+                                            union prov_elt *relation) {
+
+    __builtin_memset(relation, 0, sizeof(union prov_elt));
+    prov_init_relation(relation, type, file, flags);
 
     /*
         TODO handle versioning
@@ -51,14 +52,14 @@ static __always_inline void record_relation(uint64_t type,
     */
 
     // set send node
-    __builtin_memcpy(&relation.relation_info.snd, &node_identifier(from), sizeof(union prov_identifier));
+    __builtin_memcpy(&relation->relation_info.snd, &node_identifier(from), sizeof(union prov_identifier));
     // set rcv node
-    __builtin_memcpy(&relation.relation_info.rcv, &node_identifier(to), sizeof(union prov_identifier));
+    __builtin_memcpy(&relation->relation_info.rcv, &node_identifier(to), sizeof(union prov_identifier));
 
     // record everything
     record_provenance(from);
     record_provenance(to);
-    record_provenance(&relation);
+    record_provenance(relation);
 }
 
 #endif

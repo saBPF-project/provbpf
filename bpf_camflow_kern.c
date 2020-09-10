@@ -26,19 +26,19 @@ char _license[] SEC("license") = "GPL";
 
 SEC("lsm/task_alloc")
 int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
-    union prov_elt prov, prov_current;
+    union prov_elt prov_tmp;
     union prov_elt *ptr_prov, *ptr_prov_current;
     struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
 
-    ptr_prov_current = get_or_create_task_prov(current_task, &prov_current);
-    ptr_prov = get_or_create_task_prov(task, &prov);
+    ptr_prov_current = get_or_create_task_prov(current_task, &prov_tmp);
+    ptr_prov = get_or_create_task_prov(task, &prov_tmp);
 
     /* Record the tasks provenance to the ring buffer */
     record_provenance(ptr_prov_current);
     record_provenance(ptr_prov);
 
     // return stack error at compilation, need to figure how to fix this
-    //record_relation(RL_CLONE, ptr_prov_current, ptr_prov, NULL, clone_flags);
+    record_relation(RL_CLONE, ptr_prov_current, ptr_prov, NULL, clone_flags, &prov_tmp);
     return 0;
 }
 
