@@ -26,7 +26,6 @@ char _license[] SEC("license") = "GPL";
 
 SEC("lsm/task_alloc")
 int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
-
     union prov_elt *ptr_prov, *ptr_prov_current;
     struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
 
@@ -67,10 +66,9 @@ int BPF_PROG(task_free, struct task_struct *task) {
 
 SEC("lsm/inode_alloc_security")
 int BPF_PROG(inode_alloc_security, struct inode *inode) {
-    union prov_elt prov_tmp;
     union prov_elt *ptr_prov;
 
-    ptr_prov = get_or_create_inode_prov(inode, &prov_tmp);
+    ptr_prov = get_or_create_inode_prov(inode);
     if(!ptr_prov) // something is wrong
         return 0;
 
@@ -86,10 +84,9 @@ int BPF_PROG(inode_alloc_security, struct inode *inode) {
 SEC("lsm/inode_free_security")
 int BPF_PROG(inode_free_security, struct inode *inode) {
     uint64_t key = get_key(inode);
-    union prov_elt prov_tmp;
     union prov_elt *ptr_prov;
 
-    ptr_prov = get_or_create_inode_prov(inode, &prov_tmp);
+    ptr_prov = get_or_create_inode_prov(inode);
     if(!ptr_prov) // something is wrong
         return 0;
 
