@@ -40,8 +40,8 @@ static __always_inline union prov_elt* get_or_create_inode_prov(struct inode *in
     union prov_elt *prov_on_map = bpf_map_lookup_elem(&inode_map, &key);
 
     if (prov_on_map) {
+        // update the inode provenance in case it changed
         prov_update_inode(inode, prov_on_map);
-        return prov_on_map;
     } else {
         __builtin_memset(prov_tmp, 0, sizeof(union prov_elt));
         if (S_ISREG(inode->i_mode)) {
@@ -72,8 +72,9 @@ static __always_inline union prov_elt* get_or_create_inode_prov(struct inode *in
 
         prov_update_inode(inode, prov_tmp);
         bpf_map_update_elem(&inode_map, &key, prov_tmp, BPF_NOEXIST);
-        return prov_tmp;
+        prov_on_map = bpf_map_lookup_elem(&task_map, &key);
     }
+    return prov_on_map;
 }
 
 #endif

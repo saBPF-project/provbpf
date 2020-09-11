@@ -72,6 +72,8 @@ int BPF_PROG(inode_alloc_security, struct inode *inode) {
     union prov_elt *ptr_prov;
 
     ptr_prov = get_or_create_inode_prov(inode, &prov_tmp);
+    if(!ptr_prov) // something is wrong
+        return 0;
 
     record_provenance(ptr_prov);
 
@@ -89,6 +91,8 @@ int BPF_PROG(inode_free_security, struct inode *inode) {
     union prov_elt *ptr_prov;
 
     ptr_prov = get_or_create_inode_prov(inode, &prov_tmp);
+    if(!ptr_prov) // something is wrong
+        return 0;
 
     /* Record inode freed */
     record_terminate(RL_FREED, ptr_prov);

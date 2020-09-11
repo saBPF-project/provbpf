@@ -237,6 +237,8 @@ static int __log_fd;
 static inline void log_print(char* json){
     int len = strlen(json);
     int rc;
+    
+    printf("%s\n", json);
 
     while (len > 0) {
         rc = write(__log_fd, json, len);
