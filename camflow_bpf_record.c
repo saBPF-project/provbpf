@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <provenance.h>
 #include <provenanceW3CJSON.h>
+#include <pthread.h>
 
 #include "camflow_bpf_record.h"
 
@@ -233,13 +234,15 @@ void node_record(union prov_elt *msg){
 }
 
 static int __log_fd;
+static pthread_mutex_t __file_lock;
 
 static inline void log_print(char* json){
     int len = strlen(json);
     int rc;
-    
+
     printf("%s\n", json);
 
+    pthread_mutex_lock(&__file_lock);
     while (len > 0) {
         rc = write(__log_fd, json, len);
         if(rc<0)
@@ -248,16 +251,22 @@ static inline void log_print(char* json){
         len-=rc;
     }
     fsync(__log_fd);
+    pthread_mutex_unlock(&__file_lock);
 }
 
 void prov_init() {
     /* setup log file */
     __log_fd = open("./audit.log", O_CREAT|O_WRONLY, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
-    if (__log_fd < 0){
+    if (__log_fd < 0) {
         printf("Cannot open log file.\n");
         exit(-1);
     }
     lseek(__log_fd, 0, SEEK_SET);
+
+    if (pthread_mutex_init(&__file_lock, NULL) != 0) {
+        printf("File mutex init failed.\n");
+        exit(-1);
+    }
 
     /* ready the recording hooks */
     memcpy(&prov_ops, &w3c_ops, sizeof(struct provenance_ops));
