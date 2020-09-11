@@ -50,10 +50,10 @@ SEC("lsm/task_free")
 int BPF_PROG(task_free, struct task_struct *task) {
     uint64_t key;
     get_key(task);
-    union prov_elt prov;
+    union prov_elt prov_tmp;
     union prov_elt *ptr_prov;
 
-    ptr_prov = get_or_create_task_prov(task, &prov);
+    ptr_prov = get_or_create_task_prov(task, &prov_tmp);
     if(!ptr_prov) // something is wrong
         return 0;
 
@@ -68,10 +68,10 @@ int BPF_PROG(task_free, struct task_struct *task) {
 
 SEC("lsm/inode_alloc_security")
 int BPF_PROG(inode_alloc_security, struct inode *inode) {
-    union prov_elt prov;
+    union prov_elt prov_tmp;
     union prov_elt *ptr_prov;
 
-    ptr_prov = get_or_create_inode_prov(inode, &prov);
+    ptr_prov = get_or_create_inode_prov(inode, &prov_tmp);
 
     record_provenance(ptr_prov);
 
@@ -85,10 +85,10 @@ int BPF_PROG(inode_alloc_security, struct inode *inode) {
 SEC("lsm/inode_free_security")
 int BPF_PROG(inode_free_security, struct inode *inode) {
     uint64_t key = get_key(inode);
-    union prov_elt prov;
+    union prov_elt prov_tmp;
     union prov_elt *ptr_prov;
 
-    ptr_prov = get_or_create_inode_prov(inode, &prov);
+    ptr_prov = get_or_create_inode_prov(inode, &prov_tmp);
 
     /* Record inode freed */
     record_terminate(RL_FREED, ptr_prov);
