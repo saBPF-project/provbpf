@@ -1,7 +1,10 @@
 #define _GNU_SOURCE
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <syslog.h>
+#include <stdlib.h>
 #include <provenance.h>
 #include <provenanceW3CJSON.h>
 
@@ -229,13 +232,34 @@ void node_record(union prov_elt *msg){
   }
 }
 
+static int __log_fd;
+
 static inline void log_print(char* json){
-    printf("%s\n", json);
+    int len = strlen(json);
+    int rc;
+
+    while (len > 0) {
+        rc = write(__log_fd, json, len);
+        if(rc<0)
+            exit(-1);
+        json+=rc;
+        len-=rc;
+    }
+    fsync(__log_fd);
 }
 
 void prov_init() {
-  memcpy(&prov_ops, &w3c_ops, sizeof(struct provenance_ops));
-  set_W3CJSON_callback(log_print);
+    /* setup log file */
+    __log_fd = open("./audit.log", O_CREAT|O_WRONLY, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+    if (__log_fd < 0){
+        printf("Cannot open log file.\n");
+        exit(-1);
+    }
+    lseek(__log_fd, 0, SEEK_SET);
+
+    /* ready the recording hooks */
+    memcpy(&prov_ops, &w3c_ops, sizeof(struct provenance_ops));
+    set_W3CJSON_callback(log_print);
 }
 
 void prov_record(union prov_elt* msg){

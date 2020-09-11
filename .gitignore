@@ -3,3 +3,4 @@ vmlinux.h
 *skel.h
 camflow/
 bpf_camflow
+*.log
