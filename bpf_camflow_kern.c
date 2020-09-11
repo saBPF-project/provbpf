@@ -26,14 +26,14 @@ char _license[] SEC("license") = "GPL";
 
 SEC("lsm/task_alloc")
 int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
-    union prov_elt prov_tmp;
+
     union prov_elt *ptr_prov, *ptr_prov_current;
     struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
 
-    ptr_prov_current = get_or_create_task_prov(current_task, &prov_tmp);
+    ptr_prov_current = get_or_create_task_prov(current_task);
     if(!ptr_prov_current) // something is wrong
         return 0;
-    ptr_prov = get_or_create_task_prov(task, &prov_tmp);
+    ptr_prov = get_or_create_task_prov(task);
     if(!ptr_prov) // something is wrong
         return 0;
 
@@ -42,7 +42,7 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
     record_provenance(ptr_prov);
 
     // return stack error at compilation, need to figure how to fix this
-    record_relation(RL_CLONE, ptr_prov_current, ptr_prov, NULL, clone_flags, &prov_tmp);
+    record_relation(RL_CLONE, ptr_prov_current, ptr_prov, NULL, clone_flags);
     return 0;
 }
 
@@ -50,10 +50,9 @@ SEC("lsm/task_free")
 int BPF_PROG(task_free, struct task_struct *task) {
     uint64_t key;
     get_key(task);
-    union prov_elt prov_tmp;
     union prov_elt *ptr_prov;
 
-    ptr_prov = get_or_create_task_prov(task, &prov_tmp);
+    ptr_prov = get_or_create_task_prov(task);
     if(!ptr_prov) // something is wrong
         return 0;
 

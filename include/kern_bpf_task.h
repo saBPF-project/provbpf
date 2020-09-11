@@ -51,8 +51,8 @@ static __always_inline void prov_update_task(struct task_struct *task,
  * and insert it into the @task_map; otherwise, updates its
  * existing provenance. Return either the new provenance entry
  * pointer or the updated provenance entry pointer. */
-static __always_inline union prov_elt* get_or_create_task_prov(struct task_struct *task,
-                                                               union prov_elt *prov_tmp) {
+static __always_inline union prov_elt* get_or_create_task_prov(struct task_struct *task) {
+    union prov_elt prov_tmp;
     uint64_t key = get_key(task);
     union prov_elt *prov_on_map = bpf_map_lookup_elem(&task_map, &key);
     // provenance is already tracked
@@ -60,11 +60,11 @@ static __always_inline union prov_elt* get_or_create_task_prov(struct task_struc
         // update the task's provenance since it may have changed
         prov_update_task(task, prov_on_map);
     } else { // a new task
-        __builtin_memset(prov_tmp, 0, sizeof(union prov_elt));
-        prov_init_node(prov_tmp, ACT_TASK);
-        prov_update_task(task, prov_tmp);
+        __builtin_memset(&prov_tmp, 0, sizeof(union prov_elt));
+        prov_init_node(&prov_tmp, ACT_TASK);
+        prov_update_task(task, &prov_tmp);
         // this function does not return the pointer that sucks
-        bpf_map_update_elem(&task_map, &key, prov_tmp, BPF_NOEXIST);
+        bpf_map_update_elem(&task_map, &key, &prov_tmp, BPF_NOEXIST);
         prov_on_map = bpf_map_lookup_elem(&task_map, &key);
     }
     return prov_on_map;
