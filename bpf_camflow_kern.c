@@ -48,7 +48,7 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
 
 SEC("lsm/task_free")
 int BPF_PROG(task_free, struct task_struct *task) {
-    uint32_t key;
+    uint64_t key;
     get_task_key(task, &key);
     union prov_elt prov;
     union prov_elt *ptr_prov;
