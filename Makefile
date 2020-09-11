@@ -59,6 +59,7 @@ usr:
 	clang -o bpf_camflow $(target)_usr.o camflow_bpf_record.o camflow_bpf_id.o -lbpf -lprovenance -lpthread
 
 run:
+	rm -rf audit.log
 	sudo ./bpf_camflow
 
 all: clean btf kern skel usr
