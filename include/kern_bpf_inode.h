@@ -22,16 +22,6 @@
 #define S_ISFIFO(m)	(((m) & S_IFMT) == S_IFIFO)
 #define S_ISSOCK(m)	(((m) & S_IFMT) == S_IFSOCK)
 
-static __always_inline struct inode_key get_inode_key(struct inode *inode) {
-    struct inode_key key;
-    key.ino = inode->i_ino;
-    int index;
-    for (index = 0; index < PROV_SBUUID_LEN; index++) {
-      key.sb_uuid[index] = inode->i_sb->s_uuid.b[index];
-    }
-    return key;
-}
-
 static __always_inline void prov_update_inode(struct inode *inode, union prov_elt *prov) {
     prov->inode_info.uid = inode->i_uid.val;
     prov->inode_info.gid = inode->i_gid.val;
@@ -45,7 +35,7 @@ static __always_inline void prov_update_inode(struct inode *inode, union prov_el
 }
 
 static __always_inline union prov_elt* get_or_create_inode_prov(struct inode *inode, union prov_elt *new_prov) {
-    struct inode_key key = get_inode_key(inode);
+    uint64_t key = get_key(inode);
     union prov_elt *old_prov = bpf_map_lookup_elem(&inode_map, &key);
 
     if (old_prov) {

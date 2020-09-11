@@ -8,15 +8,6 @@
 #define KB 1024
 #define KB_MASK         (~(KB - 1))
 
-/* A task's key in the @task_map is its real PID.
- * This function reads the task's kernel struct,
- * gets its PID and stores it in @key argument. */
-static __always_inline void get_task_key(struct task_struct *task, uint64_t *key) {
-    /* we cannot do this pid not set during "alloc" */
-    // bpf_probe_read(key, sizeof(key), &task->pid);
-    (*key)=(uint64_t)task;
-}
-
 /* Update fields in a task's provenance */
 // TODO: further refactor this function.
 static __always_inline void prov_update_task(struct task_struct *task,
@@ -62,8 +53,7 @@ static __always_inline void prov_update_task(struct task_struct *task,
  * pointer or the updated provenance entry pointer. */
 static __always_inline union prov_elt* get_or_create_task_prov(struct task_struct *task,
                                                                union prov_elt *new_prov) {
-    uint64_t key;
-    get_task_key(task, &key);
+    uint64_t key = get_key(task);
     union prov_elt *prov_on_map = bpf_map_lookup_elem(&task_map, &key);
     // provenance is already tracked
     if (prov_on_map) {

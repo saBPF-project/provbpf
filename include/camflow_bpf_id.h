@@ -7,11 +7,6 @@ struct id_elem {
     uint64_t id;
 };
 
-struct inode_key {
-    uint64_t ino;
-    uint8_t sb_uuid[PROV_SBUUID_LEN];
-};
-
 #define RELATION_ID_INDEX 0
 #define NODE_ID_INDEX 1
 #define BOOT_ID_INDEX 2
