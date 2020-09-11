@@ -37,11 +37,11 @@ static __always_inline void prov_update_inode(struct inode *inode, union prov_el
 static __always_inline union prov_elt* get_or_create_inode_prov(struct inode *inode,
                                                     union prov_elt *prov_tmp) {
     uint64_t key = get_key(inode);
-    union prov_elt *old_prov = bpf_map_lookup_elem(&inode_map, &key);
+    union prov_elt *prov_on_map = bpf_map_lookup_elem(&inode_map, &key);
 
-    if (old_prov) {
-        prov_update_inode(inode, old_prov);
-        return old_prov;
+    if (prov_on_map) {
+        prov_update_inode(inode, prov_on_map);
+        return prov_on_map;
     } else {
         __builtin_memset(prov_tmp, 0, sizeof(union prov_elt));
         if (S_ISREG(inode->i_mode)) {
