@@ -31,7 +31,11 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
     struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
 
     ptr_prov_current = get_or_create_task_prov(current_task, &prov_tmp);
+    if(!ptr_prov_current) // something is wrong
+        return 0;
     ptr_prov = get_or_create_task_prov(task, &prov_tmp);
+    if(!ptr_prov) // something is wrong
+        return 0;
 
     /* Record the tasks provenance to the ring buffer */
     record_provenance(ptr_prov_current);
@@ -50,6 +54,8 @@ int BPF_PROG(task_free, struct task_struct *task) {
     union prov_elt *ptr_prov;
 
     ptr_prov = get_or_create_task_prov(task, &prov);
+    if(!ptr_prov) // something is wrong
+        return 0;
 
     /* Record task terminate */
     record_terminate(RL_TERMINATE_TASK, ptr_prov);
