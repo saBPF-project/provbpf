@@ -15,6 +15,7 @@
 #include "kern_bpf_node.h"
 #include "kern_bpf_task.h"
 #include "kern_bpf_inode.h"
+#include "kern_bpf_cred.h"
 #include "kern_bpf_relation.h"
 
 char _license[] SEC("license") = "GPL";
@@ -94,5 +95,41 @@ int BPF_PROG(inode_free_security, struct inode *inode) {
     record_terminate(RL_FREED, ptr_prov);
 
     bpf_map_delete_elem(&inode_map, &key);
+    return 0;
+}
+
+SEC("lsm/cred_alloc_blank")
+int BPF_PROG(cred_alloc_blank, struct cred *cred, gfp_t gfp) {
+    union prov_elt *ptr_prov;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+
+    ptr_prov = get_or_create_cred_prov(cred, current_task);
+    if (!ptr_prov) {
+      return 0;
+    }
+
+    record_provenance(ptr_prov);
+
+    // Record cred alloc relation
+
+    return 0;
+}
+
+SEC("lsm/cred_free")
+int BPF_PROG(cred_free, struct cred *cred) {
+    uint64_t key = get_key(cred);
+    union prov_elt *ptr_prov;
+
+
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    ptr_prov = get_or_create_cred_prov(cred, current_task);
+    if (!ptr_prov) {
+      return 0;
+    }
+
+    // Record cred freed
+    record_terminate(RL_TERMINATE_PROC, ptr_prov);
+
+    bpf_map_delete_elem(&cred_map, &key);
     return 0;
 }
