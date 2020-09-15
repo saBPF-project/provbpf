@@ -35,7 +35,7 @@ static __always_inline uint64_t u64_max(uint64_t a, uint64_t b) {
 }
 
 /* it seems we have no choice */
-static __always_inline uint64_t get_key(void *obj) {
+static __always_inline uint64_t get_key(const void *obj) {
     return (uint64_t)obj;
 }
 

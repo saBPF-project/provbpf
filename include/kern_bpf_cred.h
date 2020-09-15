@@ -49,7 +49,7 @@ static __always_inline void prov_update_cred(struct task_struct *current_task,
  * and insert it into the @cred_map; otherwise, updates its
  * existing provenance. Return either the new provenance entry
  * pointer or the updated provenance entry pointer. */
-static __always_inline union prov_elt* get_or_create_cred_prov(struct cred *cred, struct task_struct *current_task) {
+static __always_inline union prov_elt* get_or_create_cred_prov(const struct cred *cred, struct task_struct *current_task) {
     union prov_elt prov_tmp;
     uint64_t key = get_key(cred);
     union prov_elt *prov_on_map = bpf_map_lookup_elem(&cred_map, &key);
