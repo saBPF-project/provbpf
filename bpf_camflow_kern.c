@@ -64,6 +64,131 @@ int BPF_PROG(task_free, struct task_struct *task) {
     return 0;
 }
 
+/*!
+ * @brief Record provenance when task_fix_setuid hook is triggered.
+ *
+ * This hook is triggered when updating the module's state after setting one or
+ * more of the user identity attributes of the current process.
+ * The @flags parameter indicates which of the set*uid system calls invoked this
+ * hook.
+ * If @new is the set of credentials that will be installed,
+ * modifications should be made to this rather than to @current->cred.
+ * Information flows from @old to current process and then eventually flows to
+ * @new (since modification should be made to @new instead of @current->cred).
+ * Record provenance relation RL_SETUID.
+ * @param new The set of credentials that will be installed
+ * @param old The set of credentials that are being replaced.
+ * @param flags One of the LSM_SETID_* values.
+ * @return 0 if no error occurred. Other error codes unknown.
+ *
+ */
+SEC("lsm/task_fix_setuid")
+int BPF_PROG(task_fix_setuid, struct cred *new, const struct cred *old, int flags) {
+    union prov_elt *ptr_prov_new_cred, *ptr_prov_old_cred, *ptr_prov_task;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+
+    ptr_prov_new_cred = get_or_create_cred_prov(new, current_task);
+    if (!ptr_prov_new_cred) {
+      return 0;
+    }
+    ptr_prov_old_cred = get_or_create_cred_prov(old, current_task);
+    if (!ptr_prov_old_cred) {
+      return 0;
+    }
+    ptr_prov_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_task) {
+      return 0;
+    }
+
+    record_provenance(ptr_prov_new_cred);
+    record_provenance(ptr_prov_old_cred);
+    record_provenance(ptr_prov_task);
+
+    record_relation(RL_PROC_READ, ptr_prov_old_cred, ptr_prov_task, NULL, 0);
+    record_relation(RL_SETUID, ptr_prov_task, ptr_prov_new_cred, NULL, flags);
+
+    return 0;
+}
+
+/*!
+ * @brief Record provenance when task_setpgid hook is triggered.
+ *
+ * Update the module's state after setting one or more of the group
+ * identity attributes of the current process.  The @flags parameter
+ * indicates which of the set*gid system calls invoked this hook.
+ * @new is the set of credentials that will be installed.  Modifications
+ * should be made to this rather than to @current->cred.
+ * @old is the set of credentials that are being replaced
+ * @flags contains one of the LSM_SETID_* values.
+ * Return 0 on success.
+ */
+SEC("lsm/task_fix_setgid")
+int BPF_PROG(task_fix_setgid, struct cred *new, const struct cred *old, int flags) {
+    union prov_elt *ptr_prov_new_cred, *ptr_prov_old_cred, *ptr_prov_task;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+
+    ptr_prov_new_cred = get_or_create_cred_prov(new, current_task);
+    if (!ptr_prov_new_cred) {
+      return 0;
+    }
+    ptr_prov_old_cred = get_or_create_cred_prov(old, current_task);
+    if (!ptr_prov_old_cred) {
+      return 0;
+    }
+    ptr_prov_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_task) {
+      return 0;
+    }
+
+    record_provenance(ptr_prov_new_cred);
+    record_provenance(ptr_prov_old_cred);
+    record_provenance(ptr_prov_task);
+
+    record_relation(RL_PROC_READ, ptr_prov_old_cred, ptr_prov_task, NULL, 0);
+    record_relation(RL_SETGID, ptr_prov_task, ptr_prov_new_cred, NULL, flags);
+
+    return 0;
+}
+
+/*!
+ * @brief: Record provenance when task_getpgid hook is triggered.
+ *
+ * Check permission before getting the process group identifier of the
+ * process @p.
+ * @p contains the task_struct for the process.
+ * Return 0 if permission is granted.
+ */
+SEC("lsm/task_getpgid")
+int BPF_PROG(task_getpgid, struct task_struct *p) {
+    union prov_elt *ptr_prov, *ptr_prov_current_task, *ptr_prov_current_cred;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    const struct cred *current_task_cred, *p_task_cred;
+    bpf_probe_read(&current_task_cred, sizeof(current_task_cred), &current_task->cred);
+    bpf_probe_read(&p_task_cred, sizeof(p_task_cred), &p->cred);
+
+    ptr_prov_current_cred = get_or_create_cred_prov(current_task_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov = get_or_create_cred_prov(p_task_cred, p);
+    if (!ptr_prov) {
+      return 0;
+    }
+
+    record_provenance(ptr_prov_current_cred);
+    record_provenance(ptr_prov_current_task);
+    record_provenance(ptr_prov);
+
+    record_relation(RL_GETGID, ptr_prov, ptr_prov_current_task, NULL, 0);
+    record_relation(RL_PROC_WRITE, ptr_prov_current_task, ptr_prov_current_cred, NULL, 0);
+
+    return 0;
+}
+
 SEC("lsm/inode_alloc_security")
 int BPF_PROG(inode_alloc_security, struct inode *inode) {
     union prov_elt *ptr_prov;
