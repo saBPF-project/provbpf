@@ -14,6 +14,13 @@
 #define S_IFCHR  0020000
 #define S_IFIFO  0010000
 
+#define S_PRIVATE	512	/* Inode is fs-internal */
+
+#define MAY_EXEC		0x00000001
+#define MAY_WRITE		0x00000002
+#define MAY_READ		0x00000004
+#define MAY_APPEND	0x00000008
+
 #define S_ISLNK(m)	(((m) & S_IFMT) == S_IFLNK)
 #define S_ISREG(m)	(((m) & S_IFMT) == S_IFREG)
 #define S_ISDIR(m)	(((m) & S_IFMT) == S_IFDIR)
@@ -21,6 +28,8 @@
 #define S_ISBLK(m)	(((m) & S_IFMT) == S_IFBLK)
 #define S_ISFIFO(m)	(((m) & S_IFMT) == S_IFIFO)
 #define S_ISSOCK(m)	(((m) & S_IFMT) == S_IFSOCK)
+
+#define IS_PRIVATE(inode)	((inode)->i_flags & S_PRIVATE)
 
 static __always_inline void prov_update_inode(struct inode *inode, union prov_elt *prov) {
     prov->inode_info.uid = inode->i_uid.val;
