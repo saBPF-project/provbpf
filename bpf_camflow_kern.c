@@ -16,6 +16,7 @@
 #include "kern_bpf_task.h"
 #include "kern_bpf_inode.h"
 #include "kern_bpf_cred.h"
+#include "kern_bpf_iattr.h"
 #include "kern_bpf_relation.h"
 
 char _license[] SEC("license") = "GPL";
@@ -38,31 +39,31 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
         return 0;
 
     /* Record the tasks provenance to the ring buffer */
-    // record_provenance(ptr_prov_current);
-    // record_provenance(ptr_prov);
+    record_provenance(ptr_prov_current);
+    record_provenance(ptr_prov);
 
-    // record_relation(RL_CLONE, ptr_prov_current, ptr_prov, NULL, clone_flags);
+    record_relation(RL_CLONE, ptr_prov_current, ptr_prov, NULL, clone_flags);
     return 0;
 }
 
-// SEC("lsm/task_free")
-// int BPF_PROG(task_free, struct task_struct *task) {
-//     uint64_t key;
-//     get_key(task);
-//     union prov_elt *ptr_prov;
-//
-//     ptr_prov = get_or_create_task_prov(task);
-//     if(!ptr_prov) // something is wrong
-//         return 0;
-//
-//     /* Record task terminate */
-//     record_terminate(RL_TERMINATE_TASK, ptr_prov);
-//
-//     /* Delete task provenance since the task no longer exists */
-//     bpf_map_delete_elem(&task_map, &key);
-//
-//     return 0;
-// }
+SEC("lsm/task_free")
+int BPF_PROG(task_free, struct task_struct *task) {
+    uint64_t key;
+    get_key(task);
+    union prov_elt *ptr_prov;
+
+    ptr_prov = get_or_create_task_prov(task);
+    if(!ptr_prov) // something is wrong
+        return 0;
+
+    /* Record task terminate */
+    record_terminate(RL_TERMINATE_TASK, ptr_prov);
+
+    /* Delete task provenance since the task no longer exists */
+    bpf_map_delete_elem(&task_map, &key);
+
+    return 0;
+}
 
 /*!
  * @brief Record provenance when task_fix_setuid hook is triggered.
@@ -100,12 +101,12 @@ int BPF_PROG(task_fix_setuid, struct cred *new, const struct cred *old, int flag
       return 0;
     }
 
-    // record_provenance(ptr_prov_new_cred);
-    // record_provenance(ptr_prov_old_cred);
-    // record_provenance(ptr_prov_task);
-    //
-    // record_relation(RL_PROC_READ, ptr_prov_old_cred, ptr_prov_task, NULL, 0);
-    // record_relation(RL_SETUID, ptr_prov_task, ptr_prov_new_cred, NULL, flags);
+    record_provenance(ptr_prov_new_cred);
+    record_provenance(ptr_prov_old_cred);
+    record_provenance(ptr_prov_task);
+
+    record_relation(RL_PROC_READ, ptr_prov_old_cred, ptr_prov_task, NULL, 0);
+    record_relation(RL_SETUID, ptr_prov_task, ptr_prov_new_cred, NULL, flags);
 
     return 0;
 }
@@ -140,12 +141,12 @@ int BPF_PROG(task_fix_setgid, struct cred *new, const struct cred *old, int flag
       return 0;
     }
 
-    // record_provenance(ptr_prov_new_cred);
-    // record_provenance(ptr_prov_old_cred);
-    // record_provenance(ptr_prov_task);
-    //
-    // record_relation(RL_PROC_READ, ptr_prov_old_cred, ptr_prov_task, NULL, 0);
-    // record_relation(RL_SETGID, ptr_prov_task, ptr_prov_new_cred, NULL, flags);
+    record_provenance(ptr_prov_new_cred);
+    record_provenance(ptr_prov_old_cred);
+    record_provenance(ptr_prov_task);
+
+    record_relation(RL_PROC_READ, ptr_prov_old_cred, ptr_prov_task, NULL, 0);
+    record_relation(RL_SETGID, ptr_prov_task, ptr_prov_new_cred, NULL, flags);
 
     return 0;
 }
@@ -179,12 +180,12 @@ int BPF_PROG(task_getpgid, struct task_struct *p) {
       return 0;
     }
 
-    // record_provenance(ptr_prov_current_cred);
-    // record_provenance(ptr_prov_current_task);
-    // record_provenance(ptr_prov);
-    //
-    // record_relation(RL_GETGID, ptr_prov, ptr_prov_current_task, NULL, 0);
-    // record_relation(RL_PROC_WRITE, ptr_prov_current_task, ptr_prov_current_cred, NULL, 0);
+    record_provenance(ptr_prov_current_cred);
+    record_provenance(ptr_prov_current_task);
+    record_provenance(ptr_prov);
+
+    record_relation(RL_GETGID, ptr_prov, ptr_prov_current_task, NULL, 0);
+    record_relation(RL_PROC_WRITE, ptr_prov_current_task, ptr_prov_current_cred, NULL, 0);
 
     return 0;
 }
@@ -197,7 +198,7 @@ int BPF_PROG(inode_alloc_security, struct inode *inode) {
     if(!ptr_prov) // something is wrong
         return 0;
 
-    // record_provenance(ptr_prov);
+    record_provenance(ptr_prov);
 
     /* TODO: CODE HERE
      * Record the inode_alloc relation.
@@ -216,7 +217,7 @@ int BPF_PROG(inode_free_security, struct inode *inode) {
         return 0;
 
     /* Record inode freed */
-    // record_terminate(RL_FREED, ptr_prov);
+    record_terminate(RL_FREED, ptr_prov);
 
     bpf_map_delete_elem(&inode_map, &key);
     return 0;
@@ -256,12 +257,12 @@ int BPF_PROG(inode_create, struct inode *dir, struct dentry *dentry, umode_t mod
       return 0;
     }
 
-    // record_provenance(ptr_prov_current_cred);
-    // record_provenance(ptr_prov_current_task);
-    // record_provenance(ptr_prov_inode);
-    //
-    // record_relation(RL_PROC_READ, ptr_prov_current_cred, ptr_prov_current_task, NULL, 0);
-    // record_relation(RL_INODE_CREATE, ptr_prov_current_task, ptr_prov_inode, NULL, mode);
+    record_provenance(ptr_prov_current_cred);
+    record_provenance(ptr_prov_current_task);
+    record_provenance(ptr_prov_inode);
+
+    record_relation(RL_PROC_READ, ptr_prov_current_cred, ptr_prov_current_task, NULL, 0);
+    record_relation(RL_INODE_CREATE, ptr_prov_current_task, ptr_prov_inode, NULL, mode);
 
     return 0;
 }
@@ -386,12 +387,12 @@ int BPF_PROG(inode_link, struct dentry *old_dentry, struct inode *dir, struct de
       return 0;
     }
 
-    // record_provenance(ptr_prov_current_cred);
-    // record_provenance(ptr_prov_current_task);
-    // record_provenance(ptr_prov);
-    //
-    // record_relation(RL_PROC_READ, ptr_prov_current_cred, ptr_prov_current_task, NULL, 0);
-    // record_relation(RL_LINK, ptr_prov_current_task, ptr_prov, NULL, 0);
+    record_provenance(ptr_prov_current_cred);
+    record_provenance(ptr_prov_current_task);
+    record_provenance(ptr_prov);
+
+    record_relation(RL_PROC_READ, ptr_prov_current_cred, ptr_prov_current_task, NULL, 0);
+    record_relation(RL_LINK, ptr_prov_current_task, ptr_prov, NULL, 0);
 
     return 0;
 }
@@ -424,12 +425,12 @@ int BPF_PROG(inode_unlink, struct inode *dir, struct dentry *dentry) {
       return 0;
     }
 
-    // record_provenance(ptr_prov_current_cred);
-    // record_provenance(ptr_prov_current_task);
-    // record_provenance(ptr_prov);
-    //
-    // record_relation(RL_PROC_READ, ptr_prov_current_cred, ptr_prov_current_task, NULL, 0);
-    // record_relation(RL_UNLINK, ptr_prov_current_task, ptr_prov, NULL, 0);
+    record_provenance(ptr_prov_current_cred);
+    record_provenance(ptr_prov_current_task);
+    record_provenance(ptr_prov);
+
+    record_relation(RL_PROC_READ, ptr_prov_current_cred, ptr_prov_current_task, NULL, 0);
+    record_relation(RL_UNLINK, ptr_prov_current_task, ptr_prov, NULL, 0);
 
     return 0;
 }
@@ -474,6 +475,238 @@ int BPF_PROG(inode_symlink, struct inode *dir, struct dentry *dentry, const char
 }
 
 /*!
+ * @brief Record provenance when inode_rename hook is triggered.
+ *
+ * This hook is triggered when checking for permission to rename a file or
+ * directory.
+ * @param old_dir The inode structure for parent of the old link.
+ * @param old_dentry The dentry structure of the old link.
+ * @param new_dir The inode structure for parent of the new link.
+ * @param new_dentry The dentry structure of the new link.
+ * @return Error code is the same as in "provenance_inode_link" function.
+ *
+ */
+SEC("lsm/inode_rename")
+int BPF_PROG(inode_rename, struct inode *old_dir, struct dentry *old_dentry,struct inode *new_dir, struct dentry *new_dentry) {
+    union prov_elt *ptr_prov_current_cred, *ptr_prov_current_task, *ptr_prov;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    const struct cred *current_task_cred;
+    bpf_probe_read(&current_task_cred, sizeof(current_task_cred), &current_task->cred);
+
+    ptr_prov_current_cred = get_or_create_cred_prov(current_task_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov = get_or_create_inode_prov(old_dentry->d_inode);
+    if (!ptr_prov) {
+      return 0;
+    }
+
+    record_provenance(ptr_prov_current_cred);
+    record_provenance(ptr_prov_current_task);
+    record_provenance(ptr_prov);
+
+    record_relation(RL_PROC_READ, ptr_prov_current_cred, ptr_prov_current_task, NULL, 0);
+    record_relation(RL_RENAME, ptr_prov_current_task, ptr_prov, NULL, 0);
+
+    return 0;
+}
+
+/*!
+ * @brief Record provenance when inode_setattr hook is triggered.
+ *
+ * This hook is triggered when checking permission before setting file
+ * attributes.
+ * Note that the kernel call to notify_change is performed from several
+ * locations, whenever file attributes change (such as when a file is truncated,
+ * chown/chmod operations transferring disk quotas, etc).
+ * We create a new provenance node ENT_IATTR, and update its information based
+ * on @attr.
+ * Record provenance relation RL_SETATTR.
+ * Record provenance relation RL_SETATTR_INODE.
+ * Information flows from cred of the current process to the process, and
+ * eventually to the inode attribute to set the attributes.
+ * Information also flows from inode attribute to the inode whose attributes
+ * are to be set.
+ * We also persistant the inode's provenance.
+ * @param dentry The dentry structure for the file.
+ * @param attr The iattr structure containing the new file attributes.
+ * @return 0 if permission is granted; -ENOMEM if inode provenance of the file
+ * is NULL; -ENOMEM if no memory can be allocated for a new ENT_IATTR provenance
+ * entry. Other error codes unknown.
+ *
+ */
+SEC("lsm/inode_setattr")
+int BPF_PROG(inode_setattr, struct dentry *dentry, struct iattr *attr) {
+    union prov_elt *ptr_prov_current_cred, *ptr_prov_current_task, *ptr_prov_inode, *ptr_prov_iattr;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    const struct cred *current_task_cred;
+    bpf_probe_read(&current_task_cred, sizeof(current_task_cred), &current_task->cred);
+
+    ptr_prov_current_cred = get_or_create_cred_prov(current_task_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_inode = get_or_create_inode_prov(dentry->d_inode);
+    if (!ptr_prov_inode) {
+      return 0;
+    }
+    ptr_prov_iattr = get_or_create_iattr_prov(attr);
+    if (!ptr_prov_iattr) {
+      return 0;
+    }
+
+    record_provenance(ptr_prov_current_cred);
+    record_provenance(ptr_prov_current_task);
+    record_provenance(ptr_prov_inode);
+    record_provenance(ptr_prov_iattr);
+
+    record_relation(RL_PROC_READ, ptr_prov_current_cred, ptr_prov_current_task, NULL, 0);
+    record_relation(RL_SETATTR, ptr_prov_current_task, ptr_prov_iattr, NULL, 0);
+
+    record_relation(RL_SETATTR_INODE, ptr_prov_iattr, ptr_prov_inode, NULL, 0);
+
+    return 0;
+}
+
+
+/*!
+ * @brief Record provenance when inode_getattr hook is triggered.
+ *
+ * This hook is triggered when checking permission before obtaining file
+ * attributes.
+ * Record provenance relation RL_GETATTR.
+ * Information flows from the inode of the file to the calling process, and
+ * eventually to the process's cred.
+ * @param path The path structure for the file.
+ * @return 0 if permission is granted; -ENOMEM if the provenance entry of the
+ * file is NULL. Other error codes unknown.
+ *
+ */
+SEC("lsm/inode_getattr")
+int BPF_PROG(inode_getattr, const struct path *path) {
+    union prov_elt *ptr_prov_current_cred, *ptr_prov_current_task, *ptr_prov_inode;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    const struct cred *current_task_cred;
+    bpf_probe_read(&current_task_cred, sizeof(current_task_cred), &current_task->cred);
+
+    ptr_prov_current_cred = get_or_create_cred_prov(current_task_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_inode = get_or_create_inode_prov(path->dentry->d_inode);
+    if (!ptr_prov_inode) {
+      return 0;
+    }
+
+    record_provenance(ptr_prov_current_cred);
+    record_provenance(ptr_prov_current_task);
+    record_provenance(ptr_prov_inode);
+
+    record_relation(RL_GETATTR, ptr_prov_inode, ptr_prov_current_task, NULL, 0);
+    record_relation(RL_PROC_WRITE, ptr_prov_current_task, ptr_prov_current_cred, NULL, 0);
+
+    return 0;
+}
+
+/*!
+ * @brief Record provenance when inode_readlink hook is triggered.
+ *
+ * This hook is triggered when checking the permission to read the symbolic
+ * link.
+ * Record provenance relation RL_READ_LINK.
+ * Information flows from the link file to the calling process, and eventually
+ * to its cred.
+ * @param dentry The dentry structure for the file link.
+ * @return 0 if permission is granted; -ENOMEM if the link file's provenance
+ * entry is NULL. Other error codes unknown.
+ *
+ */
+SEC("lsm/inode_readlink")
+int BPF_PROG(inode_readlink, struct dentry *dentry) {
+    union prov_elt *ptr_prov_current_cred, *ptr_prov_current_task, *ptr_prov_inode;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    const struct cred *current_task_cred;
+    bpf_probe_read(&current_task_cred, sizeof(current_task_cred), &current_task->cred);
+
+    ptr_prov_current_cred = get_or_create_cred_prov(current_task_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_inode = get_or_create_inode_prov(dentry->d_inode);
+    if (!ptr_prov_inode) {
+      return 0;
+    }
+
+    record_provenance(ptr_prov_current_cred);
+    record_provenance(ptr_prov_current_task);
+    record_provenance(ptr_prov_inode);
+
+    record_relation(RL_READ_LINK, ptr_prov_inode, ptr_prov_current_task, NULL, 0);
+    record_relation(RL_PROC_WRITE, ptr_prov_current_task, ptr_prov_current_cred, NULL, 0);
+
+    return 0;
+}
+
+/*!
+ * @brief Record provenance when inode_listxattr hook is triggered.
+ *
+ * This hook is triggered when checking permission before obtaining the list of
+ * extended attribute names for @dentry.
+ * Record provenance relation RL_LSTXATTR.
+ * Information flows from inode (whose xattrs are of interests) to calling task
+ * process, and eventually to its cred.
+ * The relation may not be recorded if inode provenance entry is NULL.
+ * @param dentry The dentry structure for the file.
+ * @return 0 if no error occurred; -ENOMEM if inode provenance is NULL.
+ */
+SEC("lsm/inode_listxattr")
+int BPF_PROG(inode_listxattr, struct dentry *dentry) {
+    union prov_elt *ptr_prov_current_cred, *ptr_prov_current_task, *ptr_prov_inode;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    const struct cred *current_task_cred;
+    bpf_probe_read(&current_task_cred, sizeof(current_task_cred), &current_task->cred);
+
+    ptr_prov_current_cred = get_or_create_cred_prov(current_task_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_inode = get_or_create_inode_prov(dentry->d_inode);
+    if (!ptr_prov_inode) {
+      return 0;
+    }
+
+    record_provenance(ptr_prov_current_cred);
+    record_provenance(ptr_prov_current_task);
+    record_provenance(ptr_prov_inode);
+
+    record_relation(RL_LSTXATTR, ptr_prov_inode, ptr_prov_current_task, NULL, 0);
+    record_relation(RL_PROC_WRITE, ptr_prov_current_task, ptr_prov_current_cred, NULL, 0);
+
+    return 0;
+}
+
+/*!
  * @brief Record provenance when cred_alloc_blank hook is triggered.
  *
  * This hook is triggered when allocating sufficient memory and attaching to
@@ -497,7 +730,7 @@ int BPF_PROG(cred_alloc_blank, struct cred *cred, gfp_t gfp) {
       return 0;
     }
 
-    // record_provenance(ptr_prov);
+    record_provenance(ptr_prov);
 
     return 0;
 }
@@ -524,7 +757,7 @@ int BPF_PROG(cred_free, struct cred *cred) {
     }
 
     // Record cred freed
-    // record_terminate(RL_TERMINATE_PROC, ptr_prov);
+    record_terminate(RL_TERMINATE_PROC, ptr_prov);
 
     bpf_map_delete_elem(&cred_map, &key);
     return 0;
@@ -563,13 +796,13 @@ int BPF_PROG(cred_prepare, struct cred *new, const struct cred *old, gfp_t gfp) 
       return 0;
     }
 
-    // record_provenance(ptr_prov_new);
-    // record_provenance(ptr_prov_old);
-    // record_provenance(ptr_prov_task);
-    //
-    // // Record cred prepare relation
-    // record_relation(RL_PROC_READ, ptr_prov_old, ptr_prov_task, NULL, 0);
-    // record_relation(RL_CLONE_MEM, ptr_prov_task, ptr_prov_new, NULL, 0);
+    record_provenance(ptr_prov_new);
+    record_provenance(ptr_prov_old);
+    record_provenance(ptr_prov_task);
+
+    // Record cred prepare relation
+    record_relation(RL_PROC_READ, ptr_prov_old, ptr_prov_task, NULL, 0);
+    record_relation(RL_CLONE_MEM, ptr_prov_task, ptr_prov_new, NULL, 0);
 
     return 0;
 }
