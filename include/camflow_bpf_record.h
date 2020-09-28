@@ -5,7 +5,7 @@
 
 #include "linux/provenance.h"
 
-void prov_record(union prov_elt* msg);
+void bpf_prov_record(union long_prov_elt* msg);
 void prov_refresh_records(void);
 void prov_init(void);
 #endif

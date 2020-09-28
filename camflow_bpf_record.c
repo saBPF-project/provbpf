@@ -171,7 +171,7 @@ struct provenance_ops w3c_ops = {
   .log_error=&log_error
 };
 
-void relation_record(union prov_elt *msg){
+void relation_record(union long_prov_elt *msg){
   uint64_t type = prov_type(msg);
 
   if(prov_is_used(type) &&  prov_ops.log_used!=NULL)
@@ -233,6 +233,90 @@ void node_record(union prov_elt *msg){
   }
 }
 
+void long_prov_record(union long_prov_elt* msg){
+  switch(prov_type(msg)){
+    case ENT_PROC:
+      if(prov_ops.log_proc!=NULL)
+        prov_ops.log_proc(&(msg->proc_info));
+      break;
+    case ACT_TASK:
+      if(prov_ops.log_task!=NULL)
+        prov_ops.log_task(&(msg->task_info));
+      break;
+    case ENT_INODE_UNKNOWN:
+    case ENT_INODE_LINK:
+    case ENT_INODE_FILE:
+    case ENT_INODE_DIRECTORY:
+    case ENT_INODE_CHAR:
+    case ENT_INODE_BLOCK:
+    case ENT_INODE_PIPE:
+    case ENT_INODE_SOCKET:
+      if(prov_ops.log_inode!=NULL)
+        prov_ops.log_inode(&(msg->inode_info));
+      break;
+    case ENT_MSG:
+      if(prov_ops.log_msg!=NULL)
+        prov_ops.log_msg(&(msg->msg_msg_info));
+      break;
+    case ENT_SHM:
+      if(prov_ops.log_shm!=NULL)
+        prov_ops.log_shm(&(msg->shm_info));
+      break;
+    case ENT_PACKET:
+      if(prov_ops.log_packet!=NULL)
+        prov_ops.log_packet(&(msg->pck_info));
+      break;
+    case ENT_IATTR:
+      if(prov_ops.log_iattr!=NULL)
+        prov_ops.log_iattr(&(msg->iattr_info));
+      break;
+    case ENT_STR:
+      if(prov_ops.log_str!=NULL)
+        prov_ops.log_str(&(msg->str_info));
+      break;
+    case ENT_PATH:
+      if(prov_ops.log_file_name!=NULL)
+        prov_ops.log_file_name(&(msg->file_name_info));
+      break;
+    case ENT_ADDR:
+      if(prov_ops.log_address!=NULL)
+        prov_ops.log_address(&(msg->address_info));
+      break;
+    case ENT_XATTR:
+      if(prov_ops.log_xattr!=NULL)
+        prov_ops.log_xattr(&(msg->xattr_info));
+      break;
+    case ENT_DISC:
+      if(prov_ops.log_ent_disc!=NULL)
+        prov_ops.log_ent_disc(&(msg->disc_node_info));
+      break;
+    case ACT_DISC:
+      if(prov_ops.log_act_disc!=NULL)
+        prov_ops.log_act_disc(&(msg->disc_node_info));
+      break;
+    case AGT_DISC:
+      if(prov_ops.log_agt_disc!=NULL)
+        prov_ops.log_agt_disc(&(msg->disc_node_info));
+      break;
+    case ENT_PCKCNT:
+      if(prov_ops.log_packet_content!=NULL)
+        prov_ops.log_packet_content(&(msg->pckcnt_info));
+      break;
+    case ENT_ARG:
+    case ENT_ENV:
+      if(prov_ops.log_arg!=NULL)
+        prov_ops.log_arg(&(msg->arg_info));
+      break;
+    case AGT_MACHINE:
+      if(prov_ops.log_machine!=NULL)
+        prov_ops.log_machine(&(msg->machine_info));
+      break;
+    default:
+      printf("Error: unknown node long type %lx\n", prov_type(msg));
+      break;
+  }
+}
+
 static int __log_fd;
 static pthread_mutex_t __file_lock;
 
@@ -273,7 +357,7 @@ void prov_init() {
     set_W3CJSON_callback(log_print);
 }
 
-void prov_record(union prov_elt* msg){
+void bpf_prov_record(union long_prov_elt* msg){
     /* TODO: CODE HERE
      * Record provenance in user space.
      * Follow the logic here:
@@ -283,7 +367,7 @@ void prov_record(union prov_elt* msg){
     if (prov_is_relation(msg)) {
       relation_record(msg);
     } else {
-      node_record(msg);
+      long_prov_record(msg);
     }
 }
 

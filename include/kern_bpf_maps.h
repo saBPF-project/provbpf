@@ -10,34 +10,41 @@ struct bpf_map_def SEC("maps") r_buf = {
     /* NOTE: The minimum size seems to be 1 << 12.
      * Any value smaller than this results in
      * runtime error. */
-    .max_entries = 1 << 12,
+    .max_entries = 4096 * 64,
 };
 
 struct bpf_map_def SEC("maps") task_map = {
     .type = BPF_MAP_TYPE_HASH,
     .key_size = sizeof(uint64_t),
-    .value_size = sizeof(union prov_elt),
+    .value_size = sizeof(union long_prov_elt),
     .max_entries = 4096, // TODO: set as big as possible; real size is dynamically adjusted
+};
+
+struct bpf_map_def SEC("maps") tmp_prov_map = {
+    .type = BPF_MAP_TYPE_PERCPU_ARRAY,
+    .key_size = sizeof(uint32_t),
+    .value_size = sizeof(union long_prov_elt),
+    .max_entries = 1,
 };
 
 struct bpf_map_def SEC("maps") inode_map = {
     .type = BPF_MAP_TYPE_HASH,
     .key_size = sizeof(uint64_t),
-    .value_size = sizeof(union prov_elt),
+    .value_size = sizeof(union long_prov_elt),
     .max_entries = 4096, // TODO: set as big as possible; real size is dynamically adjusted
 };
 
 struct bpf_map_def SEC("maps") cred_map = {
     .type = BPF_MAP_TYPE_HASH,
     .key_size = sizeof(uint64_t),
-    .value_size = sizeof(union prov_elt),
+    .value_size = sizeof(union long_prov_elt),
     .max_entries = 4096, // TODO: set as big as possible; real size is dynamically adjusted
 };
 
 struct bpf_map_def SEC("maps") iattr_map = {
     .type = BPF_MAP_TYPE_HASH,
     .key_size = sizeof(uint64_t),
-    .value_size = sizeof(union prov_elt),
+    .value_size = sizeof(union long_prov_elt),
     .max_entries = 4096, // TODO: set as big as possible; real size is dynamically adjusted
 };
 

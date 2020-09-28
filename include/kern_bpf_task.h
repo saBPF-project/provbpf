@@ -8,10 +8,30 @@
 #define KB 1024
 #define KB_MASK         (~(KB - 1))
 
+#define VM_NONE		0x00000000
+
+#define VM_READ		0x00000001	/* currently active flags */
+#define VM_WRITE	0x00000002
+#define VM_EXEC		0x00000004
+#define VM_SHARED	0x00000008
+
+#define VM_MAYREAD	0x00000010	/* limits for mprotect() etc */
+#define VM_MAYWRITE	0x00000020
+#define VM_MAYEXEC	0x00000040
+#define VM_MAYSHARE	0x00000080
+
+#define vm_write(flags) ((flags & VM_WRITE) == VM_WRITE)
+#define vm_read(flags) ((flags & VM_READ) == VM_READ)
+#define vm_exec(flags) ((flags & VM_EXEC) == VM_EXEC)
+#define vm_mayshare(flags) ((flags & (VM_SHARED | VM_MAYSHARE)) != 0)
+#define vm_write_mayshare(flags) (vm_write(flags) && vm_mayshare(flags))
+#define vm_read_exec_mayshare(flags) \
+	((vm_read(flags) || vm_exec(flags)) && vm_mayshare(flags))
+
 /* Update fields in a task's provenance */
 // TODO: further refactor this function.
 static __always_inline void prov_update_task(struct task_struct *task,
-                                             union prov_elt *prov) {
+                                             union long_prov_elt *prov) {
 
     bpf_probe_read(&prov->task_info.pid, sizeof(prov->task_info.pid), &task->pid);
     bpf_probe_read(&prov->task_info.vpid, sizeof(prov->task_info.vpid), &task->tgid);
@@ -51,20 +71,25 @@ static __always_inline void prov_update_task(struct task_struct *task,
  * and insert it into the @task_map; otherwise, updates its
  * existing provenance. Return either the new provenance entry
  * pointer or the updated provenance entry pointer. */
-static __always_inline union prov_elt* get_or_create_task_prov(struct task_struct *task) {
-    union prov_elt prov_tmp;
+static __always_inline union long_prov_elt* get_or_create_task_prov(struct task_struct *task) {
+    union long_prov_elt *prov_tmp;
     uint64_t key = get_key(task);
-    union prov_elt *prov_on_map = bpf_map_lookup_elem(&task_map, &key);
+    union long_prov_elt *prov_on_map = bpf_map_lookup_elem(&task_map, &key);
     // provenance is already tracked
     if (prov_on_map) {
         // update the task's provenance since it may have changed
         prov_update_task(task, prov_on_map);
     } else { // a new task
-        __builtin_memset(&prov_tmp, 0, sizeof(union prov_elt));
-        prov_init_node(&prov_tmp, ACT_TASK);
-        prov_update_task(task, &prov_tmp);
+        // __builtin_memset(&prov_tmp, 0, sizeof(union prov_elt));
+        int map_id = 0;
+        prov_tmp = bpf_map_lookup_elem(&tmp_prov_map, &map_id);
+        if (!prov_tmp) {
+            return 0;
+        }
+        prov_init_node(prov_tmp, ACT_TASK);
+        prov_update_task(task, prov_tmp);
         // this function does not return the pointer that sucks
-        bpf_map_update_elem(&task_map, &key, &prov_tmp, BPF_NOEXIST);
+        bpf_map_update_elem(&task_map, &key, prov_tmp, BPF_NOEXIST);
         prov_on_map = bpf_map_lookup_elem(&task_map, &key);
     }
     return prov_on_map;
