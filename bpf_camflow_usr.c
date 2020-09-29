@@ -14,7 +14,7 @@
 
 /* Callback function called whenever a new ring
  * buffer entry is polled from the buffer. */
-static int buf_process_sample(void *ctx, void *data, size_t len) {
+static int buf_process_entry(void *ctx, void *data, size_t len) {
     /* Every entry from the ring buffer should
      * be of type union long_prov_elt.
      */
@@ -87,14 +87,12 @@ int main(void) {
      * buf_process_entry is the callback function that
      * process the entry in the ring buffer. */
     prov_init();
-    ringbuf = ring_buffer__new(map_fd, buf_process_sample, NULL, NULL);
+    ringbuf = ring_buffer__new(map_fd, buf_process_entry, NULL, NULL);
     printf("Start polling forever...\n");
     /* ring_buffer__poll polls for available data and consume records,
      * if any are available. Returns number of records consumed, or
      * negative number, if any of the registered callbacks returned error. */
-    while (1) {
-        ring_buffer__consume(ringbuf);
-        sleep(1);
+    while (ring_buffer__poll(ringbuf, -1) >= 0) {
         prov_refresh_records();
     }
 
