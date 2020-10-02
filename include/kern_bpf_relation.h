@@ -191,39 +191,30 @@ static __always_inline void derives(uint64_t type,
     record_relation(type, from, to, file, flags);
 }
 
-// static __always_inline void current_update_shst(union long_prov_elt *cprov,
-//                                                struct task_struct *current,
-//                                                bool read) {
-//     struct mm_struct *mm;
-//     struct vm_area_struct *vma;
-//     struct file *mmapf;
-//     vm_flags_t flags;
-//     union long_prov_elt *mmprov;
-//
-//     bpf_probe_read(&mm, sizeof(mm), &current->mm);
-//     if (!mm)
-//       return;
-//     bpf_probe_read(&vma, sizeof(vma), &mm->mmap);
-//     while (vma) {
-//       bpf_probe_read(&mmapf, sizeof(mmapf), &vma->vm_file);
-//       if (mmapf) {
-//         bpf_probe_read(&flags, sizeof(flags), &vma->vm_flags);
-//         struct inode *mmapf_inode;
-//         bpf_probe_read(&mmapf_inode, sizeof(mmapf_inode), &mmapf->f_inode);
-//         mmprov = get_or_create_inode_prov(mmapf_inode);
-//         if (mmprov) {
-//           if (vm_read_exec_mayshare(flags) && read) {
-//             record_relation(RL_SH_READ, mmprov, cprov, mmapf, flags);
-//           }
-//           if (vm_write_mayshare(flags) && !read) {
-//             record_relation(RL_SH_WRITE, cprov, mmprov, mmapf, flags);
-//           }
-//         }
-//       }
-//       vma = vma->vm_next;
-//     }
-// }
-
+/*!
+ * @brief Record "generated" relation from activity provenance node (including
+ * its memory state) to entity provenance node.
+ *
+ * This function applies to only "generated" relation between two provenance
+ * nodes.
+ * Unless all nodes involved (entity, activity, activity_mem) are set not to be
+ * tracked and prov_all is also turned off,
+ * or unless the relation type is set not to be tracked,
+ * relation will be captured.
+ * At least two relations will possibly be captured:
+ * 1. RL_PROC_READ relation between activity_mem and activity
+ * 1. Whatever relation between activity and entity given by the argument
+ * "type".
+ * @param type The type of relation (in the category of "generated") between
+ * activity and entity.
+ * @param activity_mem The memory provenance node of the activity.
+ * @param activity The activity provenance node.
+ * @param entity The entity provenance node.
+ * @param file Information related to LSM hooks.
+ * @param flags Information related to LSM hooks.
+ * @return 0 if no error occurred. Other error codes unknown.
+ *
+ */
 static __always_inline void generates(const uint64_t type,
                                       struct task_struct *current,
                                       union long_prov_elt *activity_mem,
@@ -232,9 +223,124 @@ static __always_inline void generates(const uint64_t type,
                                       const struct file *file,
                                       const uint64_t flags) {
 
-    // current_update_shst(activity_mem, current, true);
     record_relation(RL_PROC_READ, activity_mem, activity, NULL, 0);
     record_relation(type, activity, entity, file, flags);
+}
+
+/*!
+ * @brief This function records relations related to setting extended file
+ * attributes.
+ *
+ * xattr is a long provenance entry and is transient (i.e., freed after
+ * recorded).
+ * Unless certain criteria are met, several relations are recorded when a
+ * process attempts to write xattr of a file:
+ * 1. Record a RL_PROC_READ relation between a task process and its cred.
+ * Information flows from cred to the task process, and
+ * 2. Record a given type @type of relation between the process and xattr
+ * provenance entry. Information flows from the task to the xattr, and
+ * 3-1. If the given type is RL_SETXATTR, then record a RL_SETXATTR_INODE
+ * relation between xattr and the file inode. Information flows from xattr
+ * to inode;
+ * 3-2. otherwise (the only other case is that the given type is
+ * RL_RMVXATTR_INODE), record a RL_RMVXATTR_INODE relation between xattr and the
+ * file inode. Information flows from xattr to inode.
+ * The criteria to be met so as not to record the relations are:
+ * 1. If any of the cred, task, and inode provenance are not tracked and if the
+ * capture all is not set, or
+ * 2. If the relation @type should not be recorded, or
+ * 3. Failure occurred.
+ * xattr name and value pair is recorded in the long provenance entry.
+ * @param type The type of relation to be recorded.
+ * @param iprov The inode provenance entry.
+ * @param tprov The task provenance entry.
+ * @param cprov The cred provenance entry.
+ * @param name The name of the extended attribute.
+ * @param value The value of that attribute.
+ * @param size The size of the value.
+ * @param flags Flags passed by LSM hooks.
+ * @return 0 if no error occurred; -ENOMEM if no memory can be allocated from
+ * long provenance cache to create a new long provenance entry. Other error
+ * codes from "record_relation" function or unknown.
+ *
+ */
+static __always_inline int record_write_xattr(uint64_t type,
+                              					       union long_prov_elt *iprov,
+                              					       union long_prov_elt *tprov,
+                              					       union long_prov_elt *cprov,
+                              					       const char *name,
+                              					       const void *value,
+                              					       size_t size,
+                              					       const uint64_t flags)
+{
+    int map_id = 0;
+    union long_prov_elt *ptr_prov_xattr = bpf_map_lookup_elem(&tmp_prov_map, &map_id);
+    if (!ptr_prov_xattr) {
+      return 0;
+    }
+    prov_init_node(ptr_prov_xattr, ENT_XATTR);
+
+    __builtin_memcpy(&(ptr_prov_xattr->xattr_info.name), &name, PROV_XATTR_NAME_SIZE);
+    ptr_prov_xattr->xattr_info.name[PROV_XATTR_NAME_SIZE - 1] = '\0';
+
+    ptr_prov_xattr->xattr_info.size = (size < PROV_XATTR_VALUE_SIZE) ? size : PROV_XATTR_VALUE_SIZE;
+
+    record_relation(RL_PROC_READ, cprov, tprov, NULL, 0);
+    record_relation(type, tprov, ptr_prov_xattr, NULL, flags);
+
+    if (type == RL_SETXATTR) {
+      record_relation(RL_SETXATTR_INODE, ptr_prov_xattr, iprov, NULL, flags);
+    } else {
+      record_relation(RL_RMVXATTR_INODE, ptr_prov_xattr, iprov, NULL, flags);
+    }
+
+    return 0;
+}
+
+/*!
+ * @brief This function records relations related to reading extended file
+ * attributes.
+ *
+ * xattr is a long provenance entry and is transient (i.e., freed after
+ * recorded).
+ * Unless certain criteria are met, several relations are recorded when a
+ * process attempts to read xattr of a file:
+ * 1. Record a RL_GETXATTR_INODE relation between inode and xattr. Information
+ * flows from inode to xattr (to get xattr of an inode).
+ * 2. Record a RL_GETXATTR relation between xattr and task process. Information
+ * flows from xattr to the task (task reads the xattr).
+ * 3. Record a RL_PROC_WRITE relation between task and its cred. Information
+ * flows from task to its cred.
+ * The criteria to be met so as not to record the relations are:
+ * 1. If any of the cred, task, and inode provenance are not tracked and if the
+ * capture all is not set, or
+ * 2. If the relation RL_GETXATTR should not be recorded, or
+ * 3. Failure occurred.
+ * @param cprov The cred provenance entry.
+ * @param tprov The task provenance entry.
+ * @param name The name of the extended attribute.
+ * @return 0 if no error occurred; -ENOMEM if no memory can be allocated
+ * from long provenance cache to create a new long provenance entry. Other error
+ * codes from "record_relation" function or unknown.
+ *
+ */
+static __always_inline void record_read_xattr(union long_prov_elt *cprov,
+                                              union long_prov_elt *tprov,
+                                              union long_prov_elt *iprov,
+                                              const char *name)
+{
+    int map_id = 0;
+    union long_prov_elt *xattr = bpf_map_lookup_elem(&tmp_prov_map, &map_id);
+    if (!xattr)
+      return;
+    prov_init_node(xattr, ENT_XATTR);
+
+    __builtin_memcpy(&(xattr->xattr_info.name), &name, PROV_XATTR_NAME_SIZE);
+    xattr->xattr_info.name[PROV_XATTR_NAME_SIZE - 1] = '\0';
+
+    record_relation(RL_GETXATTR_INODE, iprov, xattr, NULL, 0);
+    record_relation(RL_GETXATTR, xattr, tprov, NULL, 0);
+    record_relation(RL_PROC_WRITE, tprov, cprov, NULL, 0);
 }
 
 #endif

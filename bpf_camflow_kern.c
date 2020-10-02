@@ -657,6 +657,91 @@ int BPF_PROG(inode_readlink, struct dentry *dentry) {
 }
 
 /*!
+ * @brief Record provenance when inode_post_setxattr hook is triggered.
+ *
+ * This hook is triggered when updating inode security field after successful
+ * setxattr operation.
+ * The relations are recorded through "record_write_xattr" function.
+ * RL_SETXATTR is one of the relations to be recorded.
+ * The relations may not be recorded for the following reasons:
+ * 1. The name of the extended attribute is provenance (do not capture
+ * provenance of CamFlow provenance ops), or
+ * 2. inode provenance entry is NULL.
+ * @param dentry The dentry structure for the file.
+ * @param name The name of the extended attribute.
+ * @param value The value of that attribute.
+ * @param size The size of the value.
+ * @param flags The operational flags.
+ *
+ */
+SEC("lsm/inode_post_setxattr")
+int BPF_PROG(inode_post_setxattr, struct dentry *dentry, const char *name,const void *value, size_t size, int flags) {
+    union long_prov_elt *ptr_prov_current_cred, *ptr_prov_current_task, *ptr_prov_inode;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    const struct cred *current_task_cred;
+    bpf_probe_read(&current_task_cred, sizeof(current_task_cred), &current_task->cred);
+
+    ptr_prov_current_cred = get_or_create_cred_prov(current_task_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_inode = get_or_create_inode_prov(dentry->d_inode);
+    if (!ptr_prov_inode) {
+      return 0;
+    }
+
+    record_write_xattr(RL_SETXATTR, ptr_prov_inode, ptr_prov_current_task, ptr_prov_current_cred, name, value, size, flags);
+
+    return 0;
+}
+
+/*!
+ * @brief Record provenance when inode_getxattr hook is triggered.
+ *
+ * This hook is triggered when checking permission before obtaining the extended
+ * attributes.
+ * The relations are recorded through "record_read_xattr" function defined in
+ * provenance_inode.h file.
+ * The relations may not be recorded for the following reasons:
+ * 1. The name of the extended attribute is provenance (do not capture
+ * provenance of CamFlow provenance ops), or
+ * 2. inode provenance entry is NULL.
+ * @param dentry The dentry structure for the file.
+ * @param name The name of the extended attribute.
+ * @return 0 if no error occurred; -ENOMEM if inode provenance is NULL; other
+ * error codes inherited from "record_read_xattr" function.
+ *
+ */
+SEC("lsm/inode_getxattr")
+int BPF_PROG(inode_getxattr, struct dentry *dentry, const char *name) {
+    union long_prov_elt *ptr_prov_current_cred, *ptr_prov_current_task, *ptr_prov_inode;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    const struct cred *current_task_cred;
+    bpf_probe_read(&current_task_cred, sizeof(current_task_cred), &current_task->cred);
+
+    ptr_prov_current_cred = get_or_create_cred_prov(current_task_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_inode = get_or_create_inode_prov(dentry->d_inode);
+    if (!ptr_prov_inode) {
+      return 0;
+    }
+
+    record_read_xattr(ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_inode, name);
+
+    return 0;
+}
+
+/*!
  * @brief Record provenance when inode_listxattr hook is triggered.
  *
  * This hook is triggered when checking permission before obtaining the list of
@@ -689,6 +774,47 @@ int BPF_PROG(inode_listxattr, struct dentry *dentry) {
     }
 
     uses(RL_LSTXATTR, current_task, ptr_prov_inode, ptr_prov_current_task, ptr_prov_current_cred, NULL, 0);
+
+    return 0;
+}
+
+/*!
+ * @brief Record provenance when inode_removexattr hook is triggered.
+ *
+ * This hook is triggered when checking permission before removing the extended
+ * attribute identified by @name for @dentry.
+ * The relations are recorded through "record_write_xattr" function defined in
+ * provenance_inode.h file.
+ * RL_RMVXATTR is one of the relations to be recorded.
+ * The relations may not be recorded for the following reasons:
+ * 1. The name of the extended attribute is provenance (do not capture
+ * provenance of CamFlow provenance ops), or
+ * 2. inode provenance entry is NULL.
+ * @param dentry The dentry structure for the file.
+ * @param name The name of the extended attribute.
+ *
+ */
+SEC("lsm/inode_removexattr")
+int BPF_PROG(inode_removexattr, struct dentry *dentry, const char *name) {
+    union long_prov_elt *ptr_prov_current_cred, *ptr_prov_current_task, *ptr_prov_inode;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    const struct cred *current_task_cred;
+    bpf_probe_read(&current_task_cred, sizeof(current_task_cred), &current_task->cred);
+
+    ptr_prov_current_cred = get_or_create_cred_prov(current_task_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_inode = get_or_create_inode_prov(dentry->d_inode);
+    if (!ptr_prov_inode) {
+      return 0;
+    }
+
+    record_write_xattr(RL_RMVXATTR, ptr_prov_inode, ptr_prov_current_task, ptr_prov_current_cred, name, NULL, 0, 0);
 
     return 0;
 }
