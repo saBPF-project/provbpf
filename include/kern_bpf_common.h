@@ -12,6 +12,13 @@
 #define XATTR_PROVENANCE_SUFFIX "provenance"
 #define XATTR_NAME_PROVENANCE XATTR_SECURITY_PREFIX XATTR_PROVENANCE_SUFFIX
 
+#define clear_recorded(node) \
+	__clear_recorded((union long_prov_elt *)node)
+static inline void __clear_recorded(union long_prov_elt *node)
+{
+	node->msg_info.epoch = 0;
+}
+
 static __always_inline uint64_t prov_next_id(uint32_t key)	{
     struct id_elem *val = bpf_map_lookup_elem(&ids_map, &key);
     if(!val)

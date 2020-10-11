@@ -19,6 +19,43 @@ static __always_inline void prov_init_relation(union long_prov_elt *prov,
     prov->relation_info.flags = flags;
 }
 
+/*!
+ * @brief Write provenance relation to ring buffer.
+ *
+ * @param type The type of the relation (i.e., edge)
+ * @param from The source node of the provenance edge
+ * @param to The destination node of the provenance edge
+ * @param file Information related to LSM hooks
+ * @param flags Information related to LSM hooks
+ *
+ */
+static __always_inline void __write_relation(const uint64_t type,
+                                             union long_prov_elt *from,
+                                             union long_prov_elt *to,
+                                             const struct file *file,
+                                             const uint64_t flags)
+{
+    // Record provenance nodes
+    record_provenance(from);
+    record_provenance(to);
+
+    int map_id = 0;
+    union long_prov_elt *prov_tmp = bpf_map_lookup_elem(&tmp_prov_map, &map_id);
+    if (!prov_tmp) {
+        return;
+    }
+
+    prov_init_relation(prov_tmp, type, file, flags);
+
+    // set send node
+    __builtin_memcpy(&(prov_tmp->relation_info.snd), &node_identifier(from), sizeof(union prov_identifier));
+    // set rcv node
+    __builtin_memcpy(&(prov_tmp->relation_info.rcv), &node_identifier(to), sizeof(union prov_identifier));
+
+    // record relation provenance
+    record_provenance(prov_tmp);
+}
+
 static __always_inline void record_terminate(uint64_t type, union long_prov_elt *node) {
     union long_prov_elt *relation;
     int map_id = 0;
@@ -39,36 +76,77 @@ static __always_inline void record_terminate(uint64_t type, union long_prov_elt 
     record_provenance(relation);
 }
 
+/*!
+ * @brief This function updates the version of a provenance node.
+ *
+ * Versioning is used to avoid cycles in a provenance graph.
+ * Given a provenance node, unless a certain criteria are met, the node should
+ * be versioned to avoid cycles.
+ * "old_prov" holds the older version of the node while "prov" is updated to
+ * the newer version.
+ * "prov" and "old_prov" have the same information except the version number.
+ * Once the node with a new version is created, a relation between the old and
+ * the new version should be estabilished.
+ * The relation is either "RL_VERSION_TASK" or "RL_VERSION" depending on the
+ * type of the nodes (note that they should be of the same type).
+ * If the nodes are of type AC_TASK, then the relation should be
+ * "RL_VERSION_TASK"; otherwise it is "RL_VERSION".
+ * The new node is not recorded (therefore "recorded" flag is unset) until we
+ * record it in the "__write_relation" function.
+ * The new node is not saved for persistance in this function. So we clear the
+ * saved bit inherited from the older version node.
+ * The criteria that should be met to not update the version are:
+ * 1. If nodes are set to be compressed and do not have outgoing edges, or
+ * 2. If the argument "type" is a relation whose destination node's version
+ * should not be updated becasue the "type" itself either is a VERSION type or
+ * a NAMED type.
+ * @param type The type of the relation.
+ * @param prov The pointer to the provenance node whose version may need to be
+ * updated.
+ *
+ */
+static __always_inline void update_version(const uint64_t type,
+                                          prov_entry_t *prov)
+{
+    int map_id = 0;
+    union long_prov_elt *old_prov = bpf_map_lookup_elem(&tmp_prov_map, &map_id);
+    if (!old_prov)
+        return;
+
+
+    // Copy the current provenance prov to old_prov.
+    bpf_map_update_elem(&tmp_prov_map, &map_id, prov, BPF_ANY);
+    old_prov = bpf_map_lookup_elem(&tmp_prov_map, &map_id);
+    if (!old_prov)
+        return;
+
+    // Update the version of prov to the newer version
+    node_identifier(prov).version++;
+    clear_recorded(prov);
+
+    // Record the version relation between two versions of the same identity.
+    if (node_identifier(prov).type == ACT_TASK) {
+        __write_relation(RL_VERSION_TASK, old_prov, prov, NULL, 0);
+    } else {
+        __write_relation(RL_VERSION, old_prov, prov, NULL, 0);
+    }
+    // Newer version now has no outgoing edge
+    clear_has_outgoing(prov);
+    // For inode provenance persistance
+    clear_saved(prov);
+}
+
 static __always_inline void record_relation(uint64_t type,
                                             union long_prov_elt *from,
                                             union long_prov_elt *to,
                                             const struct file *file,
-                                            const uint64_t flags) {
+                                            const uint64_t flags)
+{
+    // Update node version
+    update_version(type, to);
 
-    union long_prov_elt *prov_tmp;
-    int map_id;
-    prov_tmp = bpf_map_lookup_elem(&tmp_prov_map, &map_id);
-    if (!prov_tmp) {
-        return;
-    }
-
-    prov_init_relation(prov_tmp, type, file, flags);
-
-    /*
-        TODO handle versioning
-        original logic:
-        https://github.com/CamFlow/camflow-dev/blob/master/security/provenance/include/provenance_record.h#L52
-    */
-
-    // set send node
-    __builtin_memcpy(&(prov_tmp->relation_info.snd), &node_identifier(from), sizeof(union prov_identifier));
-    // set rcv node
-    __builtin_memcpy(&(prov_tmp->relation_info.rcv), &node_identifier(to), sizeof(union prov_identifier));
-
-    // record everything
-    record_provenance(from);
-    record_provenance(to);
-    record_provenance(prov_tmp);
+    // Write relation provenance to ring buffer
+    __write_relation(type, from, to, file, flags);
 }
 
 /*!
