@@ -235,41 +235,6 @@ void node_record(union prov_elt *msg){
 
 void long_prov_record(union long_prov_elt* msg){
   switch(prov_type(msg)){
-    case ENT_PROC:
-      if(prov_ops.log_proc!=NULL)
-        prov_ops.log_proc(&(msg->proc_info));
-      break;
-    case ACT_TASK:
-      if(prov_ops.log_task!=NULL)
-        prov_ops.log_task(&(msg->task_info));
-      break;
-    case ENT_INODE_UNKNOWN:
-    case ENT_INODE_LINK:
-    case ENT_INODE_FILE:
-    case ENT_INODE_DIRECTORY:
-    case ENT_INODE_CHAR:
-    case ENT_INODE_BLOCK:
-    case ENT_INODE_PIPE:
-    case ENT_INODE_SOCKET:
-      if(prov_ops.log_inode!=NULL)
-        prov_ops.log_inode(&(msg->inode_info));
-      break;
-    case ENT_MSG:
-      if(prov_ops.log_msg!=NULL)
-        prov_ops.log_msg(&(msg->msg_msg_info));
-      break;
-    case ENT_SHM:
-      if(prov_ops.log_shm!=NULL)
-        prov_ops.log_shm(&(msg->shm_info));
-      break;
-    case ENT_PACKET:
-      if(prov_ops.log_packet!=NULL)
-        prov_ops.log_packet(&(msg->pck_info));
-      break;
-    case ENT_IATTR:
-      if(prov_ops.log_iattr!=NULL)
-        prov_ops.log_iattr(&(msg->iattr_info));
-      break;
     case ENT_STR:
       if(prov_ops.log_str!=NULL)
         prov_ops.log_str(&(msg->str_info));
@@ -367,7 +332,11 @@ void bpf_prov_record(union long_prov_elt* msg){
     if (prov_is_relation(msg)) {
       relation_record(msg);
     } else {
-      long_prov_record(msg);
+      if (prov_type_is_long(node_type(msg))) {
+        long_prov_record(msg);
+      } else {
+        node_record((union prov_elt *)msg);
+      }
     }
 }
 

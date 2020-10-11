@@ -7,7 +7,7 @@
 
 // Update fields in a cred's provenance
 static __always_inline void prov_update_cred(struct task_struct *current_task,
-                                             union long_prov_elt *prov) {
+                                             union prov_elt *prov) {
     struct nsproxy *current_nsproxy;
     struct uts_namespace *uts_ns;
     struct ipc_namespace *ipc_ns;
@@ -49,24 +49,20 @@ static __always_inline void prov_update_cred(struct task_struct *current_task,
  * and insert it into the @cred_map; otherwise, updates its
  * existing provenance. Return either the new provenance entry
  * pointer or the updated provenance entry pointer. */
-static __always_inline union long_prov_elt* get_or_create_cred_prov(const struct cred *cred, struct task_struct *current_task) {
-    union long_prov_elt *prov_tmp;
+static __always_inline union prov_elt* get_or_create_cred_prov(const struct cred *cred, struct task_struct *current_task) {
+    union prov_elt prov_tmp;
     uint64_t key = get_key(cred);
-    union long_prov_elt *prov_on_map = bpf_map_lookup_elem(&cred_map, &key);
+    union prov_elt *prov_on_map = bpf_map_lookup_elem(&cred_map, &key);
     // provenance is already tracked
     if (prov_on_map) {
       // update the task's provenance since it may have changed
       prov_update_cred(current_task, prov_on_map);
     } else {
       // a new cred
-      int map_id = 0;
-      prov_tmp = bpf_map_lookup_elem(&tmp_prov_map, &map_id);
-      if (!prov_tmp) {
-        return 0;
-      }
-      prov_init_node(prov_tmp, ENT_PROC);
-      prov_update_cred(current_task, prov_tmp);
-      bpf_map_update_elem(&cred_map, &key, prov_tmp, BPF_NOEXIST);
+      __builtin_memset(&prov_tmp, 0, sizeof(union prov_elt));
+      prov_init_node(&prov_tmp, ENT_PROC);
+      prov_update_cred(current_task, &prov_tmp);
+      bpf_map_update_elem(&cred_map, &key, &prov_tmp, BPF_NOEXIST);
       prov_on_map = bpf_map_lookup_elem(&cred_map, &key);
     }
     return prov_on_map;

@@ -6,7 +6,7 @@
 #include "kern_bpf_node.h"
 
 static __always_inline void prov_update_iattr(struct iattr *iattr,
-                                              union long_prov_elt *prov) {
+                                              union prov_elt *prov) {
     prov->iattr_info.valid = iattr->ia_valid;
     prov->iattr_info.mode = iattr->ia_mode;
     prov->node_info.uid = iattr->ia_uid.val;
@@ -17,22 +17,18 @@ static __always_inline void prov_update_iattr(struct iattr *iattr,
     prov->iattr_info.ctime = iattr->ia_ctime.tv_sec;
 }
 
-static __always_inline union long_prov_elt* get_or_create_iattr_prov(struct iattr *iattr) {
-    union long_prov_elt *prov_tmp;
+static __always_inline union prov_elt* get_or_create_iattr_prov(struct iattr *iattr) {
+    union prov_elt prov_tmp;
     uint64_t key = get_key(iattr);
-    union long_prov_elt *prov_on_map = bpf_map_lookup_elem(&iattr_map, &key);
+    union prov_elt *prov_on_map = bpf_map_lookup_elem(&iattr_map, &key);
 
     if (prov_on_map) {
       prov_update_iattr(iattr, prov_on_map);
     } else {
-      int map_id = 0;
-      prov_tmp = bpf_map_lookup_elem(&tmp_prov_map, &map_id);
-      if (!prov_tmp) {
-        return 0;
-      }
-      prov_init_node(prov_tmp, ENT_IATTR);
-      prov_update_iattr(iattr, prov_tmp);
-      bpf_map_update_elem(&iattr_map, &key, prov_tmp, BPF_NOEXIST);
+      __builtin_memset(&prov_tmp, 0, sizeof(union prov_elt));
+      prov_init_node(&prov_tmp, ENT_IATTR);
+      prov_update_iattr(iattr, &prov_tmp);
+      bpf_map_update_elem(&iattr_map, &key, &prov_tmp, BPF_NOEXIST);
       prov_on_map = bpf_map_lookup_elem(&iattr_map, &key);
     }
     return prov_on_map;

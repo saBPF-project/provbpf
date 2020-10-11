@@ -4,10 +4,11 @@
 #define __KERN_BPF_RELATION_H
 
 /* Initialize common fields of a node's provenance */
-static __always_inline void prov_init_relation(union long_prov_elt *prov,
+static __always_inline void prov_init_relation(union prov_elt *prov,
                                                 uint64_t type,
                                                 const struct file *file,
-					                            const uint64_t flags) {
+					                                      const uint64_t flags)
+{
     relation_identifier(prov).type=type;
     relation_identifier(prov).id = prov_next_id(RELATION_ID_INDEX);
     relation_identifier(prov).boot_id = prov_get_id(BOOT_ID_INDEX);
@@ -30,50 +31,50 @@ static __always_inline void prov_init_relation(union long_prov_elt *prov,
  *
  */
 static __always_inline void __write_relation(const uint64_t type,
-                                             union long_prov_elt *from,
-                                             union long_prov_elt *to,
+                                             void *from,
+                                             bool from_is_long,
+                                             void *to,
+                                             bool to_is_long,
                                              const struct file *file,
                                              const uint64_t flags)
 {
-    // Record provenance nodes
-    record_provenance(from);
-    record_provenance(to);
+    union long_prov_elt *f, *t;
+    f = from;
+    t = to;
+    union prov_elt prov_tmp;
+    __builtin_memset(&prov_tmp, 0, sizeof(union prov_elt));
 
-    int map_id = 0;
-    union long_prov_elt *prov_tmp = bpf_map_lookup_elem(&tmp_prov_map, &map_id);
-    if (!prov_tmp) {
-        return;
-    }
-
-    prov_init_relation(prov_tmp, type, file, flags);
+    prov_init_relation(&prov_tmp, type, file, flags);
 
     // set send node
-    __builtin_memcpy(&(prov_tmp->relation_info.snd), &node_identifier(from), sizeof(union prov_identifier));
+    __builtin_memcpy(&(prov_tmp.relation_info.snd), &node_identifier(f), sizeof(union prov_identifier));
     // set rcv node
-    __builtin_memcpy(&(prov_tmp->relation_info.rcv), &node_identifier(to), sizeof(union prov_identifier));
+    __builtin_memcpy(&(prov_tmp.relation_info.rcv), &node_identifier(t), sizeof(union prov_identifier));
 
+    record_provenance(from_is_long, from);
+    record_provenance(to_is_long, to);
     // record relation provenance
-    record_provenance(prov_tmp);
+    record_provenance(false, &prov_tmp);
 }
 
-static __always_inline void record_terminate(uint64_t type, union long_prov_elt *node) {
-    union long_prov_elt *relation;
-    int map_id = 0;
-    relation = bpf_map_lookup_elem(&tmp_prov_map, &map_id);
-    if (!relation) {
-        return;
-    }
-    prov_init_relation(relation, type, NULL, 0);
+static __always_inline void record_terminate(uint64_t type,
+                                             void *node,
+                                             bool node_is_long)
+{
+    union long_prov_elt *n = node;
+    union prov_elt relation;
+    __builtin_memset(&relation, 0, sizeof(union prov_elt));
+    prov_init_relation(&relation, type, NULL, 0);
     // set send node
-    __builtin_memcpy(&(relation->relation_info.snd), &node_identifier(node), sizeof(union prov_identifier));
-    record_provenance(node);
+    __builtin_memcpy(&(relation.relation_info.snd), &node_identifier(n), sizeof(union prov_identifier));
+    record_provenance(node_is_long, node);
     // update node version
-    node_identifier(node).version++;
+    node_identifier(n).version++;
     // set rcv node
-    __builtin_memcpy(&(relation->relation_info.rcv), &node_identifier(node), sizeof(union prov_identifier));
-    record_provenance(node);
+    __builtin_memcpy(&(relation.relation_info.rcv), &node_identifier(n), sizeof(union prov_identifier));
+    record_provenance(node_is_long, node);
 
-    record_provenance(relation);
+    record_provenance(false, &relation);
 }
 
 /*!
@@ -106,47 +107,44 @@ static __always_inline void record_terminate(uint64_t type, union long_prov_elt 
  *
  */
 static __always_inline void update_version(const uint64_t type,
-                                          prov_entry_t *prov)
+                                          void *prov,
+                                          bool prov_is_long)
 {
-    int map_id = 0;
-    union long_prov_elt *old_prov = bpf_map_lookup_elem(&tmp_prov_map, &map_id);
-    if (!old_prov)
-        return;
+    union prov_elt old_prov;
 
-
-    // Copy the current provenance prov to old_prov.
-    bpf_map_update_elem(&tmp_prov_map, &map_id, prov, BPF_ANY);
-    old_prov = bpf_map_lookup_elem(&tmp_prov_map, &map_id);
-    if (!old_prov)
-        return;
+    __builtin_memset(&old_prov, 0, sizeof(union prov_elt));
+    union long_prov_elt *p = prov;
+    __builtin_memcpy(&old_prov, p, sizeof(union prov_elt));
 
     // Update the version of prov to the newer version
-    node_identifier(prov).version++;
-    clear_recorded(prov);
+    node_identifier(p).version++;
+    clear_recorded(p);
 
     // Record the version relation between two versions of the same identity.
-    if (node_identifier(prov).type == ACT_TASK) {
-        __write_relation(RL_VERSION_TASK, old_prov, prov, NULL, 0);
+    if (node_identifier(p).type == ACT_TASK) {
+        __write_relation(RL_VERSION_TASK, &old_prov, prov_is_long, prov, prov_is_long, NULL, 0);
     } else {
-        __write_relation(RL_VERSION, old_prov, prov, NULL, 0);
+        __write_relation(RL_VERSION, &old_prov, prov_is_long, prov, prov_is_long, NULL, 0);
     }
     // Newer version now has no outgoing edge
-    clear_has_outgoing(prov);
+    clear_has_outgoing(p);
     // For inode provenance persistance
-    clear_saved(prov);
+    clear_saved(p);
 }
 
 static __always_inline void record_relation(uint64_t type,
-                                            union long_prov_elt *from,
-                                            union long_prov_elt *to,
+                                            void *from,
+                                            bool from_is_long,
+                                            void *to,
+                                            bool to_is_long,
                                             const struct file *file,
                                             const uint64_t flags)
 {
     // Update node version
-    update_version(type, to);
+    update_version(type, to, to_is_long);
 
     // Write relation provenance to ring buffer
-    __write_relation(type, from, to, file, flags);
+    __write_relation(type, from, from_is_long, to, to_is_long, file, flags);
 }
 
 /*!
@@ -176,13 +174,16 @@ static __always_inline void record_relation(uint64_t type,
  */
 static __always_inline void uses(const uint64_t type,
                                  struct task_struct *current,
-                                 union long_prov_elt *entity,
-                                 union long_prov_elt *activity,
-                                 union long_prov_elt *activity_mem,
+                                 void *entity,
+                                 bool entity_is_long,
+                                 void *activity,
+                                 bool activity_is_long,
+                                 void *activity_mem,
+                                 bool activity_mem_is_long,
                                  const struct file *file,
                                  const uint64_t flags) {
-    record_relation(type, entity, activity, file, flags);
-    record_relation(RL_PROC_WRITE, activity, activity_mem, NULL, 0);
+    record_relation(type, entity, entity_is_long, activity, activity_is_long, file, flags);
+    record_relation(RL_PROC_WRITE, activity, activity_is_long, activity_mem, activity_mem_is_long, NULL, 0);
 }
 
 /*!
@@ -197,16 +198,17 @@ static __always_inline void uses(const uint64_t type,
  * @param activity The activity provenance node.
  * @param file Information related to LSM hooks.
  * @param flags Information related to LSM hooks.
- * @return 0 if no error occurred. Other error codes unknown.
  *
  */
 static __always_inline void uses_two(uint64_t type,
-                                     union long_prov_elt *entity,
-                                     union long_prov_elt *activity,
+                                     void *entity,
+                                     bool entity_is_long,
+                                     void *activity,
+                                     bool activity_is_long,
                                      const struct file *file,
                                      const uint64_t flags) {
 
-    record_relation(type, entity, activity, file, flags);
+    record_relation(type, entity, entity_is_long, activity, activity_is_long, file, flags);
 }
 
 /*!
@@ -231,12 +233,14 @@ static __always_inline void uses_two(uint64_t type,
  *
  */
 static __always_inline void informs(uint64_t type,
-                                     union long_prov_elt *from,
-                                     union long_prov_elt *to,
+                                     void *from,
+                                     bool from_is_long,
+                                     void *to,
+                                     bool to_is_long,
                                      const struct file *file,
                                      const uint64_t flags) {
 
-    record_relation(type, from, to, file, flags);
+    record_relation(type, from, from_is_long, to, to_is_long, file, flags);
 }
 
 /*!
@@ -261,12 +265,14 @@ static __always_inline void informs(uint64_t type,
  *
  */
 static __always_inline void derives(uint64_t type,
-                                     union long_prov_elt *from,
-                                     union long_prov_elt *to,
+                                     void *from,
+                                     bool from_is_long,
+                                     void *to,
+                                     bool to_is_long,
                                      const struct file *file,
                                      const uint64_t flags) {
 
-    record_relation(type, from, to, file, flags);
+    record_relation(type, from, from_is_long, to, to_is_long, file, flags);
 }
 
 /*!
@@ -290,19 +296,21 @@ static __always_inline void derives(uint64_t type,
  * @param entity The entity provenance node.
  * @param file Information related to LSM hooks.
  * @param flags Information related to LSM hooks.
- * @return 0 if no error occurred. Other error codes unknown.
  *
  */
 static __always_inline void generates(const uint64_t type,
                                       struct task_struct *current,
-                                      union long_prov_elt *activity_mem,
-                                      union long_prov_elt *activity,
-                                      union long_prov_elt *entity,
+                                      void *activity_mem,
+                                      bool activity_mem_is_long,
+                                      void *activity,
+                                      bool activity_is_long,
+                                      void *entity,
+                                      bool entity_is_long,
                                       const struct file *file,
                                       const uint64_t flags) {
 
-    record_relation(RL_PROC_READ, activity_mem, activity, NULL, 0);
-    record_relation(type, activity, entity, file, flags);
+    record_relation(RL_PROC_READ, activity_mem, activity_mem_is_long, activity, activity_is_long, NULL, 0);
+    record_relation(type, activity, activity_is_long, entity, entity_is_long, file, flags);
 }
 
 /*!
@@ -343,9 +351,9 @@ static __always_inline void generates(const uint64_t type,
  *
  */
 static __always_inline int record_write_xattr(uint64_t type,
-                              					       union long_prov_elt *iprov,
-                              					       union long_prov_elt *tprov,
-                              					       union long_prov_elt *cprov,
+                              					       void *iprov,
+                              					       void *tprov,
+                              					       void *cprov,
                               					       const char *name,
                               					       const void *value,
                               					       size_t size,
@@ -356,20 +364,20 @@ static __always_inline int record_write_xattr(uint64_t type,
     if (!ptr_prov_xattr) {
       return 0;
     }
-    prov_init_node(ptr_prov_xattr, ENT_XATTR);
+    prov_init_node((union prov_elt *)ptr_prov_xattr, ENT_XATTR);
 
     __builtin_memcpy(&(ptr_prov_xattr->xattr_info.name), &name, PROV_XATTR_NAME_SIZE);
     ptr_prov_xattr->xattr_info.name[PROV_XATTR_NAME_SIZE - 1] = '\0';
 
     ptr_prov_xattr->xattr_info.size = (size < PROV_XATTR_VALUE_SIZE) ? size : PROV_XATTR_VALUE_SIZE;
 
-    record_relation(RL_PROC_READ, cprov, tprov, NULL, 0);
-    record_relation(type, tprov, ptr_prov_xattr, NULL, flags);
+    record_relation(RL_PROC_READ, cprov, false, tprov, false, NULL, 0);
+    __write_relation(type, tprov, false, ptr_prov_xattr, true, NULL, flags);
 
     if (type == RL_SETXATTR) {
-      record_relation(RL_SETXATTR_INODE, ptr_prov_xattr, iprov, NULL, flags);
+      record_relation(RL_SETXATTR_INODE, ptr_prov_xattr, true, iprov, false, NULL, flags);
     } else {
-      record_relation(RL_RMVXATTR_INODE, ptr_prov_xattr, iprov, NULL, flags);
+      record_relation(RL_RMVXATTR_INODE, ptr_prov_xattr, true, iprov, false, NULL, flags);
     }
 
     return 0;
@@ -402,23 +410,23 @@ static __always_inline int record_write_xattr(uint64_t type,
  * codes from "record_relation" function or unknown.
  *
  */
-static __always_inline void record_read_xattr(union long_prov_elt *cprov,
-                                              union long_prov_elt *tprov,
-                                              union long_prov_elt *iprov,
+static __always_inline void record_read_xattr(void *cprov,
+                                              void *tprov,
+                                              void *iprov,
                                               const char *name)
 {
     int map_id = 0;
     union long_prov_elt *xattr = bpf_map_lookup_elem(&tmp_prov_map, &map_id);
     if (!xattr)
       return;
-    prov_init_node(xattr, ENT_XATTR);
+    prov_init_node((union prov_elt *)xattr, ENT_XATTR);
 
     __builtin_memcpy(&(xattr->xattr_info.name), &name, PROV_XATTR_NAME_SIZE);
     xattr->xattr_info.name[PROV_XATTR_NAME_SIZE - 1] = '\0';
 
-    record_relation(RL_GETXATTR_INODE, iprov, xattr, NULL, 0);
-    record_relation(RL_GETXATTR, xattr, tprov, NULL, 0);
-    record_relation(RL_PROC_WRITE, tprov, cprov, NULL, 0);
+    __write_relation(RL_GETXATTR_INODE, iprov, false, xattr, true, NULL, 0);
+    record_relation(RL_GETXATTR, xattr, true, tprov, false, NULL, 0);
+    record_relation(RL_PROC_WRITE, tprov, false, cprov, false, NULL, 0);
 }
 
 #endif

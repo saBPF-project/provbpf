@@ -18,6 +18,7 @@ static int buf_process_entry(void *ctx, void *data, size_t len) {
     /* Every entry from the ring buffer should
      * be of type union long_prov_elt.
      */
+
     union long_prov_elt *prov = (union long_prov_elt*)data;
 
     /* Userspace processing the provenance record. */
