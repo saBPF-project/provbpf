@@ -148,6 +148,51 @@ static __always_inline void record_relation(uint64_t type,
 }
 
 /*!
+ * @brief Record shared mmap relations of a process.
+ *
+ * The function goes through all the mmapped files of the "current" process,
+ * and for every shared mmaped file,
+ * if the mmapped file has provenance entry,
+ * record provenance relation between the mmaped file and the current process
+ * based on the permission flags and the action (read, exec, or write).
+ * If read/exec, record provenance relation RL_SH_READ by calling
+ * "record_relation" function.
+ * If write, record provenance relation RL_SH_WRITE by calling "record_relation"
+ * function.
+ * @param cprov The cred provenance entry pointer of the current process.
+ * @param read Whether the operation is read or not.
+ * @return 0 if no error occurred or "mm" is NULL; Other error codes inherited
+ * from record_relation function or unknown.
+ *
+ */
+// static __always_inline void current_update_shst(union prov_elt *cprov,
+//                                                struct task_struct *current_task,
+// 					                                     bool read)
+// {
+//     struct mm_struct *mm;
+//     bpf_probe_read(&mm, sizeof(mm), &current_task->mm);
+//     struct vm_area_struct *vma;
+//     struct file *mmapf;
+//
+//     if (!mm)
+//         return;
+//     bpf_probe_read(&vma, sizeof(vma), &mm->mmap);
+//     unsigned long vm_start, vm_end;
+//     bpf_probe_read(&vm_start, sizeof(vm_start), &vma->vm_start);
+//     bpf_probe_read(&vm_end, sizeof(vm_end), &vma->vm_end);
+//
+//     unsigned long length = (vm_end - vm_start) / sizeof(struct vm_area_struct);
+//     struct vm_area_struct *vma_next;
+//
+//     while (vma) {
+//       bpf_probe_read(&vma_next, sizeof(vma_next), &vma->vm_next);
+//       // vma_next = vma->vm_next;
+//       bpf_probe_read(&vma, sizeof(vma), &vma_next);
+//     }
+// }
+
+
+/*!
  * @brief Record "used" relation from entity provenance node to activity
  * provenance node, including its memory state.
  *
@@ -307,8 +352,8 @@ static __always_inline void generates(const uint64_t type,
                                       void *entity,
                                       bool entity_is_long,
                                       const struct file *file,
-                                      const uint64_t flags) {
-
+                                      const uint64_t flags)
+{
     record_relation(RL_PROC_READ, activity_mem, activity_mem_is_long, activity, activity_is_long, NULL, 0);
     record_relation(type, activity, activity_is_long, entity, entity_is_long, file, flags);
 }

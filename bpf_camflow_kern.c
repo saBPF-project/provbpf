@@ -90,25 +90,25 @@ int BPF_PROG(task_free, struct task_struct *task) {
 
     return 0;
 }
-
-/*!
- * @brief Record provenance when task_fix_setuid hook is triggered.
- *
- * This hook is triggered when updating the module's state after setting one or
- * more of the user identity attributes of the current process.
- * The @flags parameter indicates which of the set*uid system calls invoked this
- * hook.
- * If @new is the set of credentials that will be installed,
- * modifications should be made to this rather than to @current->cred.
- * Information flows from @old to current process and then eventually flows to
- * @new (since modification should be made to @new instead of @current->cred).
- * Record provenance relation RL_SETUID.
- * @param new The set of credentials that will be installed
- * @param old The set of credentials that are being replaced.
- * @param flags One of the LSM_SETID_* values.
- * @return 0 if no error occurred. Other error codes unknown.
- *
- */
+//
+// /*!
+//  * @brief Record provenance when task_fix_setuid hook is triggered.
+//  *
+//  * This hook is triggered when updating the module's state after setting one or
+//  * more of the user identity attributes of the current process.
+//  * The @flags parameter indicates which of the set*uid system calls invoked this
+//  * hook.
+//  * If @new is the set of credentials that will be installed,
+//  * modifications should be made to this rather than to @current->cred.
+//  * Information flows from @old to current process and then eventually flows to
+//  * @new (since modification should be made to @new instead of @current->cred).
+//  * Record provenance relation RL_SETUID.
+//  * @param new The set of credentials that will be installed
+//  * @param old The set of credentials that are being replaced.
+//  * @param flags One of the LSM_SETID_* values.
+//  * @return 0 if no error occurred. Other error codes unknown.
+//  *
+//  */
 SEC("lsm/task_fix_setuid")
 int BPF_PROG(task_fix_setuid, struct cred *new, const struct cred *old, int flags) {
     union prov_elt *ptr_prov_new_cred, *ptr_prov_old_cred, *ptr_prov_task;
@@ -834,8 +834,14 @@ SEC("lsm/cred_alloc_blank")
 int BPF_PROG(cred_alloc_blank, struct cred *cred, gfp_t gfp) {
     union prov_elt *ptr_prov;
     struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct cred *current_cred;
+    bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
+    kuid_t current_cred_uid;
+    kgid_t current_cred_gid;
+    bpf_probe_read(&current_cred_uid, sizeof(current_cred_uid), &current_cred->uid);
+    bpf_probe_read(&current_cred_gid, sizeof(current_cred_uid), &current_cred->gid);
 
-    ptr_prov = get_or_create_cred_prov(cred, current_task);
+    ptr_prov = (current_cred_uid.val == cred->uid.val && current_cred_gid.val == cred->gid.val) ? get_or_create_cred_prov(cred, current_task) : get_or_create_cred_prov(NULL, current_task);
     if (!ptr_prov) {
       return 0;
     }
@@ -858,9 +864,15 @@ SEC("lsm/cred_free")
 int BPF_PROG(cred_free, struct cred *cred) {
     uint64_t key = get_key(cred);
     union prov_elt *ptr_prov;
-
     struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
-    ptr_prov = get_or_create_cred_prov(cred, current_task);
+    struct cred *current_cred;
+    bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
+    kuid_t current_cred_uid;
+    kgid_t current_cred_gid;
+    bpf_probe_read(&current_cred_uid, sizeof(current_cred_uid), &current_cred->uid);
+    bpf_probe_read(&current_cred_gid, sizeof(current_cred_uid), &current_cred->gid);
+
+    ptr_prov = (current_cred_uid.val == cred->uid.val && current_cred_gid.val == cred->gid.val) ? get_or_create_cred_prov(cred, current_task) : get_or_create_cred_prov(NULL, current_task);
     if (!ptr_prov) {
       return 0;
     }
@@ -891,12 +903,18 @@ SEC("lsm/cred_prepare")
 int BPF_PROG(cred_prepare, struct cred *new, const struct cred *old, gfp_t gfp) {
     union prov_elt *ptr_prov_new, *ptr_prov_old, *ptr_prov_task;
     struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct cred *current_cred;
+    bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
+    kuid_t current_cred_uid;
+    kgid_t current_cred_gid;
+    bpf_probe_read(&current_cred_uid, sizeof(current_cred_uid), &current_cred->uid);
+    bpf_probe_read(&current_cred_gid, sizeof(current_cred_uid), &current_cred->gid);
 
-    ptr_prov_new = get_or_create_cred_prov(new, current_task);
+    ptr_prov_new = (current_cred_uid.val == new->uid.val && current_cred_gid.val == new->gid.val) ? get_or_create_cred_prov(new, current_task) : get_or_create_cred_prov(NULL, current_task);
     if (!ptr_prov_new) {
       return 0;
     }
-    ptr_prov_old = get_or_create_cred_prov(old, current_task);
+    ptr_prov_old = (current_cred_uid.val == old->uid.val && current_cred_gid.val == old->gid.val) ? get_or_create_cred_prov(old, current_task) : get_or_create_cred_prov(NULL, current_task);
     if (!ptr_prov_old) {
       return 0;
     }
