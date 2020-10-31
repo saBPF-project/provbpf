@@ -3,19 +3,23 @@
 #ifndef __KERN_BPF_RELATION_H
 #define __KERN_BPF_RELATION_H
 
+#define MAX_VMA 48
+
 /* Initialize common fields of a node's provenance */
 static __always_inline void prov_init_relation(union prov_elt *prov,
                                                 uint64_t type,
                                                 const struct file *file,
 					                                      const uint64_t flags)
 {
+    loff_t offset;
     relation_identifier(prov).type=type;
     relation_identifier(prov).id = prov_next_id(RELATION_ID_INDEX);
     relation_identifier(prov).boot_id = prov_get_id(BOOT_ID_INDEX);
     relation_identifier(prov).machine_id = prov_get_id(MACHINE_ID_INDEX);
     if (file) {
 		prov->relation_info.set = FILE_INFO_SET;
-		prov->relation_info.offset = file->f_pos;
+    bpf_probe_read(&offset, sizeof(offset), &file->f_pos);
+		prov->relation_info.offset = offset;
 	}
     prov->relation_info.flags = flags;
 }
@@ -41,20 +45,22 @@ static __always_inline void __write_relation(const uint64_t type,
     union long_prov_elt *f, *t;
     f = from;
     t = to;
-    union prov_elt prov_tmp;
-    __builtin_memset(&prov_tmp, 0, sizeof(union prov_elt));
+    int map_id = 1;
+    union prov_elt *prov_tmp = bpf_map_lookup_elem(&tmp_prov_elt_map, &map_id);
+    if (!prov_tmp)
+        return;
 
-    prov_init_relation(&prov_tmp, type, file, flags);
+    prov_init_relation(prov_tmp, type, file, flags);
 
     // set send node
-    __builtin_memcpy(&(prov_tmp.relation_info.snd), &node_identifier(f), sizeof(union prov_identifier));
+    __builtin_memcpy(&(prov_tmp->relation_info.snd), &node_identifier(f), sizeof(union prov_identifier));
     // set rcv node
-    __builtin_memcpy(&(prov_tmp.relation_info.rcv), &node_identifier(t), sizeof(union prov_identifier));
+    __builtin_memcpy(&(prov_tmp->relation_info.rcv), &node_identifier(t), sizeof(union prov_identifier));
 
     record_provenance(from_is_long, from);
     record_provenance(to_is_long, to);
     // record relation provenance
-    record_provenance(false, &prov_tmp);
+    record_provenance(false, prov_tmp);
 }
 
 static __always_inline void record_terminate(uint64_t type,
@@ -110,11 +116,14 @@ static __always_inline void update_version(const uint64_t type,
                                           void *prov,
                                           bool prov_is_long)
 {
-    union prov_elt old_prov;
+    int map_id = 0;
+    union prov_elt *old_prov = bpf_map_lookup_elem(&tmp_prov_elt_map, &map_id);
+    if (!old_prov)
+        return;
 
-    __builtin_memset(&old_prov, 0, sizeof(union prov_elt));
     union long_prov_elt *p = prov;
-    __builtin_memcpy(&old_prov, p, sizeof(union prov_elt));
+    bpf_map_update_elem(&tmp_prov_elt_map, &map_id, p, BPF_NOEXIST);
+    // __builtin_memcpy(old_prov, p, sizeof(union prov_elt));
 
     // Update the version of prov to the newer version
     node_identifier(p).version++;
@@ -122,9 +131,9 @@ static __always_inline void update_version(const uint64_t type,
 
     // Record the version relation between two versions of the same identity.
     if (node_identifier(p).type == ACT_TASK) {
-        __write_relation(RL_VERSION_TASK, &old_prov, prov_is_long, prov, prov_is_long, NULL, 0);
+        __write_relation(RL_VERSION_TASK, old_prov, prov_is_long, prov, prov_is_long, NULL, 0);
     } else {
-        __write_relation(RL_VERSION, &old_prov, prov_is_long, prov, prov_is_long, NULL, 0);
+        __write_relation(RL_VERSION, old_prov, prov_is_long, prov, prov_is_long, NULL, 0);
     }
     // Newer version now has no outgoing edge
     clear_has_outgoing(p);
@@ -165,31 +174,49 @@ static __always_inline void record_relation(uint64_t type,
  * from record_relation function or unknown.
  *
  */
-// static __always_inline void current_update_shst(union prov_elt *cprov,
-//                                                struct task_struct *current_task,
-// 					                                     bool read)
-// {
-//     struct mm_struct *mm;
-//     bpf_probe_read(&mm, sizeof(mm), &current_task->mm);
-//     struct vm_area_struct *vma;
-//     struct file *mmapf;
-//
-//     if (!mm)
-//         return;
-//     bpf_probe_read(&vma, sizeof(vma), &mm->mmap);
-//     unsigned long vm_start, vm_end;
-//     bpf_probe_read(&vm_start, sizeof(vm_start), &vma->vm_start);
-//     bpf_probe_read(&vm_end, sizeof(vm_end), &vma->vm_end);
-//
-//     unsigned long length = (vm_end - vm_start) / sizeof(struct vm_area_struct);
-//     struct vm_area_struct *vma_next;
-//
-//     while (vma) {
-//       bpf_probe_read(&vma_next, sizeof(vma_next), &vma->vm_next);
-//       // vma_next = vma->vm_next;
-//       bpf_probe_read(&vma, sizeof(vma), &vma_next);
-//     }
-// }
+static __always_inline void current_update_shst(union prov_elt *cprov,
+                                               struct task_struct *current_task,
+					                                     bool read)
+{
+    struct mm_struct *mm;
+    bpf_probe_read(&mm, sizeof(mm), &current_task->mm);
+    struct vm_area_struct *vma;
+    struct file *mmapf;
+    vm_flags_t flags;
+    union prov_elt *mmprov;
+    struct inode *mmapf_inode;
+
+    if (!mm)
+        return;
+    bpf_probe_read(&vma, sizeof(vma), &mm->mmap);
+
+    #pragma unroll
+    for (int i = 0; i < MAX_VMA; i++) {
+        // If this is the last mmaped file, break
+        if (!vma)
+            return;
+        // Perform operations of vma
+        bpf_probe_read(&mmapf, sizeof(mmapf), &vma->vm_file);
+        if (!mmapf)
+          return;
+        bpf_probe_read(&flags, sizeof(flags), &vma->vm_flags);
+
+        bpf_probe_read(&mmapf_inode, sizeof(mmapf_inode), &mmapf->f_inode);
+        mmprov = get_or_create_inode_prov(mmapf_inode);
+        if (mmprov) {
+            if (vm_read_exec_mayshare(flags) && read) {
+              record_relation(RL_SH_READ, mmprov, false, cprov, false, mmapf, flags);
+            }
+
+            if (vm_write_mayshare(flags) && !read) {
+              record_relation(RL_SH_WRITE, cprov, false, mmprov, false, mmapf, flags);
+            }
+        }
+        // Get next mmaped file
+        bpf_probe_read(&vma, sizeof(vma), &vma->vm_next);
+    }
+    return;
+}
 
 
 /*!
@@ -346,16 +373,14 @@ static __always_inline void derives(uint64_t type,
 static __always_inline void generates(const uint64_t type,
                                       struct task_struct *current,
                                       void *activity_mem,
-                                      bool activity_mem_is_long,
                                       void *activity,
-                                      bool activity_is_long,
                                       void *entity,
-                                      bool entity_is_long,
                                       const struct file *file,
                                       const uint64_t flags)
 {
-    record_relation(RL_PROC_READ, activity_mem, activity_mem_is_long, activity, activity_is_long, NULL, 0);
-    record_relation(type, activity, activity_is_long, entity, entity_is_long, file, flags);
+    current_update_shst(activity_mem, current, true);
+    record_relation(RL_PROC_READ, activity_mem, false, activity, false, NULL, 0);
+    record_relation(type, activity, false, entity, false, file, flags);
 }
 
 /*!

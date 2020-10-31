@@ -127,7 +127,7 @@ int BPF_PROG(task_fix_setuid, struct cred *new, const struct cred *old, int flag
       return 0;
     }
 
-    generates(RL_SETUID, current_task, ptr_prov_old_cred, false, ptr_prov_task, false, ptr_prov_new_cred, false, NULL, flags);
+    generates(RL_SETUID, current_task, ptr_prov_old_cred, ptr_prov_task, ptr_prov_new_cred, NULL, flags);
 
     return 0;
 }
@@ -162,7 +162,7 @@ int BPF_PROG(task_fix_setgid, struct cred *new, const struct cred *old, int flag
       return 0;
     }
 
-    generates(RL_SETGID, current_task, ptr_prov_old_cred, false, ptr_prov_task, false, ptr_prov_new_cred, false, NULL, flags);
+    // generates(RL_SETGID, current_task, ptr_prov_old_cred, false, ptr_prov_task, false, ptr_prov_new_cred, false, NULL, flags);
 
     return 0;
 }
@@ -294,7 +294,7 @@ int BPF_PROG(inode_create, struct inode *dir, struct dentry *dentry, umode_t mod
       return 0;
     }
 
-    generates(RL_INODE_CREATE, current_task, ptr_prov_current_cred, false, ptr_prov_current_task, false, ptr_prov_inode, false, NULL, mode);
+    // generates(RL_INODE_CREATE, current_task, ptr_prov_current_cred, false, ptr_prov_current_task, false, ptr_prov_inode, false, NULL, mode);
 
     return 0;
 }
@@ -415,7 +415,7 @@ int BPF_PROG(inode_link, struct dentry *old_dentry, struct inode *dir, struct de
       return 0;
     }
 
-    generates(RL_LINK, current_task, ptr_prov_current_cred, false, ptr_prov_current_task, false, ptr_prov, false, NULL, 0);
+    // generates(RL_LINK, current_task, ptr_prov_current_cred, false, ptr_prov_current_task, false, ptr_prov, false, NULL, 0);
 
     return 0;
 }
@@ -448,7 +448,7 @@ int BPF_PROG(inode_unlink, struct inode *dir, struct dentry *dentry) {
       return 0;
     }
 
-    generates(RL_UNLINK, current_task, ptr_prov_current_cred, false, ptr_prov_current_task, false, ptr_prov, false, NULL, 0);
+    // generates(RL_UNLINK, current_task, ptr_prov_current_cred, false, ptr_prov_current_task, false, ptr_prov, false, NULL, 0);
 
     return 0;
 }
@@ -482,7 +482,7 @@ int BPF_PROG(inode_symlink, struct inode *dir, struct dentry *dentry, const char
       return 0;
     }
 
-    generates(RL_SYMLINK, current_task, ptr_prov_current_cred, false, ptr_prov_current_task, false, ptr_prov, false, NULL, 0);
+    // generates(RL_SYMLINK, current_task, ptr_prov_current_cred, false, ptr_prov_current_task, false, ptr_prov, false, NULL, 0);
 
     return 0;
 }
@@ -519,7 +519,7 @@ int BPF_PROG(inode_rename, struct inode *old_dir, struct dentry *old_dentry, str
       return 0;
     }
 
-    generates(RL_RENAME, current_task, ptr_prov_current_cred, false, ptr_prov_current_task, false, ptr_prov, false, NULL, 0);
+    // generates(RL_RENAME, current_task, ptr_prov_current_cred, false, ptr_prov_current_task, false, ptr_prov, false, NULL, 0);
 
     return 0;
 }
@@ -572,7 +572,7 @@ int BPF_PROG(inode_setattr, struct dentry *dentry, struct iattr *attr) {
       return 0;
     }
 
-    generates(RL_SETATTR, current_task, ptr_prov_current_cred, false, ptr_prov_current_task, false, ptr_prov_iattr, false, NULL, 0);
+    // generates(RL_SETATTR, current_task, ptr_prov_current_cred, false, ptr_prov_current_task, false, ptr_prov_iattr, false, NULL, 0);
     derives(RL_SETATTR_INODE, ptr_prov_iattr, false, ptr_prov_inode, false, NULL, 0);
 
     return 0;
@@ -923,7 +923,7 @@ int BPF_PROG(cred_prepare, struct cred *new, const struct cred *old, gfp_t gfp) 
       return 0;
     }
 
-    generates(RL_CLONE_MEM, current_task, ptr_prov_old, false, ptr_prov_task, false, ptr_prov_new, false, NULL, 0);
+    // generates(RL_CLONE_MEM, current_task, ptr_prov_old, false, ptr_prov_task, false, ptr_prov_new, false, NULL, 0);
 
     return 0;
 }
