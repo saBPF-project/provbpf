@@ -69,6 +69,9 @@ static __always_inline void record_terminate(uint64_t type,
 {
     union long_prov_elt *n = node;
     union prov_elt relation;
+    if (filter_node(n))
+      return;
+
     __builtin_memset(&relation, 0, sizeof(union prov_elt));
     prov_init_relation(&relation, type, NULL, 0);
     // set send node

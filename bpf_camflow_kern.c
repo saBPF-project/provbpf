@@ -18,6 +18,7 @@
 #include "kern_bpf_inode.h"
 #include "kern_bpf_cred.h"
 #include "kern_bpf_iattr.h"
+#include "kern_bpf_filter.h"
 #include "kern_bpf_relation.h"
 
 char _license[] SEC("license") = "GPL";
@@ -75,8 +76,7 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
  */
 SEC("lsm/task_free")
 int BPF_PROG(task_free, struct task_struct *task) {
-    uint64_t key;
-    get_key(task);
+    uint64_t key = get_key(task);
     union prov_elt *ptr_prov;
 
     ptr_prov = get_or_create_task_prov(task);
