@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <bpf/bpf.h>
 #include <sys/resource.h>
+#include <sys/types.h>
 
 #include "bpf_camflow.skel.h"
 #include "linux/provenance.h"
@@ -65,6 +66,24 @@ int main(void) {
     set_id(skel, BOOT_ID_INDEX, get_boot_id());
     set_id(skel, MACHINE_ID_INDEX, get_machine_id());
 
+    // Initialize provenance policy
+    struct capture_policy prov_policy;
+
+    printf("Provenance: policy initialization started...\n");
+    prov_policy.prov_enabled = true;
+  	prov_policy.should_duplicate = false;
+  	prov_policy.should_compress_node = true;
+  	prov_policy.should_compress_edge = true;
+#ifdef CONFIG_SECURITY_PROVENANCE_BOOT
+  	prov_policy.prov_all = true;
+#else
+  	prov_policy.prov_all = false;
+#endif
+
+    map_fd = bpf_object__find_map_fd_by_name(skel->obj, "policy_map");
+    bpf_map_update_elem(map_fd, &key, &prov_policy, BPF_ANY);
+    printf("Provenance: policy initialization finished.\n");
+
     printf("Attaching BPF programs ...\n");
     err = bpf_camflow_kern__attach(skel);
     if (err) {
@@ -72,9 +91,7 @@ int main(void) {
         goto close_prog;
     }
 
-    //map_fd = bpf_object__find_map_fd_by_name(skel->obj, "task_map");
-    //err = bpf_map_lookup_elem(map_fd, &key, &value);
-    //printf("err: %d value: %d\n", err, value);
+    printf("current process pid: %d...\n", getpid());
 
     /* Locate ring buffer */
     printf("Locating the ring buffer...\n");

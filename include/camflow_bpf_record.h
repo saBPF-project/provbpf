@@ -4,6 +4,7 @@
 #define __CAMFLOW_BPF_RECORD_H
 
 #include "linux/provenance.h"
+#include "kern_bpf_policy.h"
 
 void bpf_prov_record(union long_prov_elt* msg);
 void prov_refresh_records(void);

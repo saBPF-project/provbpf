@@ -10,6 +10,7 @@
 #include "linux/provenance_types.h"
 #include "camflow_bpf_id.h"
 
+#include "kern_bpf_policy.h"
 #include "kern_bpf_maps.h"
 #include "kern_bpf_common.h"
 #include "kern_bpf_node.h"

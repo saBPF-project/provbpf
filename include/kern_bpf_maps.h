@@ -32,6 +32,13 @@ struct bpf_map_def SEC("maps") tmp_prov_map = {
     .max_entries = 4,
 };
 
+struct bpf_map_def SEC("maps") policy_map = {
+    .type = BPF_MAP_TYPE_ARRAY,
+    .key_size = sizeof(uint32_t),
+    .value_size = sizeof(struct capture_policy),
+    .max_entries = 1,
+};
+
 struct bpf_map_def SEC("maps") tmp_prov_elt_map = {
     .type = BPF_MAP_TYPE_PERCPU_ARRAY,
     .key_size = sizeof(uint32_t),
