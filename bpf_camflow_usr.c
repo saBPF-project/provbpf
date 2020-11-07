@@ -39,10 +39,12 @@ void set_id(struct bpf_camflow_kern *skel, uint32_t index, uint64_t value) {
 int main(void) {
     struct bpf_camflow_kern *skel = NULL;
     struct ring_buffer *ringbuf = NULL;
-    int err, map_fd;
+    int err, map_fd, task_map_fd, res;
     struct rlimit r = {RLIM_INFINITY, RLIM_INFINITY};
-    pid_t pid;
     unsigned int key = 0, value;
+    uint64_t task_map_key, prev_task_map_key;
+    union prov_elt task_map_value;
+    pid_t current_pid;
 
     printf("Starting...\n");
 
@@ -89,9 +91,7 @@ int main(void) {
     if (err) {
         printf("Failed attach ... %d\n", err);
         goto close_prog;
-    }
-
-    printf("current process pid: %d...\n", getpid());
+    }    
 
     /* Locate ring buffer */
     printf("Locating the ring buffer...\n");
@@ -105,6 +105,31 @@ int main(void) {
      * buf_process_entry is the callback function that
      * process the entry in the ring buffer. */
     prov_init();
+
+    current_pid = getpid();
+
+    printf("Searching task_map for current process...\n");
+    task_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "task_map");
+    if (task_map_fd < 0) {
+      printf("Failed loading task_map (%d)\n", task_map_fd);
+      goto close_prog;
+    }
+
+    task_map_key = -1;
+    while (bpf_map_get_next_key(task_map_fd, &prev_task_map_key, &task_map_key) == 0) {
+      res = bpf_map_lookup_elem(task_map_fd, &task_map_key, &task_map_value);
+      if (res > -1) {
+          if (task_map_value.task_info.pid == current_pid) {
+            set_opaque(&task_map_value);
+            bpf_map_update_elem(task_map_fd, &task_map_key, &task_map_value, BPF_EXIST);
+            break;
+          }
+      }
+      prev_task_map_key = task_map_key;
+    }
+    close(task_map_fd);
+    printf("Done searching. Current process has been set opaque...\n");
+
     ringbuf = ring_buffer__new(map_fd, buf_process_entry, NULL, NULL);
     printf("Start polling forever...\n");
     /* ring_buffer__poll polls for available data and consume records,
