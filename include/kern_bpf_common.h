@@ -8,6 +8,8 @@
 // probably bad, find where it is defined
 #define NULL 0
 
+#define PTRACE_MODE_READ	0x01
+#define PTRACE_MODE_ATTACH	0x02
 #define XATTR_SECURITY_PREFIX	"security."
 #define XATTR_PROVENANCE_SUFFIX "provenance"
 #define XATTR_NAME_PROVENANCE XATTR_SECURITY_PREFIX XATTR_PROVENANCE_SUFFIX

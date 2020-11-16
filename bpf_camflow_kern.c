@@ -62,7 +62,7 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
         return 0;
 
     uses_two(RL_PROC_READ, ptr_prov_cred, false, ptr_prov_current, false, NULL, clone_flags);
-    informs(RL_CLONE, ptr_prov_current, false, ptr_prov, false, NULL, clone_flags);
+    informs(RL_CLONE, ptr_prov_current, ptr_prov, NULL, clone_flags);
     return 0;
 }
 
@@ -197,7 +197,7 @@ int BPF_PROG(task_getpgid, struct task_struct *p) {
       return 0;
     }
 
-    uses(RL_GETGID, current_task, ptr_prov, false, ptr_prov_current_task, false, ptr_prov_current_cred, false, NULL, 0);
+    uses(RL_GETGID, current_task, ptr_prov, ptr_prov_current_task, ptr_prov_current_cred, NULL, 0);
     return 0;
 }
 
@@ -373,7 +373,7 @@ int BPF_PROG(inode_permission, struct inode *inode, int mask) {
     }
 
     if (relation_type != 0) {
-      uses(relation_type, current_task, ptr_prov_inode, false, ptr_prov_current_task, false, ptr_prov_current_cred, false, NULL, mask);
+      uses(relation_type, current_task, ptr_prov_inode, ptr_prov_current_task, ptr_prov_current_cred, NULL, mask);
     }
 
     return 0;
@@ -619,7 +619,7 @@ int BPF_PROG(inode_getattr, const struct path *path) {
       return 0;
     }
 
-    uses(RL_GETATTR, current_task, ptr_prov_inode, false, ptr_prov_current_task, false, ptr_prov_current_cred, false, NULL, 0);
+    uses(RL_GETATTR, current_task, ptr_prov_inode, ptr_prov_current_task, ptr_prov_current_cred, NULL, 0);
 
     return 0;
 }
@@ -657,7 +657,7 @@ int BPF_PROG(inode_readlink, struct dentry *dentry) {
       return 0;
     }
 
-    uses(RL_READ_LINK, current_task, ptr_prov_inode, false, ptr_prov_current_task, false, ptr_prov_current_cred, false, NULL, 0);
+    uses(RL_READ_LINK, current_task, ptr_prov_inode, ptr_prov_current_task, ptr_prov_current_cred, NULL, 0);
 
     return 0;
 }
@@ -778,7 +778,7 @@ int BPF_PROG(inode_listxattr, struct dentry *dentry) {
       return 0;
     }
 
-    uses(RL_LSTXATTR, current_task, ptr_prov_inode, false, ptr_prov_current_task, false, ptr_prov_current_cred, false, NULL, 0);
+    uses(RL_LSTXATTR, current_task, ptr_prov_inode, ptr_prov_current_task, ptr_prov_current_cred, NULL, 0);
 
     return 0;
 }
@@ -932,5 +932,63 @@ int BPF_PROG(cred_prepare, struct cred *new, const struct cred *old, gfp_t gfp) 
 
     generates(RL_CLONE_MEM, current_task, ptr_prov_old, ptr_prov_task, ptr_prov_new, NULL, 0);
 
+    return 0;
+}
+
+SEC("lsm/ptrace_access_check")
+int BPF_PROG(ptrace_access_check, struct task_struct *child, unsigned int mode) {
+    union prov_elt *ptr_prov_child, *ptr_prov_child_cred, *ptr_prov_current_task, *ptr_prov_current_cred;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct cred *current_cred;
+    bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
+
+    ptr_prov_child = get_or_create_task_prov(child);
+    if (!ptr_prov_child) {
+      return 0;
+    }
+    ptr_prov_child_cred = get_or_create_cred_prov(child->real_cred, child);
+    if (!ptr_prov_child_cred) {
+      return 0;
+    }
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_current_cred = get_or_create_cred_prov(current_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+
+    if (mode & PTRACE_MODE_READ) {
+      informs(RL_PTRACE_READ_TASK, ptr_prov_child, ptr_prov_current_task, NULL, mode);
+      if (ptr_prov_child_cred != ptr_prov_current_cred) {
+        uses(RL_PTRACE_READ, current_task, ptr_prov_child_cred, ptr_prov_current_task, ptr_prov_current_cred, NULL, 0);
+      }
+    }
+    if (mode & PTRACE_MODE_ATTACH) {
+      if (ptr_prov_child_cred != ptr_prov_current_cred) {
+        generates(RL_PTRACE_ATTACH, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_child_cred, NULL, 0);
+      }
+      informs(RL_PTRACE_ATTACH_TASK, ptr_prov_current_task, ptr_prov_child, NULL, mode);
+    }
+
+    return 0;
+}
+
+SEC("lsm/ptrace_traceme")
+int BPF_PROG(ptrace_traceme, struct task_struct *parent) {
+    union prov_elt *ptr_prov, *ptr_prov_current;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+
+    ptr_prov = get_or_create_task_prov(parent);
+    if (!ptr_prov) {
+      return 0;
+    }
+    ptr_prov_current = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current) {
+      return 0;
+    }
+
+    informs(RL_PTRACE_TRACEME, ptr_prov_current, ptr_prov, NULL, 0);
     return 0;
 }

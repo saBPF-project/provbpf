@@ -3,7 +3,7 @@
 #ifndef __KERN_BPF_RELATION_H
 #define __KERN_BPF_RELATION_H
 
-#define MAX_VMA 48
+#define MAX_VMA 16
 
 /* Initialize common fields of a node's provenance */
 static __always_inline void prov_init_relation(union prov_elt *prov,
@@ -218,7 +218,6 @@ static __always_inline void current_update_shst(union prov_elt *cprov,
         return;
     bpf_probe_read(&vma, sizeof(vma), &mm->mmap);
 
-    #pragma unroll
     for (int i = 0; i < MAX_VMA; i++) {
         // If this is the last mmaped file, break
         if (!vma)
@@ -275,19 +274,16 @@ static __always_inline void current_update_shst(union prov_elt *cprov,
 static __always_inline void uses(const uint64_t type,
                                  struct task_struct *current,
                                  void *entity,
-                                 bool entity_is_long,
                                  void *activity,
-                                 bool activity_is_long,
                                  void *activity_mem,
-                                 bool activity_mem_is_long,
                                  const struct file *file,
                                  const uint64_t flags) {
 
     if (!should_record_relation(type, entity, activity)) {
       return;
     }
-    record_relation(type, entity, entity_is_long, activity, activity_is_long, file, flags);
-    record_relation(RL_PROC_WRITE, activity, activity_is_long, activity_mem, activity_mem_is_long, NULL, 0);
+    record_relation(type, entity, false, activity, false, file, flags);
+    record_relation(RL_PROC_WRITE, activity, false, activity_mem, false, NULL, 0);
     current_update_shst(activity_mem, current, false);
 }
 
@@ -342,16 +338,14 @@ static __always_inline void uses_two(uint64_t type,
  */
 static __always_inline void informs(uint64_t type,
                                      void *from,
-                                     bool from_is_long,
                                      void *to,
-                                     bool to_is_long,
                                      const struct file *file,
                                      const uint64_t flags) {
 
     if (!should_record_relation(type, from, to)) {
       return;
     }
-    record_relation(type, from, from_is_long, to, to_is_long, file, flags);
+    record_relation(type, from, false, to, false, file, flags);
 }
 
 /*!
