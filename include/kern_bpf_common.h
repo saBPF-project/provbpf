@@ -8,8 +8,17 @@
 // probably bad, find where it is defined
 #define NULL 0
 
+#define MAP_SHARED 					0x01
+#define MAP_SHARED_VALIDATE 0x03
+#define MAP_TYPE 	 					0x0f
+
+#define PROT_READ  0x1
+#define PROT_WRITE 0x2
+#define PROT_EXEC  0x4
+
 #define PTRACE_MODE_READ	0x01
 #define PTRACE_MODE_ATTACH	0x02
+
 #define XATTR_SECURITY_PREFIX	"security."
 #define XATTR_PROVENANCE_SUFFIX "provenance"
 #define XATTR_NAME_PROVENANCE XATTR_SECURITY_PREFIX XATTR_PROVENANCE_SUFFIX

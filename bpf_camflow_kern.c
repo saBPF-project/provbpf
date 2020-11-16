@@ -992,3 +992,142 @@ int BPF_PROG(ptrace_traceme, struct task_struct *parent) {
     informs(RL_PTRACE_TRACEME, ptr_prov_current, ptr_prov, NULL, 0);
     return 0;
 }
+
+/*!
+ * @brief Record provenance when mmap_file hook is triggered.
+ *
+ * This hook is triggered when checking permissions for a mmap operation.
+ * The @file may be NULL, e.g., if mapping anonymous memory.
+ * Provenance relation will not be recorded if:
+ * 1. The file is NULL, or
+ * 2. Failure occurred.
+ * If the mmap is shared (flag: MAP_SHARED or MAP_SHARED_VALIDATE),
+ * depending on the action allowed by the kernel,
+ * record provenance relation RL_MMAP_WRITE and/or RL_MMAP_READ and/or
+ * RL_MMAP_EXEC by calling "derives" function.
+ * Information flows between the mmap file and calling process and its cred.
+ * The direction of the information flow depends on the action allowed.
+ * If the mmap is private (flag: MAP_PRIVATE),
+ * we create an additional provenance node to represent the private mapped inode
+ * by calling function "branch_mmap", record provenance relation RL_MMAP by
+ * calling "derives" function because information flows from the original mapped
+ * file to the private file.
+ * Then depending on the action allowed by the kernel,
+ * record provenance relation RL_MMAP_WRITE and/or RL_MMAP_READ and/or
+ * RL_MMAP_EXEC by calling "derives" function.
+ * Information flows between the new private mmap node and calling process and
+ * its cred.
+ * The direction of the information flow depends on the action allowed.
+ * Note that this new node is short-lived.
+ * @param file The file structure for file to map (may be NULL).
+ * @param reqprot The protection requested by the application.
+ * @param prot The protection that will be applied by the kernel.
+ * @param flags The operational flags.
+ * @return 0 if permission is granted and no error occurred; -ENOMEM if the
+ * original file inode provenance entry is NULL; Other error codes inherited
+ * from derives function.
+ *
+ */
+SEC("lsm/mmap_file")
+int BPF_PROG(mmap_file, struct file *file, unsigned long reqprot, unsigned long prot, unsigned long flags) {
+    union prov_elt *ptr_prov_current, *ptr_prov_current_cred, *ptr_prov_file_inode;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct cred *current_cred;
+    bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
+
+    if (__builtin_expect(!file, 0)) {
+      return 0;
+    }
+
+    ptr_prov_current = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current) {
+      return 0;
+    }
+    ptr_prov_current_cred = get_or_create_cred_prov(current_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_file_inode = get_or_create_inode_prov(file->f_inode);
+    if (!ptr_prov_file_inode) {
+      return 0;
+    }
+
+    if (provenance_is_opaque(ptr_prov_current_cred)) {
+      return 0;
+    }
+
+    if ((flags & MAP_TYPE) == MAP_SHARED || (flags & MAP_TYPE) == MAP_SHARED_VALIDATE) {
+      if ((prot & PROT_WRITE) != 0) {
+        uses(RL_MMAP_WRITE, current_task, ptr_prov_file_inode, ptr_prov_current, ptr_prov_current_cred, file, flags);
+      }
+      if ((prot & PROT_READ) != 0) {
+        uses(RL_MMAP_READ, current_task, ptr_prov_file_inode, ptr_prov_current, ptr_prov_current_cred, file, flags);
+      }
+      if ((prot & PROT_EXEC) != 0) {
+        uses(RL_MMAP_EXEC, current_task, ptr_prov_file_inode, ptr_prov_current, ptr_prov_current_cred, file, flags);
+      }
+    } else {
+      if ((prot & PROT_WRITE) != 0) {
+        uses(RL_MMAP_WRITE_PRIVATE, current_task, ptr_prov_file_inode, ptr_prov_current, ptr_prov_current_cred, file, flags);
+      }
+      if ((prot & PROT_READ) != 0) {
+        uses(RL_MMAP_READ_PRIVATE, current_task, ptr_prov_file_inode, ptr_prov_current, ptr_prov_current_cred, file, flags);
+      }
+      if ((prot & PROT_EXEC) != 0) {
+        uses(RL_MMAP_EXEC_PRIVATE, current_task, ptr_prov_file_inode, ptr_prov_current, ptr_prov_current_cred, file, flags);
+      }
+    }
+
+    return 0;
+}
+
+#ifdef CONFIG_SECURITY_FLOW_FRIENDLY
+/*!
+ * @brief Record provenance when mmap_munmap hook is triggered.
+ *
+ * This hook is triggered when a file is unmmap'ed.
+ * We obtain the provenance entry of the mmap'ed file, and if it shows that the
+ * mmap'ed file is shared based on the flags,
+ * record provenance relation RL_MUNMAP by calling "derives" function.
+ * Information flows from cred of the process that unmmaps the file to the
+ * mmap'ed file.
+ * Note that if the file to be unmmap'ed is private, the provenance of the
+ * mmap'ed file is short-lived and thus no longer exists.
+ * @param mm Unused parameter.
+ * @param vma Virtual memory of the calling process.
+ * @param start Unused parameter.
+ * @param end Unused parameter.
+ *
+ */
+SEC("lsm/mmap_munmap")
+int BPF_PROG(mmap_munmap, struct mm_struct *mm, struct vm_area_struct *vma, unsigned long start, unsigned long end) {
+    union prov_elt *ptr_prov_current, *ptr_prov_current_cred, *ptr_prov_inode;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct cred *current_cred;
+    bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
+    struct file *mmapf;
+    vm_flags_t flags = vma->vm_flags;
+
+    ptr_prov_current = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current) {
+      return 0;
+    }
+    ptr_prov_current_cred = get_or_create_cred_prov(current_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+
+    if (vm_mayshare(flags)) {
+      mmapf = vma->vm_file;
+      if (mmapf) {
+        ptr_prov_inode = get_or_create_inode_prov(mmapf->f_inode);
+        if (!ptr_prov_inode) {
+          return 0;
+        }
+        generates(RL_MUNMAP, current_task, ptr_prov_current_cred, ptr_prov_current, ptr_prov_inode, mmapf, flags);
+      }
+    }
+
+    return 0;
+}
+ #endif
