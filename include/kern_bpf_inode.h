@@ -5,31 +5,13 @@
 
 #include "kern_bpf_node.h"
 
-#define S_IFMT  00170000
-#define S_IFSOCK 0140000
-#define S_IFLNK	 0120000
-#define S_IFREG  0100000
-#define S_IFBLK  0060000
-#define S_IFDIR  0040000
-#define S_IFCHR  0020000
-#define S_IFIFO  0010000
-
-#define S_ISLNK(m)	(((m) & S_IFMT) == S_IFLNK)
-#define S_ISREG(m)	(((m) & S_IFMT) == S_IFREG)
-#define S_ISDIR(m)	(((m) & S_IFMT) == S_IFDIR)
-#define S_ISCHR(m)	(((m) & S_IFMT) == S_IFCHR)
-#define S_ISBLK(m)	(((m) & S_IFMT) == S_IFBLK)
-#define S_ISFIFO(m)	(((m) & S_IFMT) == S_IFIFO)
-#define S_ISSOCK(m)	(((m) & S_IFMT) == S_IFSOCK)
-
-#define MAY_EXEC		0x00000001
-#define MAY_WRITE		0x00000002
-#define MAY_READ		0x00000004
-#define MAY_APPEND	0x00000008
-
 #define S_PRIVATE	512	/* Inode is fs-internal */
 
 #define IS_PRIVATE(inode)	((inode)->i_flags & S_PRIVATE)
+
+#define is_inode_dir(inode)             S_ISDIR(inode->i_mode)
+#define is_inode_socket(inode)          S_ISSOCK(inode->i_mode)
+#define is_inode_file(inode)            S_ISREG(inode->i_mode)
 
 static __always_inline void prov_update_inode(struct inode *inode, union prov_elt *prov) {
     bpf_probe_read(&prov->inode_info.uid, sizeof(prov->inode_info.uid), &inode->i_uid.val);

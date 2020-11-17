@@ -580,7 +580,7 @@ int BPF_PROG(inode_setattr, struct dentry *dentry, struct iattr *attr) {
     }
 
     generates(RL_SETATTR, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_iattr, NULL, 0);
-    derives(RL_SETATTR_INODE, ptr_prov_iattr, false, ptr_prov_inode, false, NULL, 0);
+    derives(RL_SETATTR_INODE, ptr_prov_iattr, ptr_prov_inode, NULL, 0);
 
     return 0;
 }
@@ -1131,3 +1131,294 @@ int BPF_PROG(mmap_munmap, struct mm_struct *mm, struct vm_area_struct *vma, unsi
     return 0;
 }
  #endif
+
+ /*!
+  * @brief Record provenance when file_permission hook is triggered.
+  *
+  * This hook is triggered when checking file permissions before accessing an
+  * open file.
+  * This hook is called by various operations that read or write files.
+  * A security module can use this hook to perform additional checking on these
+  * operations,
+  * e.g., to revalidate permissions on use to support privilege bracketing or
+  * policy changes.
+  * Notice that this hook is used when the actual read/write operations are
+  * performed, whereas the inode_security_ops hook is called when a file is
+  * opened (as well as many other operations).
+  * Caveat:
+  * Although this hook can be used to revalidate permissions for various system
+  * call operations that read or write files,
+  * it does not address the revalidation of permissions for memory-mapped files.
+  * Security modules must handle this separately if they need such revalidation.
+  * Depending on the type of the @file (e.g., a regular file or a directory),
+  * and the requested permission from @mask,
+  * record various provenance relations, including:
+  * RL_WRITE, RL_READ, RL_SEARCH, RL_SND, RL_RCV, RL_EXEC.
+  * @param file The file structure being accessed.
+  * @param mask The requested permissions.
+  * @return 0 if permission is granted; -ENOMEM if inode provenance is NULL.
+  * Other error codes unknown.
+  *
+  */
+SEC("lsm/file_permission")
+int BPF_PROG(file_permission, struct file *file, int mask) {
+    union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_file_inode;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct cred *current_cred;
+    bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
+
+    uint32_t perms = file_mask_to_perms((file->f_inode)->i_mode, mask);
+
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_current_cred = get_or_create_cred_prov(current_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_file_inode = get_or_create_inode_prov(file->f_inode);
+    if (!ptr_prov_file_inode) {
+      return 0;
+    }
+
+    // Left commented due to generating extensive output
+    if (is_inode_dir(file->f_inode)) {
+      if ((perms & (DIR__WRITE)) != 0) {
+        // generates(RL_WRITE, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_file_inode, file, mask);
+      }
+      if ((perms & (DIR__READ)) != 0) {
+        // uses(RL_READ, current_task, ptr_prov_file_inode, ptr_prov_current_task, ptr_prov_current_cred, file, mask);
+      }
+      if ((perms & (DIR__SEARCH)) != 0) {
+        // uses(RL_SEARCH, current_task, ptr_prov_file_inode, ptr_prov_current_task, ptr_prov_current_cred, file, mask);
+      }
+    } else if (is_inode_socket(file->f_inode)) {
+      if ((perms & (FILE__WRITE | FILE__APPEND)) != 0) {
+        // generates(RL_SND, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_file_inode, file, mask);
+      }
+      if ((perms & (FILE__READ)) != 0) {
+        // uses(RL_RCV, current_task, ptr_prov_file_inode, ptr_prov_current_task, ptr_prov_current_cred, file, mask);
+      }
+    } else {
+      if ((perms & (FILE__WRITE | FILE__APPEND)) != 0) {
+        // generates(RL_WRITE, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_file_inode, file, mask);
+      }
+      if ((perms & (FILE__READ)) != 0) {
+        // uses(RL_READ, current_task, ptr_prov_file_inode, ptr_prov_current_task, ptr_prov_current_cred, file, mask);
+      }
+      if ((perms & (FILE__EXECUTE)) != 0) {
+        if (provenance_is_opaque(ptr_prov_file_inode)) {
+          set_opaque(ptr_prov_current_cred);
+        } else {
+          // derives(RL_EXEC, ptr_prov_file_inode, ptr_prov_current_cred, file, mask);
+        }
+      }
+    }
+
+    return 0;
+}
+
+#ifdef CONFIG_SECURITY_FLOW_FRIENDLY
+/*!
+ * @brief Record provenance when file_splice_pipe_to_pipe hook is triggered
+ * (splice system call).
+ *
+ * Record provenance relation RL_SPLICE by calling "derives" function.
+ * Information flows from one pipe @in to another pipe @out.
+ * Fail if either file inode provenance does not exist.
+ * @param in Information source file.
+ * @param out Information drain file.
+ * @return 0 if no error occurred; -ENOMEM if either end of the file provenance
+ * entry is NULL; Other error code inherited from derives function.
+ *
+ */
+SEC("lsm/file_splice_pipe_to_pipe")
+int BPF_PROG(file_splice_pipe_to_pipe, struct file *in, struct file *out) {
+    union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_in_inode, *ptr_prov_out_inode;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct cred *current_cred;
+    bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
+
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_current_cred = get_or_create_cred_prov(current_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_in_inode = get_or_create_inode_prov(in->f_inode);
+    if (!ptr_prov_in_inode) {
+      return 0;
+    }
+    ptr_prov_out_inode = get_or_create_inode_prov(out->f_inode);
+    if (!ptr_prov_out_inode) {
+      return 0;
+    }
+
+    uses(RL_SPLICE_IN, current_task, ptr_prov_in_inode, ptr_prov_current_task, ptr_prov_current_cred, NULL, 0);
+    generates(RL_SPLICE_OUT, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_out_inode, NULL, 0);
+
+    return 0;
+}
+#endif
+
+/*!
+ * @brief Record provenance when file_open hook is triggered.
+ *
+ * This hook is triggered when saving open-time permission checking state for
+ * later use upon file_permission,
+ * and rechecking access if anything has changed since inode_permission.
+ * Record provenance relation RL_OPEN by calling "uses" function.
+ * Information flows from inode of the file to be opened to the calling process,
+ * and eventually to its cred.
+ * @param file The file to be opened.
+ * @param cred Unused parameter.
+ * @return 0 if no error occurred; -ENOMEM if the file inode provenance entry is
+ * NULL; other error code inherited from uses function.
+ *
+ */
+SEC("lsm/file_open")
+int BPF_PROG(file_open, struct file *file) {
+    union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_file_inode;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct cred *current_cred;
+    bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
+
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_current_cred = get_or_create_cred_prov(current_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_file_inode = get_or_create_inode_prov(file->f_inode);
+    if (!ptr_prov_file_inode) {
+      return 0;
+    }
+
+    uses(RL_OPEN, current_task, ptr_prov_file_inode, ptr_prov_current_task, ptr_prov_current_cred, file, 0);
+
+    return 0;
+}
+
+/*!
+ * @brief Record provenance when file_receive hook is triggered.
+ *
+ * This hook allows security modules to control the ability of a process to
+ * receive an open file descriptor via socket IPC.
+ * Record provenance relation RL_FILE_RCV by calling "uses" function.
+ * Information flows from inode of the file being received to the calling
+ * process, and eventually to its cred.
+ * @param file The file structure being received.
+ * @return 0 if permission is granted, no error occurred; -ENOMEM if the
+ * file inode provenance entry is NULL; Other error code inherited from uses
+ * function.
+ *
+ */
+SEC("lsm/file_receive")
+int BPF_PROG(file_receive, struct file *file) {
+    union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_file_inode;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct cred *current_cred;
+    bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
+
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_current_cred = get_or_create_cred_prov(current_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_file_inode = get_or_create_inode_prov(file->f_inode);
+    if (!ptr_prov_file_inode) {
+      return 0;
+    }
+
+    uses(RL_FILE_RCV, current_task, ptr_prov_file_inode, ptr_prov_current_task, ptr_prov_current_cred, file, 0);
+
+    return 0;
+}
+
+/*
+ *	Check permission before performing file locking operations.
+ *	Note: this hook mediates both flock and fcntl style locks.
+ *	@file contains the file structure.
+ *	@cmd contains the posix-translated lock operation to perform
+ *	(e.g. F_RDLCK, F_WRLCK).
+ *	Return 0 if permission is granted.
+ */
+SEC("lsm/file_lock")
+int BPF_PROG(file_lock, struct file *file, unsigned int cmd) {
+    union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_file_inode;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct cred *current_cred;
+    bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
+
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_current_cred = get_or_create_cred_prov(current_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_file_inode = get_or_create_inode_prov(file->f_inode);
+    if (!ptr_prov_file_inode) {
+      return 0;
+    }
+
+    generates(RL_FILE_LOCK, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_file_inode, file, cmd);
+
+    return 0;
+}
+
+/*!
+ * @brief Record provenance when file_ioctl hook is triggered.
+ *
+ * This hook is triggered when checking permission for an ioctl operation on
+ * @file.
+ * Note that @arg sometimes represents a user space pointer; in other cases, it
+ * may be a simple integer value.
+ * When @arg represents a user space pointer, it should never be used by the
+ * security module.
+ * Record provenance relation RL_WRITE_IOCTL by calling "generates" function
+ * and RL_READ_IOCTL by calling "uses" function.
+ * Information flows between the file and the calling process and its cred.
+ * At the end, we save @iprov provenance.
+ * @param file The file structure.
+ * @param cmd The operation to perform.
+ * @param arg The operational arguments.
+ * @return 0 if permission is granted or no error occurred; -ENOMEM if the file
+ * inode provenance entry is NULL; Other error code inherited from
+ * generates/uses function.
+ *
+ */
+SEC("lsm/file_ioctl")
+int BPF_PROG(file_ioctl, struct file *file, unsigned int cmd, unsigned long arg) {
+    union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_file_inode;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct cred *current_cred;
+    bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
+
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_current_cred = get_or_create_cred_prov(current_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_file_inode = get_or_create_inode_prov(file->f_inode);
+    if (!ptr_prov_file_inode) {
+      return 0;
+    }
+
+    generates(RL_WRITE_IOCTL, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_file_inode, NULL, 0);
+    uses(RL_READ_IOCTL, current_task, ptr_prov_file_inode, ptr_prov_current_task, ptr_prov_current_cred, NULL, 0);
+
+    return 0;
+}

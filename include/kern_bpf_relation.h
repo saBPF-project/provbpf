@@ -371,16 +371,14 @@ static __always_inline void informs(uint64_t type,
  */
 static __always_inline void derives(uint64_t type,
                                      void *from,
-                                     bool from_is_long,
                                      void *to,
-                                     bool to_is_long,
                                      const struct file *file,
                                      const uint64_t flags) {
 
     if (!should_record_relation(type, from, to)) {
       return;
     }
-    record_relation(type, from, from_is_long, to, to_is_long, file, flags);
+    record_relation(type, from, false, to, false, file, flags);
 }
 
 /*!
