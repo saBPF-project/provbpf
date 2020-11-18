@@ -91,7 +91,7 @@ int main(void) {
     if (err) {
         printf("Failed attach ... %d\n", err);
         goto close_prog;
-    }    
+    }
 
     /* Locate ring buffer */
     printf("Locating the ring buffer...\n");
@@ -128,7 +128,7 @@ int main(void) {
       prev_task_map_key = task_map_key;
     }
     close(task_map_fd);
-    printf("Done searching. Current process has been set opaque...\n");
+    printf("Done searching. Current process pid: %d has been set opaque...\n", current_pid);
 
     ringbuf = ring_buffer__new(map_fd, buf_process_entry, NULL, NULL);
     printf("Start polling forever...\n");

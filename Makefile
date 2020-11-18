@@ -36,6 +36,7 @@ btf_circle:
 
 kern:
 	clang -O2 -Wall \
+	-DPROV_FILTER_FILE_PERMISSION_OFF \
 	-D__KERNEL__ -D__ASM_SYSREG_H \
 	-Wno-unused-value -Wno-pointer-sign \
 	-Wno-compare-distinct-pointer-types \

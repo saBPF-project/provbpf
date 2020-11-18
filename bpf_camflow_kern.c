@@ -42,6 +42,7 @@ char _license[] SEC("license") = "GPL";
  * @return 0 if no error occurred. Other error codes unknown.
  *
  */
+#ifndef PROV_FILTER_TASK_ALLOC_OFF
 SEC("lsm/task_alloc")
 int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
     union prov_elt *ptr_prov, *ptr_prov_current, *ptr_prov_cred;
@@ -65,6 +66,7 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
     informs(RL_CLONE, ptr_prov_current, ptr_prov, NULL, clone_flags);
     return 0;
 }
+#endif
 
 /*!
  * @brief Record provenance when task_free hook is triggered.
@@ -74,6 +76,7 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
  * @param task The task in question (i.e., to be free).
  *
  */
+#ifndef PROV_FILTER_TASK_FREE_OFF
 SEC("lsm/task_free")
 int BPF_PROG(task_free, struct task_struct *task) {
     uint64_t key = get_key(task);
@@ -91,25 +94,27 @@ int BPF_PROG(task_free, struct task_struct *task) {
 
     return 0;
 }
-//
-// /*!
-//  * @brief Record provenance when task_fix_setuid hook is triggered.
-//  *
-//  * This hook is triggered when updating the module's state after setting one or
-//  * more of the user identity attributes of the current process.
-//  * The @flags parameter indicates which of the set*uid system calls invoked this
-//  * hook.
-//  * If @new is the set of credentials that will be installed,
-//  * modifications should be made to this rather than to @current->cred.
-//  * Information flows from @old to current process and then eventually flows to
-//  * @new (since modification should be made to @new instead of @current->cred).
-//  * Record provenance relation RL_SETUID.
-//  * @param new The set of credentials that will be installed
-//  * @param old The set of credentials that are being replaced.
-//  * @param flags One of the LSM_SETID_* values.
-//  * @return 0 if no error occurred. Other error codes unknown.
-//  *
-//  */
+#endif
+
+/*!
+ * @brief Record provenance when task_fix_setuid hook is triggered.
+ *
+ * This hook is triggered when updating the module's state after setting one or
+ * more of the user identity attributes of the current process.
+ * The @flags parameter indicates which of the set*uid system calls invoked this
+ * hook.
+ * If @new is the set of credentials that will be installed,
+ * modifications should be made to this rather than to @current->cred.
+ * Information flows from @old to current process and then eventually flows to
+ * @new (since modification should be made to @new instead of @current->cred).
+ * Record provenance relation RL_SETUID.
+ * @param new The set of credentials that will be installed
+ * @param old The set of credentials that are being replaced.
+ * @param flags One of the LSM_SETID_* values.
+ * @return 0 if no error occurred. Other error codes unknown.
+ *
+ */
+#ifndef PROV_FILTER_TASK_FIX_SETUID_OFF
 SEC("lsm/task_fix_setuid")
 int BPF_PROG(task_fix_setuid, struct cred *new, const struct cred *old, int flags) {
     union prov_elt *ptr_prov_new_cred, *ptr_prov_old_cred, *ptr_prov_task;
@@ -132,6 +137,7 @@ int BPF_PROG(task_fix_setuid, struct cred *new, const struct cred *old, int flag
 
     return 0;
 }
+#endif
 
 /*!
  * @brief Record provenance when task_setpgid hook is triggered.
@@ -145,6 +151,7 @@ int BPF_PROG(task_fix_setuid, struct cred *new, const struct cred *old, int flag
  * @flags contains one of the LSM_SETID_* values.
  * Return 0 on success.
  */
+#ifndef PROV_FILTER_TASK_FIX_SETGID_OFF
 SEC("lsm/task_fix_setgid")
 int BPF_PROG(task_fix_setgid, struct cred *new, const struct cred *old, int flags) {
     union prov_elt *ptr_prov_new_cred, *ptr_prov_old_cred, *ptr_prov_task;
@@ -167,6 +174,7 @@ int BPF_PROG(task_fix_setgid, struct cred *new, const struct cred *old, int flag
 
     return 0;
 }
+#endif
 
 /*!
  * @brief: Record provenance when task_getpgid hook is triggered.
@@ -176,6 +184,7 @@ int BPF_PROG(task_fix_setgid, struct cred *new, const struct cred *old, int flag
  * @p contains the task_struct for the process.
  * Return 0 if permission is granted.
  */
+#ifndef PROV_FILTER_TASK_GETPGID_OFF
 SEC("lsm/task_getpgid")
 int BPF_PROG(task_getpgid, struct task_struct *p) {
     union prov_elt *ptr_prov, *ptr_prov_current_task, *ptr_prov_current_cred;
@@ -200,6 +209,7 @@ int BPF_PROG(task_getpgid, struct task_struct *p) {
     uses(RL_GETGID, current_task, ptr_prov, ptr_prov_current_task, ptr_prov_current_cred, NULL, 0);
     return 0;
 }
+#endif
 
 /*!
  * @brief Record provenance when inode_alloc_security hook is triggered.
@@ -221,6 +231,7 @@ int BPF_PROG(task_getpgid, struct task_struct *p) {
  * for the new inode provenance entry. Other error codes unknown.
  *
  */
+#ifndef PROV_FILTER_INODE_ALLOC_SECURITY_OFF
 SEC("lsm/inode_alloc_security")
 int BPF_PROG(inode_alloc_security, struct inode *inode) {
     union prov_elt *ptr_prov;
@@ -233,6 +244,7 @@ int BPF_PROG(inode_alloc_security, struct inode *inode) {
 
     return 0;
 }
+#endif
 
 /*!
  * @brief Record provenance when inode_free_security hook is triggered.
@@ -245,6 +257,7 @@ int BPF_PROG(inode_alloc_security, struct inode *inode) {
  * @param inode The inode structure whose security is to be freed.
  *
  */
+#ifndef PROV_FILTER_INODE_FREE_SECURITY_OFF
 SEC("lsm/inode_free_security")
 int BPF_PROG(inode_free_security, struct inode *inode) {
     uint64_t key = get_key(inode);
@@ -260,6 +273,7 @@ int BPF_PROG(inode_free_security, struct inode *inode) {
     bpf_map_delete_elem(&inode_map, &key);
     return 0;
 }
+#endif
 
 /*!
  * @brief Record provenance when inode_create hook is triggered.
@@ -275,6 +289,7 @@ int BPF_PROG(inode_free_security, struct inode *inode) {
  * entry is NULL. Other error codes unknown.
  *
  */
+#ifndef PROV_FILTER_INODE_CREATE_OFF
 SEC("lsm/inode_create")
 int BPF_PROG(inode_create, struct inode *dir, struct dentry *dentry, umode_t mode) {
     union prov_elt *ptr_prov_current_cred, *ptr_prov_current_task, *ptr_prov_inode;
@@ -299,6 +314,7 @@ int BPF_PROG(inode_create, struct inode *dir, struct dentry *dentry, umode_t mod
 
     return 0;
 }
+#endif
 
 /*!
  * @brief Record provenance when inode_permission hook is triggered.
@@ -327,6 +343,7 @@ int BPF_PROG(inode_create, struct inode *dir, struct dentry *dentry, umode_t mod
  * @return 0 if permission is granted; -ENOMEM if @inode's provenance does not
  * exist. Other error codes unknown.
  */
+#ifndef PROV_FILTER_INODE_PERMISSION_OFF
 SEC("lsm/inode_permission")
 int BPF_PROG(inode_permission, struct inode *inode, int mask) {
     union prov_elt *ptr_prov_current_cred, *ptr_prov_current_task, *ptr_prov_inode;
@@ -361,7 +378,6 @@ int BPF_PROG(inode_permission, struct inode *inode, int mask) {
 
     uint64_t relation_type = 0;
 
-    // Left commented due to producing significant amount of output.
     if (mask & MAY_EXEC) {
       relation_type = RL_PERM_EXEC;
     } else if (mask & MAY_READ) {
@@ -378,6 +394,7 @@ int BPF_PROG(inode_permission, struct inode *inode, int mask) {
 
     return 0;
 }
+#endif
 
 /*!
  * @brief Record provenance when inode_link hook is triggered.
@@ -402,6 +419,7 @@ int BPF_PROG(inode_permission, struct inode *inode, int mask) {
  * of the existing link to the file or the inode provenance of the new parent
  * directory of new link does not exist.
  */
+#ifndef PROV_FILTER_INODE_LINK_OFF
 SEC("lsm/inode_link")
 int BPF_PROG(inode_link, struct dentry *old_dentry, struct inode *dir, struct dentry *new_dentry) {
     union prov_elt *ptr_prov_current_cred, *ptr_prov_current_task, *ptr_prov;
@@ -426,6 +444,7 @@ int BPF_PROG(inode_link, struct dentry *old_dentry, struct inode *dir, struct de
 
     return 0;
 }
+#endif
 
 /*!
  * @brief Record provenance when inode_unlink hook is triggered.
@@ -435,6 +454,7 @@ int BPF_PROG(inode_link, struct dentry *old_dentry, struct inode *dir, struct de
  * @dentry contains the dentry structure for file to be unlinked.
  * Return 0 if permission is granted.
  */
+#ifndef PROV_FILTER_INODE_UNLINK_OFF
 SEC("lsm/inode_unlink")
 int BPF_PROG(inode_unlink, struct inode *dir, struct dentry *dentry) {
     union prov_elt *ptr_prov_current_cred, *ptr_prov_current_task, *ptr_prov;
@@ -459,6 +479,7 @@ int BPF_PROG(inode_unlink, struct inode *dir, struct dentry *dentry) {
 
     return 0;
 }
+#endif
 
 /*!
  * @brief Record provenance when inode_symlink hook is triggered.
@@ -469,6 +490,7 @@ int BPF_PROG(inode_unlink, struct inode *dir, struct dentry *dentry) {
  * @old_name contains the pathname of file.
  * Return 0 if permission is granted.
  */
+#ifndef PROV_FILTER_INODE_SYMLINK_OFF
 SEC("lsm/inode_symlink")
 int BPF_PROG(inode_symlink, struct inode *dir, struct dentry *dentry, const char *old_name) {
     union prov_elt *ptr_prov_current_cred, *ptr_prov_current_task, *ptr_prov;
@@ -493,6 +515,7 @@ int BPF_PROG(inode_symlink, struct inode *dir, struct dentry *dentry, const char
 
     return 0;
 }
+#endif
 
 /*!
  * @brief Record provenance when inode_rename hook is triggered.
@@ -506,6 +529,7 @@ int BPF_PROG(inode_symlink, struct inode *dir, struct dentry *dentry, const char
  * @return Error code is the same as in "provenance_inode_link" function.
  *
  */
+#ifndef PROV_FILTER_INODE_RENAME_OFF
 SEC("lsm/inode_rename")
 int BPF_PROG(inode_rename, struct inode *old_dir, struct dentry *old_dentry, struct inode *new_dir, struct dentry *new_dentry) {
     union prov_elt *ptr_prov_current_cred, *ptr_prov_current_task, *ptr_prov;
@@ -530,6 +554,7 @@ int BPF_PROG(inode_rename, struct inode *old_dir, struct dentry *old_dentry, str
 
     return 0;
 }
+#endif
 
 /*!
  * @brief Record provenance when inode_setattr hook is triggered.
@@ -555,6 +580,7 @@ int BPF_PROG(inode_rename, struct inode *old_dir, struct dentry *old_dentry, str
  * entry. Other error codes unknown.
  *
  */
+#ifndef PROV_FILTER_INODE_SETATTR_OFF
 SEC("lsm/inode_setattr")
 int BPF_PROG(inode_setattr, struct dentry *dentry, struct iattr *attr) {
     union prov_elt *ptr_prov_current_cred, *ptr_prov_current_task, *ptr_prov_inode, *ptr_prov_iattr;
@@ -584,7 +610,7 @@ int BPF_PROG(inode_setattr, struct dentry *dentry, struct iattr *attr) {
 
     return 0;
 }
-
+#endif
 
 /*!
  * @brief Record provenance when inode_getattr hook is triggered.
@@ -599,6 +625,7 @@ int BPF_PROG(inode_setattr, struct dentry *dentry, struct iattr *attr) {
  * file is NULL. Other error codes unknown.
  *
  */
+#ifndef PROV_FILTER_INODE_GETATTR_OFF
 SEC("lsm/inode_getattr")
 int BPF_PROG(inode_getattr, const struct path *path) {
     union prov_elt *ptr_prov_current_cred, *ptr_prov_current_task, *ptr_prov_inode;
@@ -623,6 +650,7 @@ int BPF_PROG(inode_getattr, const struct path *path) {
 
     return 0;
 }
+#endif
 
 /*!
  * @brief Record provenance when inode_readlink hook is triggered.
@@ -637,6 +665,7 @@ int BPF_PROG(inode_getattr, const struct path *path) {
  * entry is NULL. Other error codes unknown.
  *
  */
+#ifndef PROV_FILTER_INODE_READLINK_OFF
 SEC("lsm/inode_readlink")
 int BPF_PROG(inode_readlink, struct dentry *dentry) {
     union prov_elt *ptr_prov_current_cred, *ptr_prov_current_task, *ptr_prov_inode;
@@ -661,6 +690,7 @@ int BPF_PROG(inode_readlink, struct dentry *dentry) {
 
     return 0;
 }
+#endif
 
 /*!
  * @brief Record provenance when inode_post_setxattr hook is triggered.
@@ -680,6 +710,7 @@ int BPF_PROG(inode_readlink, struct dentry *dentry) {
  * @param flags The operational flags.
  *
  */
+#ifndef PROV_FILTER_INODE_POST_SETXATTR_OFF
 SEC("lsm/inode_post_setxattr")
 int BPF_PROG(inode_post_setxattr, struct dentry *dentry, const char *name,const void *value, size_t size, int flags) {
     union prov_elt *ptr_prov_current_cred, *ptr_prov_current_task, *ptr_prov_inode;
@@ -704,6 +735,7 @@ int BPF_PROG(inode_post_setxattr, struct dentry *dentry, const char *name,const 
 
     return 0;
 }
+#endif
 
 /*!
  * @brief Record provenance when inode_getxattr hook is triggered.
@@ -721,6 +753,7 @@ int BPF_PROG(inode_post_setxattr, struct dentry *dentry, const char *name,const 
  * error codes inherited from "record_read_xattr" function.
  *
  */
+#ifndef PROV_FILTER_INODE_GETXATTR_OFF
 SEC("lsm/inode_getxattr")
 int BPF_PROG(inode_getxattr, struct dentry *dentry, const char *name) {
     union prov_elt *ptr_prov_current_cred, *ptr_prov_current_task, *ptr_prov_inode;
@@ -745,6 +778,7 @@ int BPF_PROG(inode_getxattr, struct dentry *dentry, const char *name) {
 
     return 0;
 }
+#endif
 
 /*!
  * @brief Record provenance when inode_listxattr hook is triggered.
@@ -758,6 +792,7 @@ int BPF_PROG(inode_getxattr, struct dentry *dentry, const char *name) {
  * @param dentry The dentry structure for the file.
  * @return 0 if no error occurred; -ENOMEM if inode provenance is NULL.
  */
+#ifndef PROV_FILTER_INODE_LISTXATTR_OFF
 SEC("lsm/inode_listxattr")
 int BPF_PROG(inode_listxattr, struct dentry *dentry) {
     union prov_elt *ptr_prov_current_cred, *ptr_prov_current_task, *ptr_prov_inode;
@@ -782,6 +817,7 @@ int BPF_PROG(inode_listxattr, struct dentry *dentry) {
 
     return 0;
 }
+#endif
 
 /*!
  * @brief Record provenance when inode_removexattr hook is triggered.
@@ -798,6 +834,7 @@ int BPF_PROG(inode_listxattr, struct dentry *dentry) {
  * @param name The name of the extended attribute.
  *
  */
+#ifndef PROV_FILTER_INODE_REMOVEXATTR_OFF
 SEC("lsm/inode_removexattr")
 int BPF_PROG(inode_removexattr, struct dentry *dentry, const char *name) {
     union prov_elt *ptr_prov_current_cred, *ptr_prov_current_task, *ptr_prov_inode;
@@ -822,6 +859,7 @@ int BPF_PROG(inode_removexattr, struct dentry *dentry, const char *name) {
 
     return 0;
 }
+#endif
 
 /*!
  * @brief Record provenance when cred_alloc_blank hook is triggered.
@@ -837,6 +875,7 @@ int BPF_PROG(inode_removexattr, struct dentry *dentry, const char *name) {
  * the new provenance entry. Other error codes unknown.
  *
  */
+#ifndef PROV_FILTER_CRED_ALLOC_BLANK_OFF
 SEC("lsm/cred_alloc_blank")
 int BPF_PROG(cred_alloc_blank, struct cred *cred, gfp_t gfp) {
     union prov_elt *ptr_prov;
@@ -857,6 +896,7 @@ int BPF_PROG(cred_alloc_blank, struct cred *cred, gfp_t gfp) {
 
     return 0;
 }
+#endif
 
 /*!
  * @brief Record provenance when cred_free hook is triggered.
@@ -867,6 +907,7 @@ int BPF_PROG(cred_alloc_blank, struct cred *cred, gfp_t gfp) {
  * @param cred Points to the credentials to be freed.
  *
  */
+#ifndef PROV_FILTER_CRED_FREE_OFF
 SEC("lsm/cred_free")
 int BPF_PROG(cred_free, struct cred *cred) {
     uint64_t key = get_key(cred);
@@ -890,6 +931,7 @@ int BPF_PROG(cred_free, struct cred *cred) {
     bpf_map_delete_elem(&cred_map, &key);
     return 0;
 }
+#endif
 
 /*!
  * @brief Record provenance when cred_prepare hook is triggered.
@@ -906,6 +948,7 @@ int BPF_PROG(cred_free, struct cred *cred) {
  * @return 0 if no error occured. Other error codes unknown.
  *
  */
+#ifndef PROV_FILTER_CRED_PREPARE_OFF
 SEC("lsm/cred_prepare")
 int BPF_PROG(cred_prepare, struct cred *new, const struct cred *old, gfp_t gfp) {
     union prov_elt *ptr_prov_new, *ptr_prov_old, *ptr_prov_task;
@@ -934,7 +977,9 @@ int BPF_PROG(cred_prepare, struct cred *new, const struct cred *old, gfp_t gfp) 
 
     return 0;
 }
+#endif
 
+#ifndef PROV_FILTER_PTRACE_ACCESS_CHECK_OFF
 SEC("lsm/ptrace_access_check")
 int BPF_PROG(ptrace_access_check, struct task_struct *child, unsigned int mode) {
     union prov_elt *ptr_prov_child, *ptr_prov_child_cred, *ptr_prov_current_task, *ptr_prov_current_cred;
@@ -974,7 +1019,9 @@ int BPF_PROG(ptrace_access_check, struct task_struct *child, unsigned int mode) 
 
     return 0;
 }
+#endif
 
+#ifndef PROV_FILTER_PTRACE_TRACEME_OFF
 SEC("lsm/ptrace_traceme")
 int BPF_PROG(ptrace_traceme, struct task_struct *parent) {
     union prov_elt *ptr_prov, *ptr_prov_current;
@@ -992,6 +1039,7 @@ int BPF_PROG(ptrace_traceme, struct task_struct *parent) {
     informs(RL_PTRACE_TRACEME, ptr_prov_current, ptr_prov, NULL, 0);
     return 0;
 }
+#endif
 
 /*!
  * @brief Record provenance when mmap_file hook is triggered.
@@ -1028,6 +1076,7 @@ int BPF_PROG(ptrace_traceme, struct task_struct *parent) {
  * from derives function.
  *
  */
+#ifndef PROV_FILTER_MMAP_FILE_OFF
 SEC("lsm/mmap_file")
 int BPF_PROG(mmap_file, struct file *file, unsigned long reqprot, unsigned long prot, unsigned long flags) {
     union prov_elt *ptr_prov_current, *ptr_prov_current_cred, *ptr_prov_file_inode;
@@ -1080,6 +1129,7 @@ int BPF_PROG(mmap_file, struct file *file, unsigned long reqprot, unsigned long 
 
     return 0;
 }
+#endif
 
 #ifdef CONFIG_SECURITY_FLOW_FRIENDLY
 /*!
@@ -1099,6 +1149,7 @@ int BPF_PROG(mmap_file, struct file *file, unsigned long reqprot, unsigned long 
  * @param end Unused parameter.
  *
  */
+#ifndef PROV_FILTER_MMAP_MUNMAP_OFF
 SEC("lsm/mmap_munmap")
 int BPF_PROG(mmap_munmap, struct mm_struct *mm, struct vm_area_struct *vma, unsigned long start, unsigned long end) {
     union prov_elt *ptr_prov_current, *ptr_prov_current_cred, *ptr_prov_inode;
@@ -1130,7 +1181,8 @@ int BPF_PROG(mmap_munmap, struct mm_struct *mm, struct vm_area_struct *vma, unsi
 
     return 0;
 }
- #endif
+#endif
+#endif
 
  /*!
   * @brief Record provenance when file_permission hook is triggered.
@@ -1160,6 +1212,7 @@ int BPF_PROG(mmap_munmap, struct mm_struct *mm, struct vm_area_struct *vma, unsi
   * Other error codes unknown.
   *
   */
+#ifndef PROV_FILTER_FILE_PERMISSION_OFF
 SEC("lsm/file_permission")
 int BPF_PROG(file_permission, struct file *file, int mask) {
     union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_file_inode;
@@ -1182,42 +1235,42 @@ int BPF_PROG(file_permission, struct file *file, int mask) {
       return 0;
     }
 
-    // Left commented due to generating extensive output
     if (is_inode_dir(file->f_inode)) {
       if ((perms & (DIR__WRITE)) != 0) {
-        // generates(RL_WRITE, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_file_inode, file, mask);
+        generates(RL_WRITE, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_file_inode, file, mask);
       }
       if ((perms & (DIR__READ)) != 0) {
-        // uses(RL_READ, current_task, ptr_prov_file_inode, ptr_prov_current_task, ptr_prov_current_cred, file, mask);
+        uses(RL_READ, current_task, ptr_prov_file_inode, ptr_prov_current_task, ptr_prov_current_cred, file, mask);
       }
       if ((perms & (DIR__SEARCH)) != 0) {
-        // uses(RL_SEARCH, current_task, ptr_prov_file_inode, ptr_prov_current_task, ptr_prov_current_cred, file, mask);
+        uses(RL_SEARCH, current_task, ptr_prov_file_inode, ptr_prov_current_task, ptr_prov_current_cred, file, mask);
       }
     } else if (is_inode_socket(file->f_inode)) {
       if ((perms & (FILE__WRITE | FILE__APPEND)) != 0) {
-        // generates(RL_SND, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_file_inode, file, mask);
+        generates(RL_SND, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_file_inode, file, mask);
       }
       if ((perms & (FILE__READ)) != 0) {
-        // uses(RL_RCV, current_task, ptr_prov_file_inode, ptr_prov_current_task, ptr_prov_current_cred, file, mask);
+        uses(RL_RCV, current_task, ptr_prov_file_inode, ptr_prov_current_task, ptr_prov_current_cred, file, mask);
       }
     } else {
       if ((perms & (FILE__WRITE | FILE__APPEND)) != 0) {
-        // generates(RL_WRITE, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_file_inode, file, mask);
+        generates(RL_WRITE, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_file_inode, file, mask);
       }
       if ((perms & (FILE__READ)) != 0) {
-        // uses(RL_READ, current_task, ptr_prov_file_inode, ptr_prov_current_task, ptr_prov_current_cred, file, mask);
+        uses(RL_READ, current_task, ptr_prov_file_inode, ptr_prov_current_task, ptr_prov_current_cred, file, mask);
       }
       if ((perms & (FILE__EXECUTE)) != 0) {
         if (provenance_is_opaque(ptr_prov_file_inode)) {
           set_opaque(ptr_prov_current_cred);
         } else {
-          // derives(RL_EXEC, ptr_prov_file_inode, ptr_prov_current_cred, file, mask);
+          derives(RL_EXEC, ptr_prov_file_inode, ptr_prov_current_cred, file, mask);
         }
       }
     }
 
     return 0;
 }
+#endif
 
 #ifdef CONFIG_SECURITY_FLOW_FRIENDLY
 /*!
@@ -1233,6 +1286,7 @@ int BPF_PROG(file_permission, struct file *file, int mask) {
  * entry is NULL; Other error code inherited from derives function.
  *
  */
+#ifndef PROV_FILTER_FILE_SPLICE_PIPE_TO_PIPE_OFF
 SEC("lsm/file_splice_pipe_to_pipe")
 int BPF_PROG(file_splice_pipe_to_pipe, struct file *in, struct file *out) {
     union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_in_inode, *ptr_prov_out_inode;
@@ -1263,6 +1317,7 @@ int BPF_PROG(file_splice_pipe_to_pipe, struct file *in, struct file *out) {
     return 0;
 }
 #endif
+#endif
 
 /*!
  * @brief Record provenance when file_open hook is triggered.
@@ -1279,6 +1334,7 @@ int BPF_PROG(file_splice_pipe_to_pipe, struct file *in, struct file *out) {
  * NULL; other error code inherited from uses function.
  *
  */
+#ifndef PROV_FILTER_FILE_OPEN_OFF
 SEC("lsm/file_open")
 int BPF_PROG(file_open, struct file *file) {
     union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_file_inode;
@@ -1303,6 +1359,7 @@ int BPF_PROG(file_open, struct file *file) {
 
     return 0;
 }
+#endif
 
 /*!
  * @brief Record provenance when file_receive hook is triggered.
@@ -1318,6 +1375,7 @@ int BPF_PROG(file_open, struct file *file) {
  * function.
  *
  */
+#ifndef PROV_FILTER_FILE_RECEIVE_OFF
 SEC("lsm/file_receive")
 int BPF_PROG(file_receive, struct file *file) {
     union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_file_inode;
@@ -1342,6 +1400,7 @@ int BPF_PROG(file_receive, struct file *file) {
 
     return 0;
 }
+#endif
 
 /*
  *	Check permission before performing file locking operations.
@@ -1351,6 +1410,7 @@ int BPF_PROG(file_receive, struct file *file) {
  *	(e.g. F_RDLCK, F_WRLCK).
  *	Return 0 if permission is granted.
  */
+#ifndef PROV_FILTER_FILE_LOCK_OFF
 SEC("lsm/file_lock")
 int BPF_PROG(file_lock, struct file *file, unsigned int cmd) {
     union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_file_inode;
@@ -1375,6 +1435,7 @@ int BPF_PROG(file_lock, struct file *file, unsigned int cmd) {
 
     return 0;
 }
+#endif
 
 /*!
  * @brief Record provenance when file_ioctl hook is triggered.
@@ -1397,6 +1458,7 @@ int BPF_PROG(file_lock, struct file *file, unsigned int cmd) {
  * generates/uses function.
  *
  */
+#ifndef PROV_FILTER_FILE_IOCTL_OFF
 SEC("lsm/file_ioctl")
 int BPF_PROG(file_ioctl, struct file *file, unsigned int cmd, unsigned long arg) {
     union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_file_inode;
@@ -1422,3 +1484,4 @@ int BPF_PROG(file_ioctl, struct file *file, unsigned int cmd, unsigned long arg)
 
     return 0;
 }
+#endif
