@@ -17,6 +17,7 @@
 #include "kern_bpf_task.h"
 #include "kern_bpf_inode.h"
 #include "kern_bpf_cred.h"
+#include "kern_bpf_msg_msg.h"
 #include "kern_bpf_iattr.h"
 #include "kern_bpf_filter.h"
 #include "kern_bpf_relation.h"
@@ -87,7 +88,7 @@ int BPF_PROG(task_free, struct task_struct *task) {
         return 0;
 
     /* Record task terminate */
-    record_terminate(RL_TERMINATE_TASK, ptr_prov, false);
+    record_terminate(RL_TERMINATE_TASK, ptr_prov);
 
     /* Delete task provenance since the task no longer exists */
     bpf_map_delete_elem(&task_map, &key);
@@ -268,7 +269,7 @@ int BPF_PROG(inode_free_security, struct inode *inode) {
         return 0;
 
     /* Record inode freed */
-    record_terminate(RL_FREED, ptr_prov, false);
+    record_terminate(RL_FREED, ptr_prov);
 
     bpf_map_delete_elem(&inode_map, &key);
     return 0;
@@ -926,7 +927,7 @@ int BPF_PROG(cred_free, struct cred *cred) {
     }
 
     // Record cred freed
-    record_terminate(RL_TERMINATE_PROC, ptr_prov, false);
+    record_terminate(RL_TERMINATE_PROC, ptr_prov);
 
     bpf_map_delete_elem(&cred_map, &key);
     return 0;
@@ -1484,4 +1485,286 @@ int BPF_PROG(file_ioctl, struct file *file, unsigned int cmd, unsigned long arg)
 
     return 0;
 }
+#endif
+
+// SEC("lsm/file_send_sigiotask")
+// int BPF_PROG(file_send_sigiotask, struct task_struct *task, struct fown_struct *fown, int signum) {
+//     // TODO: fix issue R2 is ptr_fown_struct invalid negative access: off=-80
+//
+//     struct file *file = container_of(fown, struct file, f_owner);
+//     struct inode *inode = file->f_inode;
+//     union prov_elt *ptr_prov_task, *ptr_prov_cred, *ptr_prov_inode;
+//     struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+//
+//     ptr_prov_task = get_or_create_task_prov(task);
+//     if (!ptr_prov_task) {
+//       return 0;
+//     }
+//     ptr_prov_cred = get_or_create_cred_prov(task->cred, task);
+//     if (!ptr_prov_cred) {
+//       return 0;
+//     }
+//     ptr_prov_inode = get_or_create_inode_prov(inode);
+//     if (!ptr_prov_inode) {
+//       return 0;
+//     }
+//
+//     if (!signum) {
+//       signum = SIGIO;
+//     }
+//
+//     uses(RL_FILE_SIGIO, current_task, ptr_prov_inode, ptr_prov_task, ptr_prov_cred, file, signum);
+//
+//     return 0;
+// }
+
+/*!
+ * @brief Record provenance when msg_msg_alloc_security hook is triggered.
+ *
+ * This hooks allocates and attaches a security structure to the msg->security
+ * field.
+ * The security field is initialized to NULL when the structure is first
+ * created.
+ * This function initializes and attaches a new provenance entry to the
+ * msg->provenance field.
+ * We create a new provenance node ENT_MSG and update the information in the
+ * provenance entry from @msg.
+ * Record provenance relation RL_MSG_CREATE by calling "generates" function.
+ * Information flows from cred of the calling process to the task, and
+ * eventually to the newly created msg node.
+ * @param msg The message structure to be modified.
+ * @return 0 if operation was successful and permission is granted; -ENOMEM if
+ * no memory can be allocated for the new provenance entry; other error codes
+ * inherited from generates function.
+ *
+ */
+#ifndef PROV_FILTER_MSG_MSG_ALLOC_SECURITY_OFF
+SEC("lsm/msg_msg_alloc_security")
+int BPF_PROG(msg_msg_alloc_security, struct msg_msg *msg) {
+    union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_msg;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct cred *current_cred;
+    bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
+
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_current_cred = get_or_create_cred_prov(current_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_msg = get_or_create_msg_msg_prov(msg);
+    if (!ptr_prov_msg) {
+      return 0;
+    }
+
+    generates(RL_MSG_CREATE, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_msg, NULL, 0);
+
+    return 0;
+}
+#endif
+
+/*!
+ * @brief Record provenance when msg_msg_free_security hook is triggered.
+ *
+ * This hook is triggered when deallocating the security structure for this
+ * message.
+ * Free msg provenance entry when security structure for this message is
+ * deallocated.
+ * If the msg has a valid provenance entry pointer (i.e., non-NULL), free the
+ * memory and set the pointer to NULL.
+ * @param msg The message structure whose security structure to be freed.
+ *
+ */
+#ifndef PROV_FILTER_MSG_MSG_FREE_SECURITY_OFF
+SEC("lsm/msg_msg_free_security")
+int BPF_PROG(msg_msg_free_security, struct msg_msg *msg) {
+    uint64_t key = get_key(msg);
+    union prov_elt *ptr_prov_msg;
+
+    ptr_prov_msg = get_or_create_msg_msg_prov(msg);
+    if (!ptr_prov_msg) {
+      return 0;
+    }
+
+    record_terminate(RL_FREED, ptr_prov_msg);
+
+    bpf_map_delete_elem(&msg_msg_map, &key);
+    return 0;
+}
+#endif
+
+/*!
+ * @brief Helper function for two security hooks: msg_queue_msgsnd and
+ * mq_timedsend.
+ *
+ * Record provenance relation RL_SND_MSG_Q by calling "generates" function.
+ * Information flows from calling process's cred to the process, and eventually
+ * to msg.
+ * @param msg The message structure.
+ * @return 0 if no error occurred; Other error codes inherited from generates
+ * function.
+ *
+ */
+static inline int __mq_msgsnd(struct msg_msg *msg) {
+    union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_msg;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct cred *current_cred;
+    bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
+
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_current_cred = get_or_create_cred_prov(current_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_msg = get_or_create_msg_msg_prov(msg);
+    if (!ptr_prov_msg) {
+      return 0;
+    }
+
+    generates(RL_SND_MSG_Q, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_msg, NULL, 0);
+
+    return 0;
+}
+
+/*!
+ * @brief Record provenance when msg_queue_msgsnd hook is triggered.
+ *
+ * This hook is trigger when checking permission before a message, @msg,
+ * is enqueued on the message queue, @msq.
+ * This function simply calls the helper function __mq_msgsnd.
+ * @param msq The message queue to send message to.
+ * @param msg The message to be enqueued.
+ * @param msqflg The operational flags.
+ * @return 0 if permission is granted. Other error codes inherited from
+ * __mq_msgsnd function.
+ *
+ */
+#ifndef PROV_FILTER_MSG_QUEUE_MSGSND_OFF
+SEC("lsm/msg_queue_msgsnd")
+int BPF_PROG(msg_queue_msgsnd, struct kern_ipc_perm *msq, struct msg_msg *msg, int msqflg) {
+    return __mq_msgsnd(msg);
+}
+#endif
+
+/*!
+ * @brief Record provenance when mq_timedsend hook is triggered.
+ *
+ * This function simply calls the helper function __mq_msgsnd.
+ * @param inode Unused parameter.
+ * @param msg The message to be enqueued.
+ * @param ts Unused parameter.
+ * @return 0 if permission is granted. Other error codes inherited from
+ * __mq_msgsnd function.
+ *
+ */
+#ifdef CONFIG_SECURITY_FLOW_FRIENDLY
+#ifndef PROV_FILTER_MQ_TIMEDSEND_OFF
+SEC("lsm/mq_timedsend")
+int BPF_PROG(mq_timedsend, struct inode *inode, struct msg_msg *msg, struct timespec64 *ts) {
+    return __mq_msgsnd(msg);
+}
+#endif
+#endif
+
+/*!
+ * @brief Helper function for two security hooks: msg_queue_msgrcv and
+ * mq_timedreceive.
+ *
+ * Record provenance relation RL_RCV_MSG_Q by calling "uses" function.
+ * Information flows from msg to the calling process, and eventually to its
+ * cred.
+ * @param cprov The calling process's cred provenance entry pointer.
+ * @param msg The message structure.
+ * @return 0 if no error occurred; Other error codes inherited from uses
+ * function.
+ *
+ */
+static inline int __mq_msgrcv(union prov_elt *ptr_prov_cred, struct msg_msg *msg) {
+    union prov_elt *ptr_prov_msg, *ptr_prov_current_task;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_msg = get_or_create_msg_msg_prov(msg);
+    if (!ptr_prov_msg) {
+      return 0;
+    }
+
+    uses(RL_RCV_MSG_Q, current_task, ptr_prov_msg, ptr_prov_current_task, ptr_prov_cred, NULL, 0);
+
+    return 0;
+}
+
+/*!
+ * @brief Record provenance when msg_queue_msgrcv hook is triggered.
+ *
+ * This hook is triggered when checking permission before a message, @msg, is
+ * removed from the message queue, @msq.
+ * The @target task structure contains a pointer to the process that will be
+ * receiving the message (not equal to the current process when inline receives
+ * are being performed).
+ * Since it is the receiving task that receives the msg,
+ * we first obtain the receiving task's cred provenance entry pointer,
+ * and then simply calls the helper function __mq_msgrcv to record the
+ * information flow.
+ * @param msq The message queue to retrieve message from.
+ * @param msg The message destination.
+ * @param target The task structure for recipient process.
+ * @param type The type of message requested.
+ * @param mode The operational flags.
+ * @return 0 if permission is granted. Other error codes inherited from
+ * __mq_msgrcv function.
+ *
+ */
+#ifndef PROV_FILTER_MSG_QUEUE_MSGRCV_OFF
+SEC("lsm/msg_queue_msgrcv")
+int BPF_PROG(msg_queue_msgrcv, struct kern_ipc_perm *msq, struct msg_msg *msg, struct task_struct *target, long type, int mode) {
+    union prov_elt *ptr_prov_cred;
+
+    ptr_prov_cred = get_or_create_cred_prov(target->real_cred, target);
+    if (!ptr_prov_cred) {
+      return 0;
+    }
+
+    return __mq_msgrcv(ptr_prov_cred, msg);
+}
+#endif
+
+/*!
+ * @brief Record provenance when mq_timedreceive hook is triggered.
+ *
+ * Current process will be receiving the message.
+ * We simply calls the helper function __mq_msgrcv to record the information
+ * flow.
+ * @param inode Unused parameter.
+ * @param msg The message destination.
+ * @param ts Unused parameter.
+ * @return 0 if permission is granted. Other error codes inherited from
+ * __mq_msgrcv function.
+ *
+ */
+#ifdef CONFIG_SECURITY_FLOW_FRIENDLY
+#ifndef PROV_FILTER_MQ_TIMEDRECEIVE_OFF
+SEC("lsm/mq_timedreceive")
+int BPF_PROG(mq_timedreceive, struct inode *inode, struct msg_msg *msg, struct timespec64 *ts) {
+    union prov_elt *ptr_prov_current_cred;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct cred *current_cred;
+    bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
+
+    ptr_prov_current_cred = get_or_create_cred_prov(current_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+
+    return __mq_msgrcv(ptr_prov_current_cred, msg);
+}
+#endif
 #endif

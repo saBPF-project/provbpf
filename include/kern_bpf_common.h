@@ -8,6 +8,8 @@
 // probably bad, find where it is defined
 #define NULL 0
 
+#define SIGIO		23
+
 #define MAP_SHARED 					0x01
 #define MAP_SHARED_VALIDATE 0x03
 #define MAP_TYPE 	 					0x0f

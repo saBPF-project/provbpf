@@ -89,8 +89,7 @@ static __always_inline void __write_relation(const uint64_t type,
 }
 
 static __always_inline void record_terminate(uint64_t type,
-                                             void *node,
-                                             bool node_is_long)
+                                             void *node)
 {
     union long_prov_elt *n = node;
     union prov_elt relation;
@@ -101,12 +100,12 @@ static __always_inline void record_terminate(uint64_t type,
     prov_init_relation(&relation, type, NULL, 0);
     // set send node
     __builtin_memcpy(&(relation.relation_info.snd), &node_identifier(n), sizeof(union prov_identifier));
-    record_provenance(node_is_long, node);
+    record_provenance(false, node);
     // update node version
     node_identifier(n).version++;
     // set rcv node
     __builtin_memcpy(&(relation.relation_info.rcv), &node_identifier(n), sizeof(union prov_identifier));
-    record_provenance(node_is_long, node);
+    record_provenance(false, node);
 
     record_provenance(false, &relation);
 }
