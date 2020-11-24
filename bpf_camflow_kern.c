@@ -18,6 +18,7 @@
 #include "kern_bpf_inode.h"
 #include "kern_bpf_cred.h"
 #include "kern_bpf_msg_msg.h"
+#include "kern_bpf_kern_ipc_perm.h"
 #include "kern_bpf_iattr.h"
 #include "kern_bpf_filter.h"
 #include "kern_bpf_relation.h"
@@ -1765,6 +1766,184 @@ int BPF_PROG(mq_timedreceive, struct inode *inode, struct msg_msg *msg, struct t
     }
 
     return __mq_msgrcv(ptr_prov_current_cred, msg);
+}
+#endif
+#endif
+
+/*!
+ * @brief Record provenance when shm_alloc_security hook is triggered.
+ *
+ * This hunk is triggered when allocating and attaching a security structure to
+ * the shp->shm_perm.security field.
+ * The security field is initialized to NULL when the structure is first
+ * created.
+ * This function allocates and attaches a provenance entry to the
+ * shp->shm_perm.provenance field.
+ * That is, it creates a new provenance node ENT_SHM.
+ * It also fills in some provenance information based on the information
+ * contained in @shp.
+ * Record provenance relation RL_SH_CREATE_READ by calling "uses" function.
+ * For read, information flows from shared memory to the calling process, and
+ * eventually to its cred.
+ * Record provenance relation RL_SH_CREATE_WRITE by calling "uses" function.
+ * For write, information flows from the calling process's cree to the process,
+ * and eventually to shared memory.
+ * @param shp The shared memory structure to be modified.
+ * @return 0 if operation was successful and permission is granted, no error
+ * occurred. -ENOMEM if no memory can be allocated to create a new ENT_SHM
+ * provenance entry. Other error code inherited from uses and generates function
+ *.
+ *
+ */
+#ifndef PROV_FILTER_SHM_ALLOC_SECURITY_OFF
+SEC("lsm/shm_alloc_security")
+int BPF_PROG(shm_alloc_security, struct kern_ipc_perm *shp) {
+    union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_shp;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct cred *current_cred;
+    bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
+
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_current_cred = get_or_create_cred_prov(current_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_shp = get_or_create_kern_ipc_perm_prov(shp);
+    if (!ptr_prov_shp) {
+      return 0;
+    }
+
+    generates(RL_SH_CREATE_READ, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_shp, NULL, 0);
+    generates(RL_SH_CREATE_WRITE, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_shp, NULL, 0);
+
+    return 0;
+}
+#endif
+
+/*!
+ * @brief Record provenance when shm_free_security hook is triggered.
+ *
+ * This hook is triggered when deallocating the security struct for this memory
+ * segment.
+ * We simply free the memory of the allocated provenance entry if it exists, and
+ * set the pointer to NULL.
+ * @param shp The shared memory structure to be modified.
+ *
+ */
+#ifndef PROV_FILTER_SHM_FREE_SECURITY_OFF
+SEC("lsm/shm_free_security")
+int BPF_PROG(shm_free_security, struct kern_ipc_perm *shp) {
+    uint64_t key = get_key(shp);
+    union prov_elt *ptr_prov_shp;
+
+    ptr_prov_shp = get_or_create_kern_ipc_perm_prov(shp);
+    if (!ptr_prov_shp) {
+      return 0;
+    }
+
+    record_terminate(RL_FREED, ptr_prov_shp);
+    bpf_map_delete_elem(&kern_ipc_perm_map, &key);
+
+    return 0;
+}
+#endif
+
+/*!
+ * @brief Record provenance when shm_shmat hook is triggered.
+ *
+ * This hook is triggered when checking permissions prior to allowing the shmat
+ * system call to attach the
+ * shared memory segment @shp to the data segment of the calling process.
+ * The attaching address is specified by @shmaddr.
+ * If @shmflg is SHM_RDONLY (readable only), then:
+ * Record provenance relation RL_SH_ATTACH_READ by calling "uses" function.
+ * Information flows from shared memory to the calling process, and then
+ * eventually to its cred.
+ * Otherwise, shared memory is both readable and writable, then:
+ * Record provenance relation RL_SH_ATTACH_READ by calling "uses" function and
+ * RL_SH_ATTACH_WRITE by calling "uses" function.
+ * Information can flow both ways.
+ * @param shp The shared memory structure to be modified.
+ * @param shmaddr The address to attach memory region to.
+ * @param shmflg The operational flags.
+ * @return 0 if permission is granted and no error occurred; -ENOMEM if shared
+ * memory provenance entry does not exist. Other error codes inherited from uses
+ * and generates function.
+ *
+ */
+#ifndef PROV_FILTER_SHM_SHMAT_OFF
+SEC("lsm/shm_shmat")
+int BPF_PROG(shm_shmat, struct kern_ipc_perm *shp, char *shmaddr, int shmflg) {
+    union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_shp;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct cred *current_cred;
+    bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
+
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_current_cred = get_or_create_cred_prov(current_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_shp = get_or_create_kern_ipc_perm_prov(shp);
+    if (!ptr_prov_shp) {
+      return 0;
+    }
+
+    if (shmflg & SHM_RDONLY) {
+      uses(RL_SH_ATTACH_READ, current_task, ptr_prov_shp, ptr_prov_current_task, ptr_prov_current_cred, NULL, shmflg);
+    } else {
+      uses(RL_SH_ATTACH_READ, current_task, ptr_prov_shp, ptr_prov_current_task, ptr_prov_current_cred, NULL, shmflg);
+      generates(RL_SH_ATTACH_WRITE, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_shp, NULL, shmflg);
+    }
+
+    return 0;
+}
+#endif
+
+#ifdef CONFIG_SECURITY_FLOW_FRIENDLY
+/*!
+ * @brief Record provenance when shm_shmdt hook is triggered.
+ *
+ * This hook is triggered when detaching the shared memory segment from the
+ * address space of the calling process.
+ * The to-be-detached segment must be currently attached with shmaddr equal to
+ * the value returned by the attaching shmat() call.
+ * Record provenance relation RL_SHMDT by calling "generates" function.
+ * Information flows from the calling process's cred to the process, and
+ * eventually to the shared memory.
+ * @param shp The shared memory structure to be modified.
+ *
+ */
+#ifndef PROV_FILTER_SHM_SHMDT_OFF
+SEC("lsm/shm_shmdt")
+int BPF_PROG(shm_shmdt, struct kern_ipc_perm *shp) {
+    union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_shp;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct cred *current_cred;
+    bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
+
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_current_cred = get_or_create_cred_prov(current_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_shp = get_or_create_kern_ipc_perm_prov(shp);
+    if (!ptr_prov_shp) {
+      return 0;
+    }
+
+    generates(RL_SHMDT, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_shp, NULL, 0);
+
+    return 0;
 }
 #endif
 #endif

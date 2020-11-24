@@ -10,6 +10,8 @@
 
 #define SIGIO		23
 
+#define	SHM_RDONLY	010000	/* read-only access */
+
 #define MAP_SHARED 					0x01
 #define MAP_SHARED_VALIDATE 0x03
 #define MAP_TYPE 	 					0x0f
