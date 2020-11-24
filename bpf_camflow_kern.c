@@ -1947,3 +1947,64 @@ int BPF_PROG(shm_shmdt, struct kern_ipc_perm *shp) {
 }
 #endif
 #endif
+
+/*!
+ * @brief Record provenance when socket_post_create hook is triggered.
+ *
+ * This hook allows a module to update or allocate a per-socket security
+ * structure.
+ * Note that the security field was not added directly to the socket structure,
+ * but rather, the socket security information is stored in the associated
+ * inode.
+ * Typically, the inode alloc_security hook will allocate and and attach
+ * security information to sock->inode->i_security.
+ * This hook may be used to update the sock->inode->i_security field
+ * with additional information that wasn't available when the inode was
+ * allocated.
+ * Record provenance relation RL_SOCKET_CREATE by calling "generates" function.
+ * Information flows from the calling process's cred to the process, and
+ * eventually to the socket that is being created.
+ * If @kern is 1 (kernal socket), no provenance relation is recorded.
+ * This is becasuse kernel socket is a form of communication between kernel and
+ * userspace.
+ * We do not capture kernel's provenance for now.
+ * @param sock The newly created socket structure.
+ * @param family The requested protocol family.
+ * @param type The requested communications type.
+ * @param protocol The requested protocol.
+ * @param kern Set to 1 if it is a kernel socket.
+ * @return 0 if no error occurred; -ENOMEM if inode provenance entry does not
+ * exist. Other error codes inherited from generates function.
+ *
+ * @todo Maybe support kernel socket in a future release.
+ */
+#ifndef PROV_FILTER_SOCKET_POST_CREATE_OFF
+SEC("lsm/socket_post_create")
+int BPF_PROG(socket_post_create, struct socket *sock, int family, int type, int protocol, int kern) {
+    union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_sock_inode;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct cred *current_cred;
+    bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
+
+    if (kern) {
+      return 0;
+    }
+
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_current_cred = get_or_create_cred_prov(current_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_sock_inode = get_or_create_inode_prov(SOCK_INODE(sock));
+    if (!ptr_prov_sock_inode) {
+      return 0;
+    }
+
+    generates(RL_SOCKET_CREATE, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_sock_inode, NULL, 0);
+
+    return 0;
+}
+#endif
