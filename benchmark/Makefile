@@ -61,13 +61,13 @@ run_kernel:
 	 phoronix-test-suite benchmark pts/build-linux-kernel-1.10.2
 
 run_R:
-	phoronix-test-suite benchmark pts/rbenchmark-1.0.2
+	phoronix-test-suite benchmark pts/rbenchmark-1.0.3
 
 run_unpack:
-	phoronix-test-suite benchmark pts/unpack-linux-1.0.0
+	phoronix-test-suite benchmark pts/unpack-linux-1.1.1
 
 run_apache:
-	phoronix-test-suite benchmark pts/apache-1.6.1
+	phoronix-test-suite benchmark pts/apache-1.7.2
 
 run_nginx:
 	phoronix-test-suite benchmark pts/nginx-1.1.0
@@ -85,7 +85,7 @@ run_redis:
 	phoronix-test-suite benchmark pts/redis-1.0.0
 
 run_pgbench:
-	phoronix-test-suite benchmark pts/pgbench-1.5.2
+	phoronix-test-suite benchmark pts/pgbench-1.10.1
 
 run_network:
 	phoronix-test-suite benchmark pts/network-loopback-1.0.1
