@@ -10,20 +10,20 @@ Performing transactions..........Done
 Deleting files...Done
 Deleting subdirectories...Done
 Time:
-	97 seconds total
-	97 seconds of transactions (15463 per second)
+	111 seconds total
+	110 seconds of transactions (13636 per second)
 
 Files:
-	753706 created (7770 per second)
+	753706 created (6790 per second)
 		Creation alone: 4500 files (4500 per second)
-		Mixed with transactions: 749206 files (7723 per second)
-	750908 read (7741 per second)
-	746403 appended (7694 per second)
-	753706 deleted (7770 per second)
+		Mixed with transactions: 749206 files (6810 per second)
+	750908 read (6826 per second)
+	746403 appended (6785 per second)
+	753706 deleted (6790 per second)
 		Deletion alone: 2912 files (2912 per second)
-		Mixed with transactions: 750794 files (7740 per second)
+		Mixed with transactions: 750794 files (6825 per second)
 
 Data:
-	49757.63 megabytes read (512.97 megabytes per second)
-	49956.56 megabytes written (515.02 megabytes per second)
+	49757.63 megabytes read (448.27 megabytes per second)
+	49956.56 megabytes written (450.06 megabytes per second)
 
