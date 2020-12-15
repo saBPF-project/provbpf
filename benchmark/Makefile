@@ -4,6 +4,12 @@ prepare_lmbench:
 	cd build && git clone https://github.com/dmonakhov/lmbench.git
 	cd build/lmbench && git checkout eb0d55e8999d1275da480aff0fca98805e55916e
 
+prepare_intellmbench:
+	@echo "Preparing Intel lmbench"
+	mkdir -p build
+	cd build && git clone https://github.com/intel/lmbench.git intel-lmbench
+	cd build/intel-lmbench && git checkout 701c6c35b0270d4634fb1dc5272721340322b8ed
+
 prepare_unixbench:
 	@echo "Preparing unixbench"
 	mkdir -p build
@@ -45,6 +51,13 @@ run_lmbench:
 	cd build/lmbench && make rerun
 	cd build/lmbench/results/ && make > ../../../results/lmbench.txt
 
+run_intellmbench:
+	@echo "Running lmbench..."
+	mkdir -p results
+	cd build/intel-lmbench && make results
+	cd build/intel-lmbench && make rerun
+	cd build/intel-lmbench/results/ && make > ../../../results/intel-lmbench.txt
+
 run_unixbench:
 	@echo "Running unixbench..."
 	mkdir -p results
@@ -70,25 +83,25 @@ run_apache:
 	phoronix-test-suite benchmark pts/apache-1.7.2
 
 run_nginx:
-	phoronix-test-suite benchmark pts/nginx-1.1.0
+	phoronix-test-suite benchmark pts/nginx-1.2.2
 
 run_mcperf:
-	phoronix-test-suite benchmark pts/mcperf-1.0.0
+	phoronix-test-suite benchmark pts/mcperf-1.3.0
 
 run_phpbench:
-	phoronix-test-suite benchmark pts/phpbench-1.1.1
+	phoronix-test-suite benchmark pts/phpbench-1.1.6
 
 run_pybench:
-	phoronix-test-suite benchmark pts/pybench-1.0.0
+	phoronix-test-suite benchmark pts/pybench-1.1.3
 
 run_redis:
-	phoronix-test-suite benchmark pts/redis-1.0.0
+	phoronix-test-suite benchmark pts/redis-1.3.0
 
 run_pgbench:
 	phoronix-test-suite benchmark pts/pgbench-1.10.1
 
 run_network:
-	phoronix-test-suite benchmark pts/network-loopback-1.0.1
+	phoronix-test-suite benchmark pts/network-loopback-1.0.3
 
 run: run_lmbench run_unixbench run_pgbench run_postmark run_kernel run_R run_unpack run_apache
 
