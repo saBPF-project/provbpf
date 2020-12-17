@@ -1,0 +1,101 @@
+
+                 L M B E N C H  3 . 0   S U M M A R Y
+                 ------------------------------------
+		 (Alpha software, do not distribute)
+
+Basic system parameters
+------------------------------------------------------------------------------
+Host                 OS Description              Mhz  tlb  cache  mem   scal
+                                                     pages line   par   load
+                                                           bytes  
+--------- ------------- ----------------------- ---- ----- ----- ------ ----
+nocamflow Linux 5.7.7ca        x86_64-linux-gnu 1000                       1
+nocamflow Linux 5.7.7ca        x86_64-linux-gnu 1000                       1
+
+Processor, Processes - times in microseconds - smaller is better
+------------------------------------------------------------------------------
+Host                 OS  Mhz null null      open slct sig  sig  fork exec sh  
+                             call  I/O stat clos TCP  inst hndl proc proc proc
+--------- ------------- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+nocamflow Linux 5.7.7ca 1000                                                  
+nocamflow Linux 5.7.7ca 1000                                                  
+
+Basic integer operations - times in nanoseconds - smaller is better
+-------------------------------------------------------------------
+Host                 OS  intgr intgr  intgr  intgr  intgr  
+                          bit   add    mul    div    mod   
+--------- ------------- ------ ------ ------ ------ ------ 
+nocamflow Linux 5.7.7ca                                   
+nocamflow Linux 5.7.7ca                                   
+
+Basic uint64 operations - times in nanoseconds - smaller is better
+------------------------------------------------------------------
+Host                 OS int64  int64  int64  int64  int64  
+                         bit    add    mul    div    mod   
+--------- ------------- ------ ------ ------ ------ ------ 
+nocamflow Linux 5.7.7ca                                   
+nocamflow Linux 5.7.7ca                                   
+
+Basic float operations - times in nanoseconds - smaller is better
+-----------------------------------------------------------------
+Host                 OS  float  float  float  float
+                         add    mul    div    bogo
+--------- ------------- ------ ------ ------ ------ 
+nocamflow Linux 5.7.7ca                            
+nocamflow Linux 5.7.7ca                            
+
+Basic double operations - times in nanoseconds - smaller is better
+------------------------------------------------------------------
+Host                 OS  double double double double
+                         add    mul    div    bogo
+--------- ------------- ------  ------ ------ ------ 
+nocamflow Linux 5.7.7ca                            
+nocamflow Linux 5.7.7ca                            
+
+Context switching - times in microseconds - smaller is better
+-------------------------------------------------------------------------
+Host                 OS  2p/0K 2p/16K 2p/64K 8p/16K 8p/64K 16p/16K 16p/64K
+                         ctxsw  ctxsw  ctxsw ctxsw  ctxsw   ctxsw   ctxsw
+--------- ------------- ------ ------ ------ ------ ------ ------- -------
+nocamflow Linux 5.7.7ca        1.5300 2.0600 2.2100 2.7300 2.25000 3.93000
+nocamflow Linux 5.7.7ca        1.4100 1.6000 2.2300 2.3700 2.76000 2.58000
+
+*Local* Communication latencies in microseconds - smaller is better
+---------------------------------------------------------------------
+Host                 OS 2p/0K  Pipe AF     UDP  RPC/   TCP  RPC/ TCP
+                        ctxsw       UNIX         UDP         TCP conn
+--------- ------------- ----- ----- ---- ----- ----- ----- ----- ----
+nocamflow Linux 5.7.7ca                   12.0        14.9           
+nocamflow Linux 5.7.7ca                   12.1        14.7           
+
+*Remote* Communication latencies in microseconds - smaller is better
+---------------------------------------------------------------------
+Host                 OS   UDP  RPC/  TCP   RPC/ TCP
+                               UDP         TCP  conn
+--------- ------------- ----- ----- ----- ----- ----
+nocamflow Linux 5.7.7ca                             
+nocamflow Linux 5.7.7ca                             
+
+File & VM system latencies in microseconds - smaller is better
+-------------------------------------------------------------------------------
+Host                 OS   0K File      10K File     Mmap    Prot   Page   100fd
+                        Create Delete Create Delete Latency Fault  Fault  selct
+--------- ------------- ------ ------ ------ ------ ------- ----- ------- -----
+nocamflow Linux 5.7.7ca   13.4 6.2412   20.2 8.3544   60.4K                    
+nocamflow Linux 5.7.7ca   13.1 6.1902   20.6 8.4047   61.5K                    
+
+*Local* Communication bandwidths in MB/s - bigger is better
+-----------------------------------------------------------------------------
+Host                OS  Pipe AF    TCP  File   Mmap  Bcopy  Bcopy  Mem   Mem
+                             UNIX      reread reread (libc) (hand) read write
+--------- ------------- ---- ---- ---- ------ ------ ------ ------ ---- -----
+nocamflow Linux 5.7.7ca 5336 12.K 7900 8479.8  14.9K 9094.5 6190.9 14.K 9091.
+nocamflow Linux 5.7.7ca 5368 12.K 8010 8447.2  15.1K 7730.0 6149.7 14.K 9102.
+
+Memory latencies in nanoseconds - smaller is better
+    (WARNING - may not be correct, check graphs)
+------------------------------------------------------------------------------
+Host                 OS   Mhz   L1 $   L2 $    Main mem    Rand mem    Guesses
+--------- -------------   ---   ----   ----    --------    --------    -------
+nocamflow Linux 5.7.7ca  1000     -      -           -    Bad mhz?
+nocamflow Linux 5.7.7ca  1000     -      -           -    Bad mhz?
