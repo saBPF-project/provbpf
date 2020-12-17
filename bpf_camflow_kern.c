@@ -22,6 +22,7 @@
 #include "kern_bpf_iattr.h"
 #include "kern_bpf_filter.h"
 #include "kern_bpf_relation.h"
+#include "kern_bpf_provenance_net.h"
 
 char _license[] SEC("license") = "GPL";
 
@@ -2004,6 +2005,354 @@ int BPF_PROG(socket_post_create, struct socket *sock, int family, int type, int 
     }
 
     generates(RL_SOCKET_CREATE, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_sock_inode, NULL, 0);
+
+    return 0;
+}
+#endif
+
+/*!
+ * @brief Record provenance when socket_bind hook is triggered.
+ *
+ * This hook is triggered when checking permission before socket protocol layer
+ * bind operation is performed, and the socket @sock is bound to the address
+ * specified in the @address parameter.
+ * The function records the provenance relations if the calling process is not
+ * set to be opaque (i.e., should be recorded).
+ * The relation between the socket and its address is recorded first,
+ * then record provenance relation RL_BIND by calling "generates" function.
+ * Information flows from the cred of the calling process to the process itself,
+ * and eventually to the socket.
+ * If the address family is PF_INET (we only support IPv4 for now), we check if
+ * we should record the packet from the socket,
+ * and track and propagate recording from the socket and the calling process.
+ * Note that usually server binds the socket to its local address.
+ * @param sock The socket structure.
+ * @param address The address to bind to.
+ * @param addrlen The length of address.
+ * @return 0 if permission is granted and no error occurred; -EINVAL if socket
+ * address is longer than @addrlen; -ENOMEM if socket inode provenance entry
+ * does not exist. Other error codes inherited.
+ *
+ */
+#ifndef PROV_FILTER_SOCKET_BIND_OFF
+SEC("lsm/socket_bind")
+int BPF_PROG(socket_bind, struct socket *sock, struct sockaddr *address, int addrlen) {
+    union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_sock_inode;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct cred *current_cred;
+    bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
+
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_current_cred = get_or_create_cred_prov(current_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_sock_inode = get_or_create_inode_prov(SOCK_INODE(sock));
+    if (!ptr_prov_sock_inode) {
+      return 0;
+    }
+
+    if (provenance_is_opaque(ptr_prov_current_cred)) {
+      return 0;
+    }
+
+    record_address(address, addrlen, ptr_prov_sock_inode);
+
+    generates(RL_BIND, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_sock_inode, NULL, 0);
+
+    return 0;
+}
+#endif
+
+/*!
+ * @brief Record provenance when socket_connect hook is triggered.
+ *
+ * This hook is triggered when checking permission before socket protocol layer
+ * connect operation attempts to connect socket @sock to a remote address,
+ * @address.
+ * This function is similar to the above provenance_socket_bind function, except
+ * that we record provenance relation RL_CONNECT by calling "generates"
+ * function.
+ * @param sock The socket structure.
+ * @param address The address of remote endpoint.
+ * @param addrlen The length of address.
+ * @return 0 if permission is granted and no error occurred; -EINVAL if socket
+ * address is longer than @addrlen; -ENOMEM if socket inode provenance entry
+ * does not exist. Other error codes inherited.
+ *
+ */
+#ifndef PROV_FILTER_SOCKET_CONNECT_OFF
+SEC("lsm/socket_connect")
+int BPF_PROG(socket_connect, struct socket *sock, struct sockaddr *address, int addrlen) {
+    union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_sock_inode;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct cred *current_cred;
+    bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
+
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_current_cred = get_or_create_cred_prov(current_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_sock_inode = get_or_create_inode_prov(SOCK_INODE(sock));
+    if (!ptr_prov_sock_inode) {
+      return 0;
+    }
+
+    if (provenance_is_opaque(ptr_prov_current_cred)) {
+      return 0;
+    }
+
+    record_address(address, addrlen, ptr_prov_sock_inode);
+
+    generates(RL_CONNECT, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_sock_inode, NULL, 0);
+
+    return 0;
+}
+#endif
+
+/*!
+ * @brief Record provenance when socket_listen hook is triggered.
+ *
+ * This hook is triggered when checking permission before socket protocol layer
+ * listen operation.
+ * Record provenance relation RL_LISTEN by calling "generates" function.
+ * @param sock The socket structure.
+ * @param backlog The maximum length for the pending connection queue.
+ * @return 0 if no error occurred; -ENOMEM if socket inode provenance entry does
+ * not exist. Other error codes inherited from generates function.
+ *
+ */
+#ifndef PROV_FILTER_SOCKET_LISTEN_OFF
+SEC("lsm/socket_listen")
+int BPF_PROG(socket_listen, struct socket *sock, int backlog) {
+    union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_sock_inode;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct cred *current_cred;
+    bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
+
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_current_cred = get_or_create_cred_prov(current_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_sock_inode = get_or_create_inode_prov(SOCK_INODE(sock));
+    if (!ptr_prov_sock_inode) {
+      return 0;
+    }
+
+    if (provenance_is_opaque(ptr_prov_current_cred)) {
+      return 0;
+    }
+
+    generates(RL_LISTEN, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_sock_inode, NULL, 0);
+
+    return 0;
+}
+#endif
+
+/*!
+ * @brief Record provenance when socket_accept hook is triggered.
+ *
+ * This hook is triggered when checking permission before accepting a new
+ * connection.
+ * Note that the new socket, @newsock, has been created and some information
+ * copied to it,
+ * but the accept operation has not actually been performed.
+ * Since a new socket has been created after aceepting a new connection,
+ * record provenance relation RL_ACCEPT_SOCKET by calling "derives" function.
+ * Information flows from the old socket to the new socket.
+ * Then record provenance relation RL_ACCEPT by calling "uses" function,
+ * since the calling process accepts the connection.
+ * Information flows from the new socket to the calling process, and eventually
+ * to its cred.
+ * @param sock The listening socket structure.
+ * @param newsock The newly created server socket for connection.
+ * @return 0 if permission is granted and no error occurred; Other error codes
+ * inherited from derives and uses function.
+ *
+ */
+#ifndef PROV_FILTER_SOCKET_ACCEPT_OFF
+SEC("lsm/socket_accept")
+int BPF_PROG(socket_accept, struct socket *sock, struct socket *newsock) {
+    union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_sock_inode, *ptr_prov_newsock_inode;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct cred *current_cred;
+    bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
+
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_current_cred = get_or_create_cred_prov(current_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_sock_inode = get_or_create_inode_prov(SOCK_INODE(sock));
+    if (!ptr_prov_sock_inode) {
+      return 0;
+    }
+    ptr_prov_newsock_inode = get_or_create_inode_prov(SOCK_INODE(newsock));
+    if (!ptr_prov_newsock_inode) {
+      return 0;
+    }
+
+    derives(RL_ACCEPT_SOCKET, ptr_prov_sock_inode, ptr_prov_newsock_inode, NULL, 0);
+    uses(RL_ACCEPT, current_task, ptr_prov_newsock_inode, ptr_prov_current_task, ptr_prov_current_cred, NULL, 0);
+
+    return 0;
+}
+#endif
+
+/*!
+ * @brief Record provenance when socket_sendmsg_always/socket_sendmsg hook is
+ * triggered.
+ *
+ * This hook is triggered when checking permission before transmitting a message
+ * to another socket.
+ * Record provenance relation RL_SND_MSG by calling "generates" function.
+ * Information flows from the calling process's cred to the calling process, and
+ * eventually to the sending socket.
+ * If sk_family is PF_UNIX (or any local communication) and sk_type is not
+ * SOCK_DGRAM, we obtain the @peer receiving socket and its provenance,
+ * and if the provenance is not NULL,
+ * record provenance relation RL_RCV_UNIX by calling "derives" function.
+ * Information flows from the sending socket to the receiving peer socket.
+ * @param sock The socket structure.
+ * @param msg The message to be transmitted.
+ * @param size The size of message.
+ * @return 0 if permission is granted and no error occurred; -ENOMEM if the
+ * sending socket's provenance entry does not exist; Other error codes inherited
+ * from generates and derives function.
+ *
+ */
+#ifndef PROV_FILTER_SOCKET_SENDMSG_OFF
+SEC("lsm/socket_sendmsg")
+int BPF_PROG(socket_sendmsg, struct socket *sock, struct msghdr *msg, int size) {
+    union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_sock_inode_a, *ptr_prov_sock_inode_b;
+    struct sock *peer = NULL;
+
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct cred *current_cred;
+    bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
+
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_current_cred = get_or_create_cred_prov(current_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_sock_inode_a = get_or_create_inode_prov(SOCK_INODE(sock));
+    if (!ptr_prov_sock_inode_a) {
+      return 0;
+    }
+    ptr_prov_sock_inode_b = NULL;
+
+    generates(RL_SND_MSG, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_sock_inode_a, NULL, 0);
+    if (ptr_prov_sock_inode_b) {
+      derives(RL_RCV_UNIX, ptr_prov_sock_inode_a, ptr_prov_sock_inode_b, NULL, 0);
+    }
+
+    return 0;
+}
+#endif
+
+/*!
+ * @brief Record provenance when socket_recvmsg_always/socket_recvmsg hook is
+ * triggered.
+ *
+ * This hook is triggered when checking permission before receiving a message
+ * from a socket.
+ * This function is similar to the above provenance_socket_sendmsg_always
+ * function except the direction is reversed.
+ * Specifically, if we know the sending socket, we have
+ * record provenance relation RL_SND_UNIX by calling "derives" function.
+ * Information flows from the sending socket (@peer) to the receiving socket
+ * (@sock).
+ * Then record provenance relation RL_RCV_MSG by calling "uses" function.
+ * Information flows from the receiving socket to the calling process, and
+ * eventually to its cred.
+ * @param sock The receiving socket structure.
+ * @param msg The message structure.
+ * @param size The size of message structure.
+ * @param flags The operational flags.
+ * @return 0 if permission is granted, and no error occurred; -ENOMEM if the
+ * receiving socket's provenance entry does not exist; Other error codes
+ * inherited from uses and derives function.
+ *
+ */
+#ifndef PROV_FILTER_SOCKET_RECVMSG_OFF
+SEC("lsm/socket_recvmsg")
+int BPF_PROG(socket_recvmsg, struct socket *sock, struct msghdr *msg, int size, int flags) {
+    union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_sock_inode, *ptr_prov_sock_inode_peer;
+    struct sock *peer;
+    peer = NULL;
+
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct cred *current_cred;
+    bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
+
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_current_cred = get_or_create_cred_prov(current_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_sock_inode = get_or_create_inode_prov(SOCK_INODE(sock));
+    if (!ptr_prov_sock_inode) {
+      return 0;
+    }
+    ptr_prov_sock_inode_peer = NULL;
+
+    if (ptr_prov_sock_inode_peer) {
+      derives(RL_SND_UNIX, ptr_prov_sock_inode_peer, ptr_prov_sock_inode, NULL, flags);
+    }
+    uses(RL_RCV_MSG, current_task, ptr_prov_sock_inode, ptr_prov_current_task, ptr_prov_current_cred, NULL, flags);
+
+    return 0;
+}
+#endif
+
+#ifndef PROV_FILTER_SOCKET_SOCKETPAIR_OFF
+SEC("lsm/socket_socketpair")
+int BPF_PROG(socket_socketpair, struct socket *socka, struct socket *sockb) {
+    union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_sock_a, *ptr_prov_sock_b;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct cred *current_cred;
+    bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
+
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_current_cred = get_or_create_cred_prov(current_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_sock_a = get_or_create_inode_prov(SOCK_INODE(socka));
+    if (!ptr_prov_sock_a) {
+      return 0;
+    }
+    ptr_prov_sock_b = get_or_create_inode_prov(SOCK_INODE(sockb));
+    if (!ptr_prov_sock_b) {
+      return 0;
+    }
+
+    generates(RL_SOCKET_PAIR_CREATE, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_sock_a, NULL, 0);
+    generates(RL_SOCKET_PAIR_CREATE, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_sock_b, NULL, 0);
 
     return 0;
 }

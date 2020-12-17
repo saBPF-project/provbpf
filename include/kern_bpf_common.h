@@ -56,6 +56,11 @@
 #define XATTR_PROVENANCE_SUFFIX "provenance"
 #define XATTR_NAME_PROVENANCE XATTR_SECURITY_PREFIX XATTR_PROVENANCE_SUFFIX
 
+#define AF_UNIX 1
+#define AF_INET 2
+#define PF_UNIX AF_UNIX
+#define PF_INET AF_INET
+
 #define clear_recorded(node) \
 	__clear_recorded((union long_prov_elt *)node)
 static inline void __clear_recorded(union long_prov_elt *node)
