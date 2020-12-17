@@ -2357,3 +2357,83 @@ int BPF_PROG(socket_socketpair, struct socket *socka, struct socket *sockb) {
     return 0;
 }
 #endif
+
+/*!
+ * @brief Record provenance when unix_stream_connect hook is triggered.
+ *
+ * This hook is triggered when checking permissions before establishing a Unix
+ * domain stream connection b]etween @sock and @other.
+ * Unix domain connection is local communication.
+ * Since this is simply to connect (no information should flow between the two
+ * local sockets yet), we do not use receiving socket information @other or new
+ * socket @newsk.
+ * Record provenance relation RL_CONNECT by calling "generates" function.
+ * Information flows from the calling process's cred to the task , and
+ * eventually to the sending socket.
+ * @param sock The (sending) sock structure.
+ * @param other The peer (i.e., receiving) sock structure. Unused parameter.
+ * @param newsk The new sock structure. Unused parameter.
+ * @return 0 if permission is granted; Other error code inherited from generates
+ * function.
+ *
+ */
+#ifndef PROV_FILTER_UNIX_STREAM_CONNECT_OFF
+SEC("lsm/unix_stream_connect")
+int BPF_PROG(unix_stream_connect, struct sock *sock, struct sock *other, struct sock *newsk) {
+    union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_sock_inode;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct cred *current_cred;
+    bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
+
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_current_cred = get_or_create_cred_prov(current_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_sock_inode = get_or_create_inode_prov(SOCK_INODE(sock->sk_socket));
+    if (!ptr_prov_sock_inode) {
+      return 0;
+    }
+
+    generates(RL_CONNECT_UNIX_STREAM, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_sock_inode, NULL, 0);
+
+    return 0;
+}
+#endif
+
+/*!
+ * @brief Record provenance when unix_may_send hook is triggered.
+ *
+ * This hook is triggered when checking permissions before connecting or sending
+ * datagrams from @sock to @other.
+ * Record provenance relation RL_SND_UNIX by calling "derives" function.
+ * Information flows from the sending socket (@sock) to the receiving socket
+ * (@other).
+ * @param sock The socket structure.
+ * @param other The peer socket structure.
+ * @return 0 if permission is granted and no error occurred; Other error codes
+ * inherited from derives function.
+ *
+ */
+#ifndef PROV_FILTER_UNIX_MAY_SEND_OFF
+SEC("lsm/unix_may_send")
+int BPF_PROG(unix_may_send, struct socket *sock, struct socket *other) {
+    union prov_elt *ptr_prov_inode_sock, *ptr_prov_inode_other;
+
+    ptr_prov_inode_sock = get_or_create_inode_prov(SOCK_INODE(sock));
+    if (!ptr_prov_inode_sock) {
+      return 0;
+    }
+    ptr_prov_inode_other = get_or_create_inode_prov(SOCK_INODE(other));
+    if (!ptr_prov_inode_other) {
+      return 0;
+    }
+
+    derives(RL_SND_UNIX, ptr_prov_inode_sock, ptr_prov_inode_other, NULL, 0);
+
+    return 0;
+}
+#endif
