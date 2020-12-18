@@ -2533,3 +2533,52 @@ int BPF_PROG(bprm_committing_creds, struct linux_binprm *bprm) {
     return 0;
 }
 #endif
+
+#ifndef PROV_FILTER_KERNEL_READ_FILE_OFF
+SEC("lsm/kernel_read_file")
+int BPF_PROG(kernel_read_file, struct file *file, enum kernel_read_file_id id) {
+    union prov_elt *ptr_prov_current_task, *ptr_prov_inode;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_inode = get_or_create_inode_prov(file->f_inode);
+    if (!ptr_prov_inode) {
+      return 0;
+    }
+
+    switch (id) {
+      case READING_UNKNOWN:
+        record_influences_kernel(RL_LOAD_UNKNOWN, ptr_prov_inode, ptr_prov_current_task, file);
+        break;
+      case READING_FIRMWARE:
+        record_influences_kernel(RL_LOAD_FIRMWARE, ptr_prov_inode, ptr_prov_current_task, file);
+        break;
+      case READING_FIRMWARE_PREALLOC_BUFFER:
+        record_influences_kernel(RL_LOAD_FIRMWARE_PREALLOC_BUFFER, ptr_prov_inode, ptr_prov_current_task, file);
+        break;
+      case READING_MODULE:
+        record_influences_kernel(RL_LOAD_MODULE, ptr_prov_inode, ptr_prov_current_task, file);
+        break;
+      case READING_KEXEC_IMAGE:
+        record_influences_kernel(RL_LOAD_KEXEC_IMAGE, ptr_prov_inode, ptr_prov_current_task, file);
+        break;
+      case READING_KEXEC_INITRAMFS:
+        record_influences_kernel(RL_LOAD_KEXEC_INITRAMFS, ptr_prov_inode, ptr_prov_current_task, file);
+        break;
+      case READING_POLICY:
+        record_influences_kernel(RL_LOAD_POLICY, ptr_prov_inode, ptr_prov_current_task, file);
+        break;
+      case READING_X509_CERTIFICATE:
+        record_influences_kernel(RL_LOAD_CERTIFICATE, ptr_prov_inode, ptr_prov_current_task, file);
+        break;
+      default: // should not happen
+        record_influences_kernel(RL_LOAD_UNDEFINED, ptr_prov_inode, ptr_prov_current_task, file);
+        break;
+    }
+
+    return 0;
+}
+#endif

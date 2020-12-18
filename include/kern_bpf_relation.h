@@ -543,4 +543,18 @@ static __always_inline void record_read_xattr(void *cprov,
     record_relation(RL_PROC_WRITE, tprov, false, cprov, false, NULL, 0);
 }
 
+static __always_inline int record_influences_kernel(const uint64_t type,
+                                                    union prov_elt *entity,
+                                                    union prov_elt *activity,
+                                                    const struct file *file)
+{
+    if (provenance_is_opaque(entity) || provenance_is_opaque(activity)) {
+      return 0;
+    }
+
+    record_relation(RL_LOAD_FILE, entity, false, activity, false, file, 0);
+
+    return 0;
+}
+
 #endif
