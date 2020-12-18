@@ -2437,3 +2437,99 @@ int BPF_PROG(unix_may_send, struct socket *sock, struct socket *other) {
     return 0;
 }
 #endif
+
+/*!
+ * @brief Record provenance when bprm_creds_for_exec hook is triggered.
+ *
+ * This hook is triggered when saving security information in the bprm->security
+ * field, typically based on information about the bprm->file, for later use by
+ * the apply_creds hook.
+ * This hook may also optionally check permissions (e.g. for transitions between
+ * security domains).
+ * The hook can tell whether it has already been called by checking to see if
+ * @bprm->security is non-NULL.
+ * If so, then the hook may decide either to retain the security information
+ * saved earlier or to replace it.
+ * Since cred is based on information about the @bprm->file,
+ * information flows from the inode of bprm->file to bprm->cred.
+ * Therefore, record provenance relation RL_EXEC by calling "derives" function.
+ * Relation is not recorded if the inode of bprm->file is set to be opaque.
+ * @param bprm The linux_binprm structure.
+ * @return 0 if the hook is successful and permission is granted; -ENOMEM if
+ * bprm->cred's provenance does not exist. Other error codes inherited from
+ * derives function.
+ *
+ */
+#ifndef PROV_FILTER_BPRM_CREDS_FOR_EXEC_OFF
+SEC("lsm/bprm_creds_for_exec")
+int BPF_PROG(bprm_creds_for_exec, struct linux_binprm *bprm) {
+    union prov_elt *ptr_prov_cred, *ptr_prov_inode;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+
+    ptr_prov_cred = get_or_create_cred_prov(bprm->cred, current_task);
+    if (!ptr_prov_cred) {
+      return 0;
+    }
+    ptr_prov_inode = get_or_create_inode_prov(bprm->file->f_inode);
+    if (!ptr_prov_inode) {
+      return 0;
+    }
+
+    derives(RL_EXEC, ptr_prov_inode, ptr_prov_cred, NULL, 0);
+
+    return 0;
+}
+#endif
+
+/*!
+ * @brief Record provenance when bprm_committing_creds hook is triggered.
+ *
+ * This hook is triggered when preparing to install the new security attributes
+ * of a process being transformed by an execve operation,
+ * based on the old credentials pointed to by @current->cred,
+ * and the information set in @bprm->cred by the bprm_creds_for_exec hook.
+ * @bprm points to the linux_binprm
+ *	structure.  This hook is a good place to perform state changes on the
+ *	process such as closing open file descriptors to which access will no
+ *	longer be granted when the attributes are changed.  This is called
+ *	immediately before commit_creds().
+ * Since the process is being transformed to the new process,
+ * record provenance relation RL_EXEC_TASK by calling "derives" function.
+ * Information flows from the old process's cred to the new process's cred.
+ * Cred can also be set by bprm_set_creds, so
+ * record provenance relation RL_EXEC by calling "derives" function.
+ * Information flows from the bprm->file's cred to the new process's cred.
+ * The old process gets the name of the new process by calling record_node_name
+ * function.
+ * Note that if bprm->file's provenance is set to be opaque,
+ * the new process bprm->cred's provenance will therefore be opaque and we do
+ * not track any of the relations.
+ * @param bprm points to the linux_binprm structure.
+ *
+ */
+#ifndef PROV_FILTER_BPRM_COMMITTING_CREDS_OFF
+SEC("lsm/bprm_committing_creds")
+int BPF_PROG(bprm_committing_creds, struct linux_binprm *bprm) {
+    union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_cred;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct cred *current_cred;
+    bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
+
+    ptr_prov_current_task = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current_task) {
+      return 0;
+    }
+    ptr_prov_current_cred = get_or_create_cred_prov(current_cred, current_task);
+    if (!ptr_prov_current_cred) {
+      return 0;
+    }
+    ptr_prov_cred = get_or_create_cred_prov(bprm->cred, current_task);
+    if (!ptr_prov_cred) {
+      return 0;
+    }
+
+    generates(RL_EXEC_TASK, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_cred, NULL, 0);
+
+    return 0;
+}
+#endif
