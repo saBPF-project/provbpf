@@ -2556,9 +2556,6 @@ int BPF_PROG(kernel_read_file, struct file *file, enum kernel_read_file_id id) {
       case READING_FIRMWARE:
         record_influences_kernel(RL_LOAD_FIRMWARE, ptr_prov_inode, ptr_prov_current_task, file);
         break;
-      case READING_FIRMWARE_PREALLOC_BUFFER:
-        record_influences_kernel(RL_LOAD_FIRMWARE_PREALLOC_BUFFER, ptr_prov_inode, ptr_prov_current_task, file);
-        break;
       case READING_MODULE:
         record_influences_kernel(RL_LOAD_MODULE, ptr_prov_inode, ptr_prov_current_task, file);
         break;

@@ -2,7 +2,7 @@ target := bpf_camflow
 kernel-version := 5.8
 
 submodule:
-	git submodule update --init
+	git submodule update --init --recursive
 
 build_libbpf:
 	cd ~ && git clone https://github.com/libbpf/libbpf
