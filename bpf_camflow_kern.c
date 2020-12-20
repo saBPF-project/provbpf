@@ -1489,36 +1489,36 @@ int BPF_PROG(file_ioctl, struct file *file, unsigned int cmd, unsigned long arg)
 }
 #endif
 
-// SEC("lsm/file_send_sigiotask")
-// int BPF_PROG(file_send_sigiotask, struct task_struct *task, struct fown_struct *fown, int signum) {
-//     // TODO: fix issue R2 is ptr_fown_struct invalid negative access: off=-80
-//
-//     struct file *file = container_of(fown, struct file, f_owner);
-//     struct inode *inode = file->f_inode;
-//     union prov_elt *ptr_prov_task, *ptr_prov_cred, *ptr_prov_inode;
-//     struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
-//
-//     ptr_prov_task = get_or_create_task_prov(task);
-//     if (!ptr_prov_task) {
-//       return 0;
-//     }
-//     ptr_prov_cred = get_or_create_cred_prov(task->cred, task);
-//     if (!ptr_prov_cred) {
-//       return 0;
-//     }
-//     ptr_prov_inode = get_or_create_inode_prov(inode);
-//     if (!ptr_prov_inode) {
-//       return 0;
-//     }
-//
-//     if (!signum) {
-//       signum = SIGIO;
-//     }
-//
-//     uses(RL_FILE_SIGIO, current_task, ptr_prov_inode, ptr_prov_task, ptr_prov_cred, file, signum);
-//
-//     return 0;
-// }
+SEC("lsm/file_send_sigiotask")
+int BPF_PROG(file_send_sigiotask, struct task_struct *task, struct fown_struct *fown, int signum) {
+    struct file *file = container_of(fown, struct file, f_owner);
+    struct inode *inode;
+    bpf_probe_read(&inode, sizeof(inode), &file->f_inode);
+
+    union prov_elt *ptr_prov_task, *ptr_prov_cred, *ptr_prov_inode;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+
+    ptr_prov_task = get_or_create_task_prov(task);
+    if (!ptr_prov_task) {
+      return 0;
+    }
+    ptr_prov_cred = get_or_create_cred_prov(task->cred, task);
+    if (!ptr_prov_cred) {
+      return 0;
+    }
+    ptr_prov_inode = get_or_create_inode_prov(inode);
+    if (!ptr_prov_inode) {
+      return 0;
+    }
+
+    if (!signum) {
+      signum = SIGIO;
+    }
+
+    uses(RL_FILE_SIGIO, current_task, ptr_prov_inode, ptr_prov_task, ptr_prov_cred, file, signum);
+
+    return 0;
+}
 
 /*!
  * @brief Record provenance when msg_msg_alloc_security hook is triggered.
