@@ -39,11 +39,11 @@ void set_id(struct bpf_camflow_kern *skel, uint32_t index, uint64_t value) {
 int main(void) {
     struct bpf_camflow_kern *skel = NULL;
     struct ring_buffer *ringbuf = NULL;
-    int err, map_fd, task_map_fd, res;
+    int err, map_fd, search_map_fd, res;
     struct rlimit r = {RLIM_INFINITY, RLIM_INFINITY};
     unsigned int key = 0, value;
-    uint64_t task_map_key, prev_task_map_key;
-    union prov_elt task_map_value;
+    uint64_t search_map_key, prev_search_map_key;
+    union prov_elt search_map_value;
     pid_t current_pid;
 
     printf("Starting...\n");
@@ -107,28 +107,51 @@ int main(void) {
     prov_init();
 
     current_pid = getpid();
+    gid_t current_gid = getgid();
 
     printf("Searching task_map for current process...\n");
-    task_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "task_map");
-    if (task_map_fd < 0) {
-      printf("Failed loading task_map (%d)\n", task_map_fd);
+    search_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "task_map");
+    if (search_map_fd < 0) {
+      printf("Failed loading task_map (%d)\n", search_map_fd);
       goto close_prog;
     }
 
-    task_map_key = -1;
-    while (bpf_map_get_next_key(task_map_fd, &prev_task_map_key, &task_map_key) == 0) {
-      res = bpf_map_lookup_elem(task_map_fd, &task_map_key, &task_map_value);
+    search_map_key = -1;
+    while (bpf_map_get_next_key(search_map_fd, &prev_search_map_key, &search_map_key) == 0) {
+      res = bpf_map_lookup_elem(search_map_fd, &search_map_key, &search_map_value);
       if (res > -1) {
-          if (task_map_value.task_info.pid == current_pid) {
-            set_opaque(&task_map_value);
-            bpf_map_update_elem(task_map_fd, &task_map_key, &task_map_value, BPF_EXIST);
+          if (search_map_value.task_info.pid == current_pid) {
+            set_opaque(&search_map_value);
+            bpf_map_update_elem(search_map_fd, &search_map_key, &search_map_value, BPF_EXIST);
             break;
           }
       }
-      prev_task_map_key = task_map_key;
+      prev_search_map_key = search_map_key;
     }
-    close(task_map_fd);
+    close(search_map_fd);
     printf("Done searching. Current process pid: %d has been set opaque...\n", current_pid);
+
+    printf("Searching cred_map for current cred...\n");
+    search_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "cred_map");
+    if (search_map_fd < 0) {
+      printf("Failed loading task_map (%d)\n", search_map_fd);
+      goto close_prog;
+    }
+
+    search_map_key = -1;
+    while (bpf_map_get_next_key(search_map_fd, &prev_search_map_key, &search_map_key) == 0) {
+      res = bpf_map_lookup_elem(search_map_fd, &search_map_key, &search_map_value);
+      if (res > -1) {
+          if (search_map_value.proc_info.tgid == current_gid) {
+            set_opaque(&search_map_value);
+            bpf_map_update_elem(search_map_fd, &search_map_key, &search_map_value, BPF_EXIST);
+            break;
+          }
+      }
+      prev_search_map_key = search_map_key;
+    }
+    close(search_map_fd);
+    printf("Done searching. Current cred gid: %d has been set opaque...\n", current_gid);
 
     ringbuf = ring_buffer__new(map_fd, buf_process_entry, NULL, NULL);
     printf("Start polling forever...\n");
