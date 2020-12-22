@@ -107,7 +107,6 @@ int main(void) {
     prov_init();
 
     current_pid = getpid();
-    gid_t current_gid = getgid();
 
     printf("Searching task_map for current process...\n");
     search_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "task_map");
@@ -142,16 +141,16 @@ int main(void) {
     while (bpf_map_get_next_key(search_map_fd, &prev_search_map_key, &search_map_key) == 0) {
       res = bpf_map_lookup_elem(search_map_fd, &search_map_key, &search_map_value);
       if (res > -1) {
-          if (search_map_value.proc_info.tgid == current_gid) {
+          if (search_map_value.proc_info.tgid == current_pid) {
             set_opaque(&search_map_value);
             bpf_map_update_elem(search_map_fd, &search_map_key, &search_map_value, BPF_EXIST);
+            printf("Done searching. Current cred tgid: %d has been set opaque...\n", current_pid);
             break;
           }
       }
       prev_search_map_key = search_map_key;
     }
     close(search_map_fd);
-    printf("Done searching. Current cred gid: %d has been set opaque...\n", current_gid);
 
     ringbuf = ring_buffer__new(map_fd, buf_process_entry, NULL, NULL);
     printf("Start polling forever...\n");
