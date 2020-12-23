@@ -168,6 +168,35 @@ static __always_inline void update_version(const uint64_t type,
     clear_saved(p);
 }
 
+static __always_inline void update_version_long(const uint64_t type,
+                                          void *prov,
+                                          bool prov_is_long)
+{
+    int map_id = 3;
+    union long_prov_elt *old_prov = bpf_map_lookup_elem(&tmp_prov_map, &map_id);
+    if (!old_prov)
+        return;
+
+    union long_prov_elt *p = prov;
+    bpf_map_update_elem(&tmp_prov_map, &map_id, p, BPF_NOEXIST);
+    // __builtin_memcpy(old_prov, p, sizeof(union prov_elt));
+
+    // Update the version of prov to the newer version
+    node_identifier(p).version++;
+    clear_recorded(p);
+
+    // Record the version relation between two versions of the same identity.
+    if (node_identifier(p).type == ACT_TASK) {
+        __write_relation(RL_VERSION_TASK, old_prov, prov_is_long, prov, prov_is_long, NULL, 0);
+    } else {
+        __write_relation(RL_VERSION, old_prov, prov_is_long, prov, prov_is_long, NULL, 0);
+    }
+    // Newer version now has no outgoing edge
+    clear_has_outgoing(p);
+    // For inode provenance persistance
+    clear_saved(p);
+}
+
 static __always_inline void record_relation(uint64_t type,
                                             void *from,
                                             bool from_is_long,
@@ -482,6 +511,7 @@ static __always_inline int record_write_xattr(uint64_t type,
     ptr_prov_xattr->xattr_info.size = (size < PROV_XATTR_VALUE_SIZE) ? size : PROV_XATTR_VALUE_SIZE;
 
     record_relation(RL_PROC_READ, cprov, false, tprov, false, NULL, 0);
+    update_version_long(type, ptr_prov_xattr, true);
     __write_relation(type, tprov, false, ptr_prov_xattr, true, NULL, flags);
 
     if (type == RL_SETXATTR) {
@@ -538,6 +568,7 @@ static __always_inline void record_read_xattr(void *cprov,
     __builtin_memcpy(&(xattr->xattr_info.name), &name, PROV_XATTR_NAME_SIZE);
     xattr->xattr_info.name[PROV_XATTR_NAME_SIZE - 1] = '\0';
 
+    update_version_long(RL_GETXATTR_INODE, xattr, true);
     __write_relation(RL_GETXATTR_INODE, iprov, false, xattr, true, NULL, 0);
     record_relation(RL_GETXATTR, xattr, true, tprov, false, NULL, 0);
     record_relation(RL_PROC_WRITE, tprov, false, cprov, false, NULL, 0);
@@ -548,11 +579,19 @@ static __always_inline int record_influences_kernel(const uint64_t type,
                                                     union prov_elt *activity,
                                                     const struct file *file)
 {
+    uint64_t key = 0;
+    union long_prov_elt *ptr_prov_machine;
+    ptr_prov_machine = bpf_map_lookup_elem(&prov_machine_map, &key);
+
     if (provenance_is_opaque(entity) || provenance_is_opaque(activity)) {
       return 0;
     }
 
     record_relation(RL_LOAD_FILE, entity, false, activity, false, file, 0);
+    if (ptr_prov_machine) {
+        update_version_long(type, ptr_prov_machine, true);
+        __write_relation(type, activity, false, ptr_prov_machine, true, NULL, 0);
+    }
 
     return 0;
 }

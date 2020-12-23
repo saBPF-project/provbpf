@@ -6,12 +6,19 @@
 #include <bpf/bpf.h>
 #include <sys/resource.h>
 #include <sys/types.h>
+#include <sys/utsname.h>
 
 #include "bpf_camflow.skel.h"
 #include "linux/provenance.h"
 
 #include "camflow_bpf_record.h"
 #include "camflow_bpf_id.h"
+
+
+#define DM_AGENT                                0x1000000000000000UL
+/* NODE IS LONG*/
+#define ND_LONG                                 0x0400000000000000UL
+#define AGT_MACHINE                             (DM_AGENT | ND_LONG | (0x0000000000000001ULL << 4))
 
 /* Callback function called whenever a new ring
  * buffer entry is polled from the buffer. */
@@ -34,6 +41,19 @@ void set_id(struct bpf_camflow_kern *skel, uint32_t index, uint64_t value) {
     map_fd = bpf_object__find_map_fd_by_name(skel->obj, "ids_map");
     id.id = value;
     bpf_map_update_elem(map_fd, &index, &id, BPF_ANY);
+}
+
+/* djb2 hash implementation by Dan Bernstein */
+static inline uint64_t djb2_hash(const char *str)
+{
+	uint64_t hash = 5381;
+	int c = *str;
+
+	while (c) {
+		hash = ((hash << 5) + hash) + c;
+		c = *++str;
+	}
+	return hash;
 }
 
 int main(void) {
@@ -85,6 +105,40 @@ int main(void) {
     map_fd = bpf_object__find_map_fd_by_name(skel->obj, "policy_map");
     bpf_map_update_elem(map_fd, &key, &prov_policy, BPF_ANY);
     printf("Provenance: policy initialization finished.\n");
+
+    printf("Provenance: prov_machine initialization started...\n");
+    union long_prov_elt prov_machine;
+
+    prov_machine.machine_info.cam_major = CAMFLOW_VERSION_MAJOR;
+    prov_machine.machine_info.cam_minor = CAMFLOW_VERSION_MINOR;
+    prov_machine.machine_info.cam_patch = CAMFLOW_VERSION_PATCH;
+
+    __builtin_memcpy(&(prov_machine.machine_info.commit), CAMFLOW_COMMIT, PROV_COMMIT_MAX_LENGTH);
+
+    prov_machine.node_info.identifier.node_id.type = AGT_MACHINE;
+    prov_machine.node_info.identifier.node_id.version = 1;
+
+    struct utsname buffer;
+
+    int result = uname(&buffer);
+
+    if (result == -1) {
+        printf("Something went wrong...\n");
+        return 0;
+    }
+
+    __builtin_memcpy(&(prov_machine.machine_info.utsname), &buffer, sizeof(struct new_utsname));
+
+    prov_machine.node_info.identifier.node_id.id = djb2_hash(CAMFLOW_COMMIT);
+    prov_machine.node_info.identifier.node_id.boot_id = get_boot_id();
+    prov_machine.node_info.identifier.node_id.machine_id = get_machine_id();
+
+    map_fd = bpf_object__find_map_fd_by_name(skel->obj, "policy_map");
+    bpf_map_update_elem(map_fd, &key, &prov_machine, BPF_ANY);
+
+    printf("Provenance: prov_machine initialization ended...\n");
+
+
 
     printf("Attaching BPF programs ...\n");
     err = bpf_camflow_kern__attach(skel);
