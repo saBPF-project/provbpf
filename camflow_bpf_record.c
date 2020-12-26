@@ -297,6 +297,9 @@ static inline void log_print(char* json){
         json+=rc;
         len-=rc;
     }
+    rc = write(__log_fd, "\n", 1);
+    if(rc<0)
+        exit(-1);
     fsync(__log_fd);
     pthread_mutex_unlock(&__file_lock);
 }
