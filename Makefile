@@ -25,7 +25,7 @@ build_libprovenance:
 	cd libprovenance && $(MAKE) install
 	cd libprovenance/src && sed -i -e "s/INCLUDES = -I..\/include -I..\/..\/camflow-dev\/include\/uapi/INCLUDES = -I..\/include/g" Makefile
 
-prepare: build_libbpf build_kernel build_libprovenance
+prepare: submodule build_libbpf build_kernel build_libprovenance
 
 btf:
 	bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
