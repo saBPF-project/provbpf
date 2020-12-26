@@ -289,8 +289,6 @@ static inline void log_print(char* json){
     int len = strlen(json);
     int rc;
 
-    printf("%s\n", json);
-
     pthread_mutex_lock(&__file_lock);
     while (len > 0) {
         rc = write(__log_fd, json, len);
