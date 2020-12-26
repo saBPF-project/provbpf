@@ -13,7 +13,7 @@ jobs:
       - run: 'sudo dnf install -y openssl-devel bc nano patch mosquitto sparse'
       - run: 'sudo dnf install -y llvm bpftool libbpf libbpf-devel elfutils-libelf libcap'
       - run: 'sudo dnf install -y ruby uthash-devel'
-      - run: 'git submodule update --init --recursive -j 8'
+      - run: 'make submodule'
       - run: 'make build_libbpf'
       - run: 'make build_libprovenance'
       - run: 'make clean'
