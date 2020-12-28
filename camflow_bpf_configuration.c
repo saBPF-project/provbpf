@@ -36,14 +36,16 @@ static int handler(void* user, const char* section, const char* name,
             local->tm_sec
         );
     } else if(MATCH("general", "output")) {
-        if(strcmp(value, "log"))
+        if(strcmp(value, "log")==0) {
             pconfig->output = CF_BPF_LOG;
-        else if(strcmp(value, "null"))
+        } else if(strcmp(value, "null")==0) {
             pconfig->output = CF_BPF_NULL;
-        else if(strcmp(value, "terminal"))
+        } else if(strcmp(value, "terminal")==0) {
             pconfig->output = CF_BPF_TERMINAL;
-        else
-            return 0;
+        } else {
+            printf("\n\nUnknown output: %s\n\n", value);
+            return -1;
+        }
     } else {
         return 0; /* unknown section/name error */
     }

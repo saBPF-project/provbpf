@@ -118,7 +118,7 @@ void log_error(char* error){
   syslog(LOG_ERR, "From library: %s", error);
 }
 
-struct provenance_ops ops_null = {
+struct provenance_ops null_ops = {
   .init=&init,
   .log_derived=NULL,
   .log_generated=NULL,
@@ -177,18 +177,24 @@ struct provenance_ops w3c_ops = {
 void relation_record(union long_prov_elt *msg){
   uint64_t type = prov_type(msg);
 
-  if(prov_is_used(type) &&  prov_ops.log_used!=NULL)
-    prov_ops.log_used(&(msg->relation_info));
-  else if(prov_is_informed(type) && prov_ops.log_informed!=NULL)
-    prov_ops.log_informed(&(msg->relation_info));
-  else if(prov_is_generated(type) && prov_ops.log_generated!=NULL)
-    prov_ops.log_generated(&(msg->relation_info));
-  else if(prov_is_derived(type) && prov_ops.log_derived!=NULL)
-    prov_ops.log_derived(&(msg->relation_info));
-  else if(prov_is_influenced(type) && prov_ops.log_influenced!=NULL)
-    prov_ops.log_influenced(&(msg->relation_info));
-  else if(prov_is_associated(type) && prov_ops.log_associated!=NULL)
-    prov_ops.log_associated(&(msg->relation_info));
+  if(prov_is_used(type))
+    if (prov_ops.log_used!=NULL)
+        prov_ops.log_used(&(msg->relation_info));
+  else if(prov_is_informed(type))
+    if (prov_ops.log_informed!=NULL)
+        prov_ops.log_informed(&(msg->relation_info));
+  else if(prov_is_generated(type))
+    if (prov_ops.log_generated!=NULL)
+        prov_ops.log_generated(&(msg->relation_info));
+  else if(prov_is_derived(type))
+    if (prov_ops.log_derived!=NULL)
+        prov_ops.log_derived(&(msg->relation_info));
+  else if(prov_is_influenced(type))
+    if (prov_ops.log_influenced!=NULL)
+        prov_ops.log_influenced(&(msg->relation_info));
+  else if(prov_is_associated(type))
+    if (prov_ops.log_associated!=NULL)
+        prov_ops.log_associated(&(msg->relation_info));
   else
     printf("Error: unknown relation type %lu\n", prov_type(msg));
 }
@@ -308,27 +314,45 @@ static inline void log_to_file(char* json){
 }
 
 static inline void log_to_terminal(char* json){
-    printf("%s", json);
+    printf("%s\n", json);
 }
 
 void prov_init() {
-    /* setup log file */
-    printf("Log file %s.\n", __config.log_path);
-    __log_fd = open(__config.log_path, O_CREAT|O_WRONLY, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
-    if (__log_fd < 0) {
-        printf("Cannot open log file.\n");
+    printf("\n\n");
+    printf("############################\n");
+    printf("CONFIGURATION TYPE: %d\n", __config.output);
+    printf("############################\n\n");
+
+    if (__config.output == CF_BPF_LOG) {
+        /* setup log file */
+        printf("Log file %s.\n", __config.log_path);
+        __log_fd = open(__config.log_path, O_CREAT|O_WRONLY, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+        if (__log_fd < 0) {
+            printf("Cannot open log file.\n");
+            exit(-1);
+        }
+        lseek(__log_fd, 0, SEEK_SET);
+
+        if (pthread_mutex_init(&__file_lock, NULL) != 0) {
+            printf("File mutex init failed.\n");
+            exit(-1);
+        }
+
+        /* ready the recording hooks */
+        memcpy(&prov_ops, &w3c_ops, sizeof(struct provenance_ops));
+        set_W3CJSON_callback(log_to_file);
+    } else if (__config.output == CF_BPF_TERMINAL) {
+        /* ready the recording hooks */
+        memcpy(&prov_ops, &w3c_ops, sizeof(struct provenance_ops));
+        set_W3CJSON_callback(log_to_terminal);
+    } else if (__config.output == CF_BPF_NULL) {
+        /* ready the recording hooks */
+        memcpy(&prov_ops, &null_ops, sizeof(struct provenance_ops));
+        set_W3CJSON_callback(log_to_terminal);
+    }  else {
+        printf("ERROR initializing logging\n");
         exit(-1);
     }
-    lseek(__log_fd, 0, SEEK_SET);
-
-    if (pthread_mutex_init(&__file_lock, NULL) != 0) {
-        printf("File mutex init failed.\n");
-        exit(-1);
-    }
-
-    /* ready the recording hooks */
-    memcpy(&prov_ops, &w3c_ops, sizeof(struct provenance_ops));
-    set_W3CJSON_callback(log_to_file);
 }
 
 void bpf_prov_record(union long_prov_elt* msg){
@@ -344,5 +368,6 @@ void bpf_prov_record(union long_prov_elt* msg){
 }
 
 void prov_refresh_records(void) {
-    flush_json();
+    if (__config.output != CF_BPF_NULL)
+        flush_json();
 }

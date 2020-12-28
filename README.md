@@ -42,6 +42,8 @@ Installing CamFlowBPF:
 make install
 ```
 
+Check [provbpf.ini](provbpf.ini) that can be edited at `/etc/provbpf.ini`.
+
 Running bpf program:
 ```
 make run
