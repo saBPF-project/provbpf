@@ -22,7 +22,7 @@ static int handler(void* user, const char* section, const char* name,
     time_t now;
     struct tm *local;
 
-    if(MATCH("log", "path")){
+    if(MATCH("log", "path")) {
         time(&now);
         local = localtime(&now);
         snprintf(pconfig->log_path, PATH_MAX,
@@ -35,6 +35,13 @@ static int handler(void* user, const char* section, const char* name,
             local->tm_min,
             local->tm_sec
         );
+    } else if(MATCH("general", "output")) {
+        if(strcmp(value, "log"))
+            pconfig->output = CF_BPF_LOG;
+        else if(strcmp(value, "null"))
+            pconfig->output = CF_BPF_NULL;
+        else
+            return 0;
     } else {
         return 0; /* unknown section/name error */
     }
