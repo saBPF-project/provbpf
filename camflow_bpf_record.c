@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <provenance.h>
 #include <provenanceW3CJSON.h>
+#include <provenanceSPADEJSON.h>
 #include <pthread.h>
 
 #include "camflow_bpf_record.h"
@@ -20,6 +21,38 @@ void init( void ){
   pid_t tid = gettid();
   syslog(LOG_INFO, "Init audit thread (%d)", (int) tid);
 }
+
+void log_error(char* error){
+  syslog(LOG_ERR, "From library: %s", error);
+}
+
+struct provenance_ops null_ops = {
+  .init=&init,
+  .log_derived=NULL,
+  .log_generated=NULL,
+  .log_used=NULL,
+  .log_informed=NULL,
+  .log_influenced=NULL,
+  .log_associated=NULL,
+  .log_proc=NULL,
+  .log_task=NULL,
+  .log_inode=NULL,
+  .log_str=NULL,
+  .log_act_disc=NULL,
+  .log_agt_disc=NULL,
+  .log_ent_disc=NULL,
+  .log_msg=NULL,
+  .log_shm=NULL,
+  .log_packet=NULL,
+  .log_address=NULL,
+  .log_file_name=NULL,
+  .log_iattr=NULL,
+  .log_xattr=NULL,
+  .log_packet_content=NULL,
+  .log_arg=NULL,
+  .log_machine=NULL,
+  .log_error=&log_error
+};
 
 void w3c_str(struct str_struct* data){
   append_entity(str_msg_to_json(data));
@@ -114,38 +147,6 @@ void w3c_machine(struct machine_struct* machine){
   append_agent(machine_to_json(machine));
 }
 
-void log_error(char* error){
-  syslog(LOG_ERR, "From library: %s", error);
-}
-
-struct provenance_ops null_ops = {
-  .init=&init,
-  .log_derived=NULL,
-  .log_generated=NULL,
-  .log_used=NULL,
-  .log_informed=NULL,
-  .log_influenced=NULL,
-  .log_associated=NULL,
-  .log_proc=NULL,
-  .log_task=NULL,
-  .log_inode=NULL,
-  .log_str=NULL,
-  .log_act_disc=NULL,
-  .log_agt_disc=NULL,
-  .log_ent_disc=NULL,
-  .log_msg=NULL,
-  .log_shm=NULL,
-  .log_packet=NULL,
-  .log_address=NULL,
-  .log_file_name=NULL,
-  .log_iattr=NULL,
-  .log_xattr=NULL,
-  .log_packet_content=NULL,
-  .log_arg=NULL,
-  .log_machine=NULL,
-  .log_error=&log_error
-};
-
 struct provenance_ops w3c_ops = {
   .init=&init,
   .log_derived=&w3c_derived,
@@ -174,28 +175,145 @@ struct provenance_ops w3c_ops = {
   .log_error=&log_error
 };
 
+void spade_derived(struct relation_struct* relation){
+  spade_json_append(derived_to_spade_json(relation));
+}
+
+void spade_generated(struct relation_struct* relation){
+  spade_json_append(generated_to_spade_json(relation));
+}
+
+void spade_used(struct relation_struct* relation){
+  spade_json_append(used_to_spade_json(relation));
+}
+
+void spade_informed(struct relation_struct* relation){
+  spade_json_append(informed_to_spade_json(relation));
+}
+
+void spade_influenced(struct relation_struct* relation){
+  spade_json_append(influenced_to_spade_json(relation));
+}
+
+void spade_associated(struct relation_struct* relation){
+  spade_json_append(associated_to_spade_json(relation));
+}
+
+void spade_proc(struct proc_prov_struct* proc){
+    spade_json_append(proc_to_spade_json(proc));
+}
+
+void spade_task(struct task_prov_struct* task){
+  spade_json_append(task_to_spade_json(task));
+}
+
+void spade_inode(struct inode_prov_struct* inode){
+  spade_json_append(inode_to_spade_json(inode));
+}
+
+void spade_act_disc(struct disc_node_struct* node){
+  spade_json_append(disc_to_spade_json(node));
+}
+
+void spade_agt_disc(struct disc_node_struct* node){
+  spade_json_append(disc_to_spade_json(node));
+}
+
+void spade_ent_disc(struct disc_node_struct* node){
+  spade_json_append(disc_to_spade_json(node));
+}
+
+void spade_msg(struct msg_msg_struct* msg){
+  spade_json_append(msg_to_spade_json(msg));
+}
+
+void spade_shm(struct shm_struct* shm){
+  spade_json_append(shm_to_spade_json(shm));
+}
+
+void spade_packet(struct pck_struct* pck){
+  spade_json_append(packet_to_spade_json(pck));
+}
+
+void spade_address(struct address_struct* address){
+  spade_json_append(addr_to_spade_json(address));
+}
+
+void spade_file_name(struct file_name_struct* f_name){
+  spade_json_append(pathname_to_spade_json(f_name));
+}
+
+void spade_iattr(struct iattr_prov_struct* iattr){
+  spade_json_append(iattr_to_spade_json(iattr));
+}
+
+
+void spade_xattr(struct xattr_prov_struct* xattr){
+  spade_json_append(xattr_to_spade_json(xattr));
+}
+
+void spade_packet_content(struct pckcnt_struct* cnt){
+  spade_json_append(pckcnt_to_spade_json(cnt));
+}
+
+void spade_arg(struct arg_struct* arg){
+  spade_json_append(arg_to_spade_json(arg));
+}
+
+void spade_machine(struct machine_struct* m){
+  spade_json_append(machine_to_spade_json(m));
+}
+
+struct provenance_ops spade_ops = {
+  .init=&init,
+  .log_derived=&spade_derived,
+  .log_generated=&spade_generated,
+  .log_used=&spade_used,
+  .log_informed=&spade_informed,
+  .log_influenced=&spade_influenced,
+  .log_associated=&spade_associated,
+  .log_proc=&spade_proc,
+  .log_task=&spade_task,
+  .log_inode=&spade_inode,
+  .log_str=NULL,
+  .log_act_disc=&spade_act_disc,
+  .log_agt_disc=&spade_agt_disc,
+  .log_ent_disc=&spade_ent_disc,
+  .log_msg=&spade_msg,
+  .log_shm=&spade_shm,
+  .log_packet=&spade_packet,
+  .log_address=&spade_address,
+  .log_file_name=&spade_file_name,
+  .log_iattr=&spade_iattr,
+  .log_xattr=&spade_xattr,
+  .log_packet_content=&spade_packet_content,
+  .log_arg=&spade_arg,
+  .log_machine=&spade_machine,
+  .log_error=&log_error
+};
+
 void relation_record(union long_prov_elt *msg){
   uint64_t type = prov_type(msg);
 
-  if(prov_is_used(type))
+  if(prov_is_used(type)) {
     if (prov_ops.log_used!=NULL)
         prov_ops.log_used(&(msg->relation_info));
-  else if(prov_is_informed(type))
+  } else if(prov_is_informed(type)) {
     if (prov_ops.log_informed!=NULL)
         prov_ops.log_informed(&(msg->relation_info));
-  else if(prov_is_generated(type))
+  } else if(prov_is_generated(type)) {
     if (prov_ops.log_generated!=NULL)
         prov_ops.log_generated(&(msg->relation_info));
-  else if(prov_is_derived(type))
+  } else if(prov_is_derived(type)) {
     if (prov_ops.log_derived!=NULL)
         prov_ops.log_derived(&(msg->relation_info));
-  else if(prov_is_influenced(type))
+  } else if(prov_is_influenced(type)) {
     if (prov_ops.log_influenced!=NULL)
         prov_ops.log_influenced(&(msg->relation_info));
-  else if(prov_is_associated(type))
+  } else if(prov_is_associated(type)) {
     if (prov_ops.log_associated!=NULL)
         prov_ops.log_associated(&(msg->relation_info));
-  else
+  } else
     printf("Error: unknown relation type %lu\n", prov_type(msg));
 }
 
@@ -339,16 +457,31 @@ void prov_init() {
         }
 
         /* ready the recording hooks */
-        memcpy(&prov_ops, &w3c_ops, sizeof(struct provenance_ops));
-        set_W3CJSON_callback(log_to_file);
+        if (__config.format == CF_BPF_W3C) {
+            memcpy(&prov_ops, &w3c_ops, sizeof(struct provenance_ops));
+            set_W3CJSON_callback(log_to_file);
+        } else if (__config.format == CF_BPF_SPADE) {
+            memcpy(&prov_ops, &spade_ops, sizeof(struct provenance_ops));
+            set_SPADEJSON_callback(log_to_file);
+        } else {
+            printf("Unknown format.\n");
+            exit(-1);
+        }
     } else if (__config.output == CF_BPF_TERMINAL) {
         /* ready the recording hooks */
-        memcpy(&prov_ops, &w3c_ops, sizeof(struct provenance_ops));
-        set_W3CJSON_callback(log_to_terminal);
+        if (__config.format == CF_BPF_W3C) {
+            memcpy(&prov_ops, &w3c_ops, sizeof(struct provenance_ops));
+            set_W3CJSON_callback(log_to_terminal);
+        } else if (__config.format == CF_BPF_SPADE) {
+            memcpy(&prov_ops, &spade_ops, sizeof(struct provenance_ops));
+            set_SPADEJSON_callback(log_to_terminal);
+        } else {
+            printf("Unknown format.\n");
+            exit(-1);
+        }
     } else if (__config.output == CF_BPF_NULL) {
         /* ready the recording hooks */
         memcpy(&prov_ops, &null_ops, sizeof(struct provenance_ops));
-        set_W3CJSON_callback(log_to_terminal);
     }  else {
         printf("ERROR initializing logging\n");
         exit(-1);
@@ -368,6 +501,10 @@ void bpf_prov_record(union long_prov_elt* msg){
 }
 
 void prov_refresh_records(void) {
-    if (__config.output != CF_BPF_NULL)
+    if (__config.output == CF_BPF_NULL)
+        return;
+    if (__config.format == CF_BPF_W3C)
         flush_json();
+    if (__config.format == CF_BPF_SPADE)
+        flush_spade_json();
 }

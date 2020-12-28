@@ -46,6 +46,15 @@ static int handler(void* user, const char* section, const char* name,
             printf("\n\nUnknown output: %s\n\n", value);
             return -1;
         }
+    } else if(MATCH("general", "format")) {
+        if(strcmp(value, "w3c")==0) {
+            pconfig->format = CF_BPF_W3C;
+        } else if(strcmp(value, "spade")==0) {
+            pconfig->format = CF_BPF_SPADE;
+        } else {
+            printf("\n\nUnknown output: %s\n\n", value);
+            return -1;
+        }
     } else {
         return 0; /* unknown section/name error */
     }
