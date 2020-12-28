@@ -13,6 +13,7 @@
 
 #include "camflow_bpf_record.h"
 #include "camflow_bpf_id.h"
+#include "camflow_bpf_configuration.h"
 
 
 #define DM_AGENT                                0x1000000000000000UL
@@ -67,6 +68,9 @@ int main(void) {
     pid_t current_pid;
 
     printf("Starting...\n");
+
+    printf("Reading Configuration...\n");
+    read_config();
 
     printf("Setting rlimit...\n");
     err = setrlimit(RLIMIT_MEMLOCK, &r);

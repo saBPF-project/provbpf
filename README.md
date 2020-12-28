@@ -37,6 +37,11 @@ Building bpf kernel and user space program:
 make all
 ```
 
+Installing CamFlowBPF:
+```
+make install
+```
+
 Running bpf program:
 ```
 make run

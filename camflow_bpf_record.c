@@ -10,8 +10,11 @@
 #include <pthread.h>
 
 #include "camflow_bpf_record.h"
+#include "camflow_bpf_configuration.h"
 
 static struct provenance_ops prov_ops;
+
+extern configuration __config;
 
 void init( void ){
   pid_t tid = gettid();
@@ -306,7 +309,8 @@ static inline void log_print(char* json){
 
 void prov_init() {
     /* setup log file */
-    __log_fd = open("./audit.log", O_CREAT|O_WRONLY, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+    printf("Log file %s.\n", __config.log_path);
+    __log_fd = open(__config.log_path, O_CREAT|O_WRONLY, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
     if (__log_fd < 0) {
         printf("Cannot open log file.\n");
         exit(-1);

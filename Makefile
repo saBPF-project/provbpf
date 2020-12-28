@@ -56,15 +56,25 @@ usr:
 	-Icamflow-dev/include/uapi -Iinclude -c
 	clang camflow_bpf_id.c -o camflow_bpf_id.o \
 	-Icamflow-dev/include/uapi -Iinclude -c
+	clang camflow_bpf_configuration.c -o camflow_bpf_configuration.o \
+	-Icamflow-dev/include/uapi -Iinclude -c
 	clang $(target)_usr.c -o $(target)_usr.o -Icamflow-dev/include/uapi \
 	-Iinclude -c
-	clang -o bpf_camflow $(target)_usr.o camflow_bpf_record.o camflow_bpf_id.o -lbpf -lprovenance -lpthread
+	clang -o bpf_camflow \
+	$(target)_usr.o \
+	camflow_bpf_record.o \
+	camflow_bpf_id.o \
+	camflow_bpf_configuration.o \
+	-lbpf -lprovenance -lpthread -linih
+
+all: clean btf kern skel usr
+
+install:
+	sudo cp --force ./provbpf.ini /etc/provbpf.ini
 
 run:
 	rm -rf audit.log
 	sudo ./bpf_camflow
-
-all: clean btf kern skel usr
 
 clean:
 	rm -f *.o
