@@ -288,7 +288,7 @@ void long_prov_record(union long_prov_elt* msg){
 static int __log_fd;
 static pthread_mutex_t __file_lock;
 
-static inline void log_print(char* json){
+static inline void log_to_file(char* json){
     int len = strlen(json);
     int rc;
 
@@ -305,6 +305,10 @@ static inline void log_print(char* json){
         exit(-1);
     fsync(__log_fd);
     pthread_mutex_unlock(&__file_lock);
+}
+
+static inline void log_to_terminal(char* json){
+    printf("%s", json);
 }
 
 void prov_init() {
@@ -324,16 +328,10 @@ void prov_init() {
 
     /* ready the recording hooks */
     memcpy(&prov_ops, &w3c_ops, sizeof(struct provenance_ops));
-    set_W3CJSON_callback(log_print);
+    set_W3CJSON_callback(log_to_file);
 }
 
 void bpf_prov_record(union long_prov_elt* msg){
-    /* TODO: CODE HERE
-     * Record provenance in user space.
-     * Follow the logic here:
-     * https://github.com/CamFlow/libprovenance/blob/master/src/relay.c#L268
-    */
-
     if (prov_is_relation(msg)) {
       relation_record(msg);
     } else {

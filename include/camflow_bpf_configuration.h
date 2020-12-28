@@ -7,6 +7,7 @@
 
 enum output_type {
     CF_BPF_LOG,
+    CF_BPF_TERMINAL,
     CF_BPF_NULL
 };
 

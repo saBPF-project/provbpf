@@ -40,6 +40,8 @@ static int handler(void* user, const char* section, const char* name,
             pconfig->output = CF_BPF_LOG;
         else if(strcmp(value, "null"))
             pconfig->output = CF_BPF_NULL;
+        else if(strcmp(value, "terminal"))
+            pconfig->output = CF_BPF_TERMINAL;
         else
             return 0;
     } else {

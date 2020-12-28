@@ -141,9 +141,7 @@ int main(void) {
     bpf_map_update_elem(map_fd, &key, &prov_machine, BPF_ANY);
 
     printf("Provenance: prov_machine initialization ended...\n");
-
-
-
+    
     printf("Attaching BPF programs ...\n");
     err = bpf_camflow_kern__attach(skel);
     if (err) {
