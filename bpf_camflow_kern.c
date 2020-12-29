@@ -168,7 +168,7 @@ int BPF_PROG(task_fix_setgid, struct cred *new, const struct cred *old, int flag
     if (!ptr_prov_old_cred) {
       return 0;
     }
-    ptr_prov_task = get_task_provenance(true);
+    ptr_prov_task = get_task_provenance(current_task, true);
     if (!ptr_prov_task) {
       return 0;
     }
@@ -200,7 +200,7 @@ int BPF_PROG(task_getpgid, struct task_struct *p) {
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_current_task = get_task_provenance(true);;
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -304,7 +304,7 @@ int BPF_PROG(inode_create, struct inode *dir, struct dentry *dentry, umode_t mod
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -370,7 +370,7 @@ int BPF_PROG(inode_permission, struct inode *inode, int mask) {
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -434,7 +434,7 @@ int BPF_PROG(inode_link, struct dentry *old_dentry, struct inode *dir, struct de
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -469,7 +469,7 @@ int BPF_PROG(inode_unlink, struct inode *dir, struct dentry *dentry) {
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -505,7 +505,7 @@ int BPF_PROG(inode_symlink, struct inode *dir, struct dentry *dentry, const char
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -544,7 +544,7 @@ int BPF_PROG(inode_rename, struct inode *old_dir, struct dentry *old_dentry, str
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -595,7 +595,7 @@ int BPF_PROG(inode_setattr, struct dentry *dentry, struct iattr *attr) {
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -640,7 +640,7 @@ int BPF_PROG(inode_getattr, const struct path *path) {
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -680,7 +680,7 @@ int BPF_PROG(inode_readlink, struct dentry *dentry) {
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -725,7 +725,7 @@ int BPF_PROG(inode_post_setxattr, struct dentry *dentry, const char *name,const 
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -768,7 +768,7 @@ int BPF_PROG(inode_getxattr, struct dentry *dentry, const char *name) {
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -807,7 +807,7 @@ int BPF_PROG(inode_listxattr, struct dentry *dentry) {
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -849,7 +849,7 @@ int BPF_PROG(inode_removexattr, struct dentry *dentry, const char *name) {
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -998,7 +998,7 @@ int BPF_PROG(ptrace_access_check, struct task_struct *child, unsigned int mode) 
     if (!ptr_prov_child_cred) {
       return 0;
     }
-    ptr_prov_current_task = get_task_provenance(false);
+    ptr_prov_current_task = get_task_provenance(current_task, false);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -1028,12 +1028,13 @@ int BPF_PROG(ptrace_access_check, struct task_struct *child, unsigned int mode) 
 SEC("lsm/ptrace_traceme")
 int BPF_PROG(ptrace_traceme, struct task_struct *parent) {
     union prov_elt *ptr_prov, *ptr_prov_current;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
 
     ptr_prov = get_or_create_task_prov(parent);
     if (!ptr_prov) {
       return 0;
     }
-    ptr_prov_current = get_task_provenance(false);
+    ptr_prov_current = get_task_provenance(current_task, false);
     if (!ptr_prov_current) {
       return 0;
     }
@@ -1090,7 +1091,7 @@ int BPF_PROG(mmap_file, struct file *file, unsigned long reqprot, unsigned long 
       return 0;
     }
 
-    ptr_prov_current = get_task_provenance(true);
+    ptr_prov_current = get_task_provenance(current_task, true);
     if (!ptr_prov_current) {
       return 0;
     }
@@ -1161,7 +1162,7 @@ int BPF_PROG(mmap_munmap, struct mm_struct *mm, struct vm_area_struct *vma, unsi
     struct file *mmapf;
     vm_flags_t flags = vma->vm_flags;
 
-    ptr_prov_current = get_task_provenance(true);
+    ptr_prov_current = get_task_provenance(current_task, true);
     if (!ptr_prov_current) {
       return 0;
     }
@@ -1224,7 +1225,7 @@ int BPF_PROG(file_permission, struct file *file, int mask) {
 
     uint32_t perms = file_mask_to_perms((file->f_inode)->i_mode, mask);
 
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -1296,7 +1297,7 @@ int BPF_PROG(file_splice_pipe_to_pipe, struct file *in, struct file *out) {
     struct cred *current_cred;
     bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
 
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -1344,7 +1345,7 @@ int BPF_PROG(file_open, struct file *file) {
     struct cred *current_cred;
     bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
 
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -1385,7 +1386,7 @@ int BPF_PROG(file_receive, struct file *file) {
     struct cred *current_cred;
     bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
 
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -1420,7 +1421,7 @@ int BPF_PROG(file_lock, struct file *file, unsigned int cmd) {
     struct cred *current_cred;
     bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
 
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -1468,7 +1469,7 @@ int BPF_PROG(file_ioctl, struct file *file, unsigned int cmd, unsigned long arg)
     struct cred *current_cred;
     bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
 
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -1547,7 +1548,7 @@ int BPF_PROG(msg_msg_alloc_security, struct msg_msg *msg) {
     struct cred *current_cred;
     bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
 
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -1614,7 +1615,7 @@ static inline int __mq_msgsnd(struct msg_msg *msg) {
     struct cred *current_cred;
     bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
 
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -1689,7 +1690,7 @@ static inline int __mq_msgrcv(union prov_elt *ptr_prov_cred, struct msg_msg *msg
     union prov_elt *ptr_prov_msg, *ptr_prov_current_task;
     struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
 
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -1803,7 +1804,7 @@ int BPF_PROG(shm_alloc_security, struct kern_ipc_perm *shp) {
     struct cred *current_cred;
     bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
 
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -1882,7 +1883,7 @@ int BPF_PROG(shm_shmat, struct kern_ipc_perm *shp, char *shmaddr, int shmflg) {
     struct cred *current_cred;
     bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
 
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -1928,7 +1929,7 @@ int BPF_PROG(shm_shmdt, struct kern_ipc_perm *shp) {
     struct cred *current_cred;
     bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
 
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -1990,7 +1991,7 @@ int BPF_PROG(socket_post_create, struct socket *sock, int family, int type, int 
       return 0;
     }
 
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -2041,7 +2042,7 @@ int BPF_PROG(socket_bind, struct socket *sock, struct sockaddr *address, int add
     struct cred *current_cred;
     bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
 
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -2091,7 +2092,7 @@ int BPF_PROG(socket_connect, struct socket *sock, struct sockaddr *address, int 
     struct cred *current_cred;
     bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
 
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -2136,7 +2137,7 @@ int BPF_PROG(socket_listen, struct socket *sock, int backlog) {
     struct cred *current_cred;
     bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
 
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -2188,7 +2189,7 @@ int BPF_PROG(socket_accept, struct socket *sock, struct socket *newsock) {
     struct cred *current_cred;
     bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
 
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -2244,7 +2245,7 @@ int BPF_PROG(socket_sendmsg, struct socket *sock, struct msghdr *msg, int size) 
     struct cred *current_cred;
     bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
 
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -2302,7 +2303,7 @@ int BPF_PROG(socket_recvmsg, struct socket *sock, struct msghdr *msg, int size, 
     struct cred *current_cred;
     bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
 
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -2333,7 +2334,7 @@ int BPF_PROG(socket_socketpair, struct socket *socka, struct socket *sockb) {
     struct cred *current_cred;
     bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
 
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -2384,7 +2385,7 @@ int BPF_PROG(unix_stream_connect, struct sock *sock, struct sock *other, struct 
     struct cred *current_cred;
     bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
 
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -2514,7 +2515,7 @@ int BPF_PROG(bprm_committing_creds, struct linux_binprm *bprm) {
     struct cred *current_cred;
     bpf_probe_read(&current_cred, sizeof(current_cred), &current_task->real_cred);
 
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }
@@ -2537,8 +2538,9 @@ int BPF_PROG(bprm_committing_creds, struct linux_binprm *bprm) {
 SEC("lsm/kernel_read_file")
 int BPF_PROG(kernel_read_file, struct file *file, enum kernel_read_file_id id) {
     union prov_elt *ptr_prov_current_task, *ptr_prov_inode;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
 
-    ptr_prov_current_task = get_task_provenance(true);
+    ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
       return 0;
     }

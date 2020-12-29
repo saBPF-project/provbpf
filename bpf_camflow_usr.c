@@ -44,6 +44,38 @@ void set_id(struct bpf_camflow_kern *skel, uint32_t index, uint64_t value) {
     bpf_map_update_elem(map_fd, &index, &id, BPF_ANY);
 }
 
+static __always_inline uint64_t prov_next_id(uint32_t key, struct bpf_camflow_kern *skel)	{
+    int map_fd = bpf_object__find_map_fd_by_name(skel->obj, "ids_map");
+    if (map_fd < 0) {
+      printf("Failed loading ids_map (%d)\n", map_fd);
+      return 0;
+    }
+
+    struct id_elem val;
+    int res = bpf_map_lookup_elem(map_fd, &key, &val);
+    if (res == -1)
+        return 0;
+    __sync_fetch_and_add(&val.id, 1);
+    // TODO: eBPF seems to have issue with __sync_fetch_and_add
+    // TODO: we cannot obtain the return value of the function.
+    // TODO: Perhaps we need a lock to avoid race conditions.
+    return val.id;
+}
+
+static __always_inline uint64_t prov_get_id(uint32_t key, struct bpf_camflow_kern *skel) {
+    int map_fd = bpf_object__find_map_fd_by_name(skel->obj, "ids_map");
+    if (map_fd < 0) {
+      printf("Failed loading ids_map (%d)\n", map_fd);
+      return 0;
+    }
+
+    struct id_elem val;
+    int res = bpf_map_lookup_elem(map_fd, &key, &val);
+    if (res == -1)
+        return 0;
+    return val.id;
+}
+
 /* djb2 hash implementation by Dan Bernstein */
 static inline uint64_t djb2_hash(const char *str)
 {
@@ -120,6 +152,9 @@ int main(void) {
     __builtin_memcpy(&(prov_machine.machine_info.commit), CAMFLOW_COMMIT, PROV_COMMIT_MAX_LENGTH);
 
     prov_machine.node_info.identifier.node_id.type = AGT_MACHINE;
+    prov_machine.node_info.identifier.node_id.id = prov_next_id(NODE_ID_INDEX, skel);
+    prov_machine.node_info.identifier.node_id.boot_id = prov_get_id(BOOT_ID_INDEX, skel);
+    prov_machine.node_info.identifier.node_id.machine_id = prov_get_id(MACHINE_ID_INDEX, skel);
     prov_machine.node_info.identifier.node_id.version = 1;
 
     struct utsname buffer;
@@ -137,11 +172,11 @@ int main(void) {
     prov_machine.node_info.identifier.node_id.boot_id = get_boot_id();
     prov_machine.node_info.identifier.node_id.machine_id = get_machine_id();
 
-    map_fd = bpf_object__find_map_fd_by_name(skel->obj, "policy_map");
+    map_fd = bpf_object__find_map_fd_by_name(skel->obj, "prov_machine_map");
     bpf_map_update_elem(map_fd, &key, &prov_machine, BPF_ANY);
 
     printf("Provenance: prov_machine initialization ended...\n");
-    
+
     printf("Attaching BPF programs ...\n");
     err = bpf_camflow_kern__attach(skel);
     if (err) {

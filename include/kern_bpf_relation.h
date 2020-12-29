@@ -143,14 +143,11 @@ static __always_inline void update_version(const uint64_t type,
                                           void *prov,
                                           bool prov_is_long)
 {
-    int map_id = 0;
-    union prov_elt *old_prov = bpf_map_lookup_elem(&tmp_prov_elt_map, &map_id);
-    if (!old_prov)
-        return;
+    union prov_elt old_prov;
 
-    union long_prov_elt *p = prov;
-    bpf_map_update_elem(&tmp_prov_elt_map, &map_id, p, BPF_NOEXIST);
-    // __builtin_memcpy(old_prov, p, sizeof(union prov_elt));
+    union prov_elt *p = prov;
+    __builtin_memset(&old_prov, 0, sizeof(union prov_elt));
+    __builtin_memcpy(&old_prov, p, sizeof(union prov_elt));
 
     // Update the version of prov to the newer version
     node_identifier(p).version++;
@@ -158,9 +155,9 @@ static __always_inline void update_version(const uint64_t type,
 
     // Record the version relation between two versions of the same identity.
     if (node_identifier(p).type == ACT_TASK) {
-        __write_relation(RL_VERSION_TASK, old_prov, prov_is_long, prov, prov_is_long, NULL, 0);
+        __write_relation(RL_VERSION_TASK, &old_prov, prov_is_long, prov, prov_is_long, NULL, 0);
     } else {
-        __write_relation(RL_VERSION, old_prov, prov_is_long, prov, prov_is_long, NULL, 0);
+        __write_relation(RL_VERSION, &old_prov, prov_is_long, prov, prov_is_long, NULL, 0);
     }
     // Newer version now has no outgoing edge
     clear_has_outgoing(p);
@@ -609,13 +606,13 @@ static __always_inline int record_kernel_link(union prov_elt *ptr_prov) {
     return 0;
 }
 
-static __always_inline union prov_elt *get_task_provenance(bool link) {
+static __always_inline union prov_elt *get_task_provenance(struct task_struct *current_task, bool link) {
     union prov_elt *ptr_prov_current;
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
 
     ptr_prov_current = get_or_create_task_prov(current_task);
-    if (!ptr_prov_current)
-        return NULL;
+    if (!ptr_prov_current) {
+      return NULL;
+    }
 
     if (!provenance_is_opaque(ptr_prov_current) && link) {
       record_kernel_link(ptr_prov_current);

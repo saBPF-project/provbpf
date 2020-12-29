@@ -29,6 +29,10 @@ static __always_inline void prov_update_inode(struct inode *inode, union prov_el
 }
 
 static __always_inline union prov_elt* get_or_create_inode_prov(struct inode *inode) {
+    if (!inode) {
+      return NULL;
+    }
+
     int map_id = 0;
     union prov_elt *prov_tmp = bpf_map_lookup_elem(&tmp_prov_elt_map, &map_id);
     if (!prov_tmp)
@@ -71,7 +75,7 @@ static __always_inline union prov_elt* get_or_create_inode_prov(struct inode *in
 
         prov_update_inode(inode, prov_tmp);
         bpf_map_update_elem(&inode_map, &key, prov_tmp, BPF_NOEXIST);
-        prov_on_map = bpf_map_lookup_elem(&task_map, &key);
+        prov_on_map = bpf_map_lookup_elem(&inode_map, &key);
     }
     return prov_on_map;
 }
