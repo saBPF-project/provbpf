@@ -501,6 +501,7 @@ void bpf_prov_record(union long_prov_elt* msg){
 }
 
 void prov_refresh_records(void) {
+    sleep(1);
     if (__config.output == CF_BPF_NULL)
         return;
     if (__config.format == CF_BPF_W3C)

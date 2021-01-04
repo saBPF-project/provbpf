@@ -71,6 +71,16 @@ all: clean btf kern skel usr
 
 install:
 	sudo cp --force ./provbpf.ini /etc/provbpf.ini
+	sudo cp --force ./bpf_camflow /usr/bin/provbpfd
+	sudo cp --force ./provbpfd.service /etc/systemd/system/provbpfd.service
+	sudo systemctl enable provbpfd.service
+
+uninstall:
+	sudo systemctl stop provbpfd.service
+	sudo systemctl disable provbpfd.service
+	rm -f /etc/provbpf.ini
+	rm -f /usr/bin/provbpfd
+	rm -f /etc/systemd/system/provbpfd.service
 
 run:
 	rm -rf audit.log
