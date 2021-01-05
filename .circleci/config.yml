@@ -21,6 +21,7 @@ jobs:
       - run: 'make kern'
       - run: 'make skel'
       - run: 'make usr'
+      - run: 'make rpm'
 workflows:
   build_and_deploy:
     jobs:

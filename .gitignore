@@ -4,3 +4,5 @@ vmlinux.h
 camflow/
 bpf_camflow
 *.log
+provbpfd
+output/

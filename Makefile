@@ -60,7 +60,7 @@ usr:
 	-Icamflow-dev/include/uapi -Iinclude -c
 	clang $(target)_usr.c -o $(target)_usr.o -Icamflow-dev/include/uapi \
 	-Iinclude -c
-	clang -o bpf_camflow \
+	clang -o provbpfd \
 	$(target)_usr.o \
 	camflow_bpf_record.o \
 	camflow_bpf_id.o \
@@ -71,7 +71,7 @@ all: clean btf kern skel usr
 
 install:
 	sudo cp --force ./provbpf.ini /etc/provbpf.ini
-	sudo cp --force ./bpf_camflow /usr/bin/provbpfd
+	sudo cp --force ./provbpfd /usr/bin/provbpfd
 	sudo cp --force ./provbpfd.service /etc/systemd/system/provbpfd.service
 	sudo systemctl enable provbpfd.service
 
@@ -84,9 +84,17 @@ uninstall:
 
 run:
 	rm -rf audit.log
-	sudo ./bpf_camflow
+	sudo ./provbpfd
+
+rpm:
+	mkdir -p ~/rpmbuild/{RPMS,SRPMS,BUILD,SOURCES,SPECS,tmp}
+	cp -f ./provbpf.spec ~/rpmbuild/SPECS/provbpf.spec
+	rpmbuild -bb provbpf.spec
+	mkdir -p output
+	cp ~/rpmbuild/RPMS/x86_64/* ./output
 
 clean:
 	rm -f *.o
 	rm -f *.skel.h
 	rm -rf vmlinux.h
+	rm -rf output
