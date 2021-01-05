@@ -14,7 +14,7 @@ jobs:
       - run: 'sudo dnf install -y llvm bpftool libbpf libbpf-devel'
       - run: 'sudo dnf install -y elfutils-libelf libcap'
       - run: 'sudo dnf install -y ruby uthash-devel inih-devel'
-      - run: 'sudo dnf install -y rpmbuild'
+      - run: 'sudo dnf install -y rpm-build redhat-rpm-config'
       - run: 'make submodule'
       - run: 'make build_libbpf'
       - run: 'make build_libprovenance'
