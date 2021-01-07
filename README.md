@@ -25,6 +25,11 @@ Building libprovenance:
 make build_libprovenance
 ```
 
+Building threadpool library:
+```
+make build_threadpool
+```
+
 All of the build in one go:
 ```
 make prepare
