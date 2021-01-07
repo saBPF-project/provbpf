@@ -483,7 +483,8 @@ void prov_init() {
     }
 }
 
-void bpf_prov_record(union long_prov_elt* msg){
+void bpf_prov_record(void *raw_msg){
+    union long_prov_elt *msg = (union long_prov_elt*)raw_msg;
     if (prov_is_relation(msg)) {
       relation_record(msg);
     } else {
