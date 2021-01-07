@@ -67,6 +67,22 @@ usr:
 	camflow_bpf_configuration.o \
 	-lbpf -lprovenance -lpthread -linih
 
+usr_dbg:
+	clang -g camflow_bpf_record.c -o camflow_bpf_record.o \
+	-Icamflow-dev/include/uapi -Iinclude -c
+	clang -g camflow_bpf_id.c -o camflow_bpf_id.o \
+	-Icamflow-dev/include/uapi -Iinclude -c
+	clang -g camflow_bpf_configuration.c -o camflow_bpf_configuration.o \
+	-Icamflow-dev/include/uapi -Iinclude -c
+	clang -g $(target)_usr.c -o $(target)_usr.o -Icamflow-dev/include/uapi \
+	-Iinclude -c
+	clang -g -o provbpfd \
+	$(target)_usr.o \
+	camflow_bpf_record.o \
+	camflow_bpf_id.o \
+	camflow_bpf_configuration.o \
+	-lbpf -lprovenance -lpthread -linih
+
 all: clean btf kern skel usr
 
 install:
@@ -91,6 +107,10 @@ uninstall:
 run:
 	rm -rf audit.log
 	sudo ./provbpfd
+
+run_valgrind: usr_dbg
+	rm -rf audit.log
+	sudo valgrind --leak-check=yes ./provbpfd
 
 rpm:
 	mkdir -p ~/rpmbuild/{RPMS,SRPMS,BUILD,SOURCES,SPECS,tmp}
