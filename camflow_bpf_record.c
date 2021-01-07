@@ -314,7 +314,7 @@ void relation_record(union long_prov_elt *msg){
     if (prov_ops.log_associated!=NULL)
         prov_ops.log_associated(&(msg->relation_info));
   } else
-    printf("Error: unknown relation type %lu\n", prov_type(msg));
+    syslog(LOG_ERR, "ProvBPF: unknown relation type %lu.", prov_type(msg));
 }
 
 void node_record(union prov_elt *msg){
@@ -355,7 +355,7 @@ void node_record(union prov_elt *msg){
         prov_ops.log_iattr(&(msg->iattr_info));
       break;
     default:
-      printf("Error: unknown node type %lu\n", prov_type(msg));
+      syslog(LOG_ERR, "ProvBPF: unknown node type %lu.", prov_type(msg));
       break;
   }
 }
@@ -404,7 +404,7 @@ void long_prov_record(union long_prov_elt* msg){
         prov_ops.log_machine(&(msg->machine_info));
       break;
     default:
-      printf("Error: unknown node long type %lx\n", prov_type(msg));
+      syslog(LOG_ERR, "ProvBPF: unknown node long type %lx.", prov_type(msg));
       break;
   }
 }
@@ -436,23 +436,18 @@ static inline void log_to_terminal(char* json){
 }
 
 void prov_init() {
-    printf("\n\n");
-    printf("############################\n");
-    printf("CONFIGURATION TYPE: %d\n", __config.output);
-    printf("############################\n\n");
-
     if (__config.output == CF_BPF_LOG) {
         /* setup log file */
-        printf("Log file %s.\n", __config.log_path);
+        syslog(LOG_INFO, "ProvBPF: Log file %s.", __config.log_path);
         __log_fd = open(__config.log_path, O_CREAT|O_WRONLY, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
         if (__log_fd < 0) {
-            printf("Cannot open log file.\n");
+            syslog(LOG_ERR, "ProvBPF: Cannot open log file.");
             exit(-1);
         }
         lseek(__log_fd, 0, SEEK_SET);
 
         if (pthread_mutex_init(&__file_lock, NULL) != 0) {
-            printf("File mutex init failed.\n");
+            syslog(LOG_ERR, "ProvBPF: File mutex init failed.");
             exit(-1);
         }
 
@@ -464,7 +459,7 @@ void prov_init() {
             memcpy(&prov_ops, &spade_ops, sizeof(struct provenance_ops));
             set_SPADEJSON_callback(log_to_file);
         } else {
-            printf("Unknown format.\n");
+            syslog(LOG_ERR, "ProvBPF: Unknown format.");
             exit(-1);
         }
     } else if (__config.output == CF_BPF_TERMINAL) {
@@ -476,14 +471,14 @@ void prov_init() {
             memcpy(&prov_ops, &spade_ops, sizeof(struct provenance_ops));
             set_SPADEJSON_callback(log_to_terminal);
         } else {
-            printf("Unknown format.\n");
+            syslog(LOG_ERR, "ProvBPF: Unknown format.");
             exit(-1);
         }
     } else if (__config.output == CF_BPF_NULL) {
         /* ready the recording hooks */
         memcpy(&prov_ops, &null_ops, sizeof(struct provenance_ops));
     }  else {
-        printf("ERROR initializing logging\n");
+        syslog(LOG_ERR, "ProvBPF: error initializing logging.");
         exit(-1);
     }
 }
