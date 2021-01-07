@@ -25,7 +25,10 @@ build_libprovenance:
 	cd libprovenance && $(MAKE) install
 	cd libprovenance/src && sed -i -e "s/INCLUDES = -I..\/include -I..\/..\/camflow-dev\/include\/uapi/INCLUDES = -I..\/include/g" Makefile
 
-prepare: submodule build_libbpf build_kernel build_libprovenance
+build_threadpool:
+	cd threadpool && $(MAKE) all
+
+prepare: submodule build_libbpf build_kernel build_libprovenance build_threadpool
 
 btf:
 	bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
@@ -65,6 +68,7 @@ usr:
 	camflow_bpf_record.o \
 	camflow_bpf_id.o \
 	camflow_bpf_configuration.o \
+	threadpool/thpool.a \
 	-lbpf -lprovenance -lpthread -linih
 
 all: clean btf kern skel usr
