@@ -75,6 +75,12 @@ install:
 	sudo cp --force ./provbpfd.service /etc/systemd/system/provbpfd.service
 	sudo systemctl enable provbpfd.service
 
+start:
+	sudo systemctl start provbpfd.service
+
+stop:
+	sudo systemctl stop provbpfd.service
+
 uninstall:
 	sudo systemctl stop provbpfd.service
 	sudo systemctl disable provbpfd.service
