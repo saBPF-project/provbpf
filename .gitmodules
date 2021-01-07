@@ -4,3 +4,6 @@
 [submodule "libprovenance"]
 	path = libprovenance
 	url = https://github.com/camflow/libprovenance
+[submodule "threadpool/C-Thread-Pool"]
+	path = threadpool/C-Thread-Pool
+	url = https://github.com/Pithikos/C-Thread-Pool.git
