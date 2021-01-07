@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+#include <syslog.h>
 
 #include "linux/provenance.h"
 #include "camflow_bpf_id.h"
