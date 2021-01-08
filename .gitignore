@@ -6,4 +6,3 @@ bpf_camflow
 *.log
 provbpfd
 output/
-*.a
