@@ -40,19 +40,19 @@ uint32_t get_boot_id(void){
         fptr = fopen(CAMFLOW_BOOT_ID_FILE, "wb");
         if (!fptr) {
             syslog(LOG_ERR, "ProvBPF: Failed opening machine ID file.");
-	    exit(-1);
-	}
-	fwrite(&boot_id, sizeof(uint32_t), 1, fptr);
+            exit(-1);
+        }
+        fwrite(&boot_id, sizeof(uint32_t), 1, fptr);
     } else {
         rc = fread(&boot_id, sizeof(uint32_t), 1, fptr);
         if (rc < 0 && ferror(fptr))
-	    exit(rc);
-	boot_id += 1;
-	fseek(fptr, 0, SEEK_SET);
-	fwrite(&boot_id, sizeof(uint32_t), 1, fptr);
+            exit(rc);
+        boot_id += 1;
+        fseek(fptr, 0, SEEK_SET);
+        fwrite(&boot_id, sizeof(uint32_t), 1, fptr);
     }
     if (fptr)
-	fclose(fptr);
+	   fclose(fptr);
     __boot_id=boot_id;
     return boot_id;
 }
@@ -63,24 +63,24 @@ uint32_t get_machine_id(void){
     int rc;
 
     if (__machine_id != 0)
-	return __machine_id;
+	   return __machine_id;
 
     fptr = fopen(CAMFLOW_MACHINE_ID_FILE, "rb+");
     // Create the file if it does not exist
     if (!fptr) {
         fptr = fopen(CAMFLOW_MACHINE_ID_FILE, "wb");
-	if (!fptr) {
-	    syslog(LOG_ERR, "ProvBPF: Failed opening machine ID file.");
-	    exit(-1);
-	}
-	srand(time(NULL) + gethostid());
-	do {
-	    machine_id = rand();
-	} while (machine_id == 0);
-	fwrite(&machine_id, sizeof(uint32_t), 1, fptr);
+        if (!fptr) {
+            syslog(LOG_ERR, "ProvBPF: Failed opening machine ID file.");
+            exit(-1);
+        }
+        srand(time(NULL) + gethostid());
+        do {
+            machine_id = rand();
+        } while (machine_id == 0);
+        fwrite(&machine_id, sizeof(uint32_t), 1, fptr);
     } else {
         rc = fread(&machine_id, sizeof(uint32_t), 1, fptr);
-	if (rc < 0 && ferror(fptr))
+        if (rc < 0 && ferror(fptr))
             exit(rc);
     }
     if (fptr)
