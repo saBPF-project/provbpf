@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <syslog.h>
 #include <bpf/bpf.h>
 #include <sys/resource.h>
 #include <sys/types.h>
@@ -48,7 +49,7 @@ void set_id(struct bpf_camflow_kern *skel, uint32_t index, uint64_t value) {
 static __always_inline uint64_t prov_next_id(uint32_t key, struct bpf_camflow_kern *skel)	{
     int map_fd = bpf_object__find_map_fd_by_name(skel->obj, "ids_map");
     if (map_fd < 0) {
-      printf("Failed loading ids_map (%d)\n", map_fd);
+      syslog(LOG_ERR, "ProvBPF: Failed loading ids_map (%d).", map_fd);
       return 0;
     }
 
@@ -66,7 +67,7 @@ static __always_inline uint64_t prov_next_id(uint32_t key, struct bpf_camflow_ke
 static __always_inline uint64_t prov_get_id(uint32_t key, struct bpf_camflow_kern *skel) {
     int map_fd = bpf_object__find_map_fd_by_name(skel->obj, "ids_map");
     if (map_fd < 0) {
-      printf("Failed loading ids_map (%d)\n", map_fd);
+      syslog(LOG_ERR, "ProvBPF: Failed loading ids_map (%d).", map_fd);
       return 0;
     }
 
@@ -94,9 +95,10 @@ static struct bpf_camflow_kern *skel = NULL;
 
 void sig_handler(int sig) {
     if (sig == SIGTERM) {
-        printf("Received termination signal...\n");
+        syslog(LOG_INFO, "ProvBPF: Received termination signal...");
         prov_refresh_records();
         bpf_camflow_kern__destroy(skel);
+        syslog(LOG_INFO, "ProvBPF: Good bye!");
         exit(0);
     }
 }
@@ -110,26 +112,26 @@ int main(void) {
     union prov_elt search_map_value;
     pid_t current_pid;
 
-    printf("Starting...\n");
+    syslog(LOG_INFO, "ProvBPF: Starting...");
 
-    printf("Registering signal handler...\n");
+    syslog(LOG_INFO, "ProvBPF: Registering signal handler...");
     signal(SIGTERM, sig_handler);
 
-    printf("Reading Configuration...\n");
+    syslog(LOG_INFO, "ProvBPF: Reading Configuration...");
     read_config();
 
-    printf("Setting rlimit...\n");
+    syslog(LOG_INFO, "ProvBPF: Setting rlimit...");
     err = setrlimit(RLIMIT_MEMLOCK, &r);
     if (err) {
-        printf("Error while setting rlimit %d\n", err);
+        syslog(LOG_ERR, "ProvBPF: Error while setting rlimit %d.", err);
         return err;
     }
 
-    printf("Open and loading...\n");
+    syslog(LOG_INFO, "ProvBPF: Open and loading...");
     skel = bpf_camflow_kern__open_and_load();
     if (!skel) {
-        printf("Failed loading ...\n");
-        printf("Kernel doesn't support this program type.\n");
+        syslog(LOG_ERR, "ProvBPF: Failed loading ...");
+        syslog(LOG_ERR, "ProvBPF: Kernel doesn't support this program type.");
         goto close_prog;
     }
 
@@ -141,7 +143,7 @@ int main(void) {
     // Initialize provenance policy
     struct capture_policy prov_policy;
 
-    printf("Provenance: policy initialization started...\n");
+    syslog(LOG_INFO, "ProvBPF: policy initialization started...");
     prov_policy.prov_enabled = true;
   	prov_policy.should_duplicate = false;
   	prov_policy.should_compress_node = true;
@@ -154,9 +156,9 @@ int main(void) {
 
     map_fd = bpf_object__find_map_fd_by_name(skel->obj, "policy_map");
     bpf_map_update_elem(map_fd, &key, &prov_policy, BPF_ANY);
-    printf("Provenance: policy initialization finished.\n");
+    syslog(LOG_INFO, "ProvBPF: policy initialization finished.");
 
-    printf("Provenance: prov_machine initialization started...\n");
+    syslog(LOG_INFO, "ProvBPF: prov_machine initialization started...");
     union long_prov_elt prov_machine;
 
     prov_machine.machine_info.cam_major = CAMFLOW_VERSION_MAJOR;
@@ -176,7 +178,7 @@ int main(void) {
     int result = uname(&buffer);
 
     if (result == -1) {
-        printf("Something went wrong...\n");
+        syslog(LOG_ERR, "ProvBPF: Something went wrong..."); // TODO improve error description
         return 0;
     }
 
@@ -189,23 +191,23 @@ int main(void) {
     map_fd = bpf_object__find_map_fd_by_name(skel->obj, "prov_machine_map");
     bpf_map_update_elem(map_fd, &key, &prov_machine, BPF_ANY);
 
-    printf("Provenance: prov_machine initialization ended...\n");
+    syslog(LOG_INFO, "ProvBPF: prov_machine initialization ended...");
 
-    printf("Attaching BPF programs ...\n");
+    syslog(LOG_INFO, "ProvBPF: Attaching BPF programs...");
     err = bpf_camflow_kern__attach(skel);
     if (err) {
-        printf("Failed attach ... %d\n", err);
+        syslog(LOG_ERR, "ProvBPF: Failed attaching %d.", err);
         goto close_prog;
     }
 
     /* Locate ring buffer */
-    printf("Locating the ring buffer...\n");
+    syslog(LOG_INFO, "ProvBPF: Locating the ring buffer...");
     map_fd = bpf_object__find_map_fd_by_name(skel->obj, "r_buf");
     if (map_fd < 0) {
-        printf("Failed loading ring buffer (%d)\n", map_fd);
+        syslog(LOG_ERR, "ProvBPF: Failed loading ring buffer (%d).", map_fd);
         goto close_prog;
     }
-    printf("Setting up the ring buffer in userspace...\n");
+    syslog(LOG_INFO, "ProvBPF: Setting up the ring buffer in userspace...");
     /* Create a new ring buffer handle in the userspace.
      * buf_process_entry is the callback function that
      * process the entry in the ring buffer. */
@@ -213,10 +215,10 @@ int main(void) {
 
     current_pid = getpid();
 
-    printf("Searching task_map for current process...\n");
+    syslog(LOG_INFO, "ProvBPF: Searching task_map for current process...");
     search_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "task_map");
     if (search_map_fd < 0) {
-      printf("Failed loading task_map (%d)\n", search_map_fd);
+      syslog(LOG_ERR, "ProvBPF: Failed loading task_map (%d).", search_map_fd);
       goto close_prog;
     }
 
@@ -233,12 +235,12 @@ int main(void) {
       prev_search_map_key = search_map_key;
     }
     close(search_map_fd);
-    printf("Done searching. Current process pid: %d has been set opaque...\n", current_pid);
+    syslog(LOG_INFO, "ProvBPF: Done searching. Current process pid: %d has been set opaque...", current_pid);
 
-    printf("Searching cred_map for current cred...\n");
+    syslog(LOG_INFO, "ProvBPF: Searching cred_map for current cred...");
     search_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "cred_map");
     if (search_map_fd < 0) {
-      printf("Failed loading task_map (%d)\n", search_map_fd);
+      syslog(LOG_INFO, "ProvBPF: Failed loading task_map (%d).", search_map_fd);
       goto close_prog;
     }
 
@@ -249,7 +251,7 @@ int main(void) {
           if (search_map_value.proc_info.tgid == current_pid) {
             set_opaque(&search_map_value);
             bpf_map_update_elem(search_map_fd, &search_map_key, &search_map_value, BPF_EXIST);
-            printf("Done searching. Current cred tgid: %d has been set opaque...\n", current_pid);
+            syslog(LOG_INFO, "ProvBPF: Done searching. Current cred tgid: %d has been set opaque...", current_pid);
             break;
           }
       }
@@ -258,7 +260,7 @@ int main(void) {
     close(search_map_fd);
 
     ringbuf = ring_buffer__new(map_fd, buf_process_entry, NULL, NULL);
-    printf("Start polling forever...\n");
+    syslog(LOG_INFO, "ProvBPF: Start polling forever...");
     /* ring_buffer__poll polls for available data and consume records,
      * if any are available. Returns number of records consumed, or
      * negative number, if any of the registered callbacks returned error. */

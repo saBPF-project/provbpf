@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+#include <syslog.h>
 
 #include "linux/provenance.h"
 #include "camflow_bpf_id.h"
@@ -23,7 +24,7 @@ uint32_t get_boot_id(void){
     if (!fptr) {
         fptr = fopen(CAMFLOW_BOOT_ID_FILE, "wb");
         if (!fptr) {
-            printf("Failed opening machine ID file.\n");
+            syslog(LOG_ERR, "ProvBPF: Failed opening machine ID file.");
 	    exit(-1);
 	}
 	fwrite(&boot_id, sizeof(uint32_t), 1, fptr);
@@ -54,7 +55,7 @@ uint32_t get_machine_id(void){
     if (!fptr) {
         fptr = fopen(CAMFLOW_MACHINE_ID_FILE, "wb");
 	if (!fptr) {
-	    printf("Failed opening machine ID file.\n");
+	    syslog(LOG_ERR, "ProvBPF: Failed opening machine ID file.");
 	    exit(-1);
 	}
 	srand(time(NULL) + gethostid());

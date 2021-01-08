@@ -4,6 +4,7 @@
 #include <string.h>
 #include <ini.h>
 #include <time.h>
+#include <syslog.h>
 
 #include "camflow_bpf_configuration.h"
 
@@ -43,7 +44,7 @@ static int handler(void* user, const char* section, const char* name,
         } else if(strcmp(value, "terminal")==0) {
             pconfig->output = CF_BPF_TERMINAL;
         } else {
-            printf("\n\nUnknown output: %s\n\n", value);
+            syslog(LOG_ERR, "ProvBPF: Unknown output type: %s.", value);
             return -1;
         }
     } else if(MATCH("general", "format")) {
@@ -52,7 +53,7 @@ static int handler(void* user, const char* section, const char* name,
         } else if(strcmp(value, "spade")==0) {
             pconfig->format = CF_BPF_SPADE;
         } else {
-            printf("\n\nUnknown output: %s\n\n", value);
+            syslog(LOG_ERR, "ProvBPF: Unknown output format: %s.", value);
             return -1;
         }
     } else {
@@ -64,7 +65,7 @@ static int handler(void* user, const char* section, const char* name,
 void read_config(void){
   memset(&__config, 0, sizeof(configuration));
   if (ini_parse(CONFIG_PATH, handler, &__config) < 0) {
-      printf("Can't load configuration: %s\n", CONFIG_PATH);
+      syslog(LOG_ERR, "ProvBPF: Can't load configuration: %s.", CONFIG_PATH);
       exit(-1);
   }
 }
