@@ -109,14 +109,6 @@ int BPF_PROG(task_free, struct task_struct *task) {
     /* Delete task provenance since the task no longer exists */
     bpf_map_delete_elem(&task_map, &key);
 
-    // if (bpf_map_lookup_elem(&task_map, &key) != NULL) {
-    //   char err[] = "Error: task prov still in task_map...\n";
-    //   bpf_trace_printk(err, sizeof(err));
-    // } else {
-    //   char err[] = "task prov deleted from task_map...\n";
-    //   bpf_trace_printk(err, sizeof(err));
-    // }
-
     return 0;
 }
 #endif
@@ -296,14 +288,6 @@ int BPF_PROG(inode_free_security, struct inode *inode) {
     record_terminate(RL_FREED, ptr_prov);
 
     bpf_map_delete_elem(&inode_map, &key);
-
-    // if (bpf_map_lookup_elem(&inode_map, &key) != NULL) {
-    //   char err[] = "Error: inode prov still in inode_map...\n";
-    //   bpf_trace_printk(err, sizeof(err));
-    // } else {
-    //   char err[] = "inode prov deleted from inode_map...\n";
-    //   bpf_trace_printk(err, sizeof(err));
-    // }
     return 0;
 }
 #endif
@@ -962,14 +946,6 @@ int BPF_PROG(cred_free, struct cred *cred) {
     record_terminate(RL_TERMINATE_PROC, ptr_prov);
 
     bpf_map_delete_elem(&cred_map, &key);
-
-    // if (bpf_map_lookup_elem(&cred_map, &key) != NULL) {
-    //   char err[] = "Error: cred prov still in cred_map...\n";
-    //   bpf_trace_printk(err, sizeof(err));
-    // } else {
-    //   char err[] = "cred prov deleted from cred_map...\n";
-    //   bpf_trace_printk(err, sizeof(err));
-    // }
     return 0;
 }
 #endif
@@ -1631,13 +1607,6 @@ int BPF_PROG(msg_msg_free_security, struct msg_msg *msg) {
     record_terminate(RL_FREED, ptr_prov_msg);
 
     bpf_map_delete_elem(&msg_msg_map, &key);
-    // if (bpf_map_lookup_elem(&msg_msg_map, &key) != NULL) {
-    //   char err[] = "Error: msg_msg prov still in msg_msg_map...\n";
-    //   bpf_trace_printk(err, sizeof(err));
-    // } else {
-    //   char err[] = "msg_msg prov deleted from msg_msg_map...\n";
-    //   bpf_trace_printk(err, sizeof(err));
-    // }
     return 0;
 }
 #endif
@@ -1892,14 +1861,6 @@ int BPF_PROG(shm_free_security, struct kern_ipc_perm *shp) {
 
     record_terminate(RL_FREED, ptr_prov_shp);
     bpf_map_delete_elem(&kern_ipc_perm_map, &key);
-
-    // if (bpf_map_lookup_elem(&kern_ipc_perm_map, &key) != NULL) {
-    //   char err[] = "Error: kern_ipc_perm prov still in kern_ipc_perm_map...\n";
-    //   bpf_trace_printk(err, sizeof(err));
-    // } else {
-    //   char err[] = "kern_ipc_perm prov deleted from kern_ipc_perm_map...\n";
-    //   bpf_trace_printk(err, sizeof(err));
-    // }
 
     return 0;
 }

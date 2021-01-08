@@ -50,16 +50,6 @@ static __always_inline int record_address(struct sockaddr *address, int addrlen,
 
   record_relation(RL_ADDRESSED, ptr_prov_addr, true, prov, false, NULL, 0);
 
-	bpf_map_delete_elem(&tmp_prov_map, &map_id);
-
-	// if (bpf_map_lookup_elem(&tmp_prov_map, &map_id) != NULL) {
-	//   char err[] = "[record_address] Error: ptr_prov_addr prov still in tmp_prov_map...\n";
-	//   bpf_trace_printk(err, sizeof(err));
-	// } else {
-	//   char err[] = "[record_address] ptr_prov_addr prov deleted from tmp_prov_map...\n";
-	//   bpf_trace_printk(err, sizeof(err));
-	// }
-
 	return 0;
 }
 
