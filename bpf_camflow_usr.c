@@ -110,8 +110,8 @@ static struct bpf_camflow_kern *skel = NULL;
 void sig_handler(int sig) {
     if (sig == SIGTERM) {
         syslog(LOG_INFO, "ProvBPF: Received termination signal...");
-        prov_refresh_records();
         bpf_camflow_kern__destroy(skel);
+        prov_refresh_records();
         syslog(LOG_INFO, "ProvBPF: Good bye!");
         exit(0);
     }
