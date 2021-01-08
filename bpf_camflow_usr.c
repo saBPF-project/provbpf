@@ -8,6 +8,7 @@
 #include <sys/resource.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
+#include <signal.h>
 
 #include "bpf_camflow.skel.h"
 #include "linux/provenance.h"
@@ -90,8 +91,19 @@ static inline uint64_t djb2_hash(const char *str)
 	return hash;
 }
 
+static struct bpf_camflow_kern *skel = NULL;
+
+void sig_handler(int sig) {
+    if (sig == SIGTERM) {
+        syslog(LOG_INFO, "ProvBPF: Received termination signal...");
+        prov_refresh_records();
+        bpf_camflow_kern__destroy(skel);
+        syslog(LOG_INFO, "ProvBPF: Good bye!");
+        exit(0);
+    }
+}
+
 int main(void) {
-    struct bpf_camflow_kern *skel = NULL;
     struct ring_buffer *ringbuf = NULL;
     int err, map_fd, search_map_fd, res;
     struct rlimit r = {RLIM_INFINITY, RLIM_INFINITY};
@@ -101,6 +113,9 @@ int main(void) {
     pid_t current_pid;
 
     syslog(LOG_INFO, "ProvBPF: Starting...");
+
+    syslog(LOG_INFO, "ProvBPF: Registering signal handler...");
+    signal(SIGTERM, sig_handler);
 
     syslog(LOG_INFO, "ProvBPF: Reading Configuration...");
     read_config();
