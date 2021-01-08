@@ -110,7 +110,7 @@ run:
 
 run_valgrind: usr_dbg
 	rm -rf audit.log
-	sudo valgrind --leak-check=yes ./provbpfd
+	sudo valgrind --leak-check=full --show-leak-kinds=all ./provbpfd
 
 rpm:
 	mkdir -p ~/rpmbuild/{RPMS,SRPMS,BUILD,SOURCES,SPECS,tmp}
