@@ -207,7 +207,7 @@ int main(void) {
     map_fd = bpf_object__find_map_fd_by_name(skel->obj, "prov_machine_map");
     bpf_map_update_elem(map_fd, &key, &prov_machine, BPF_ANY);
 
-    syslog(LOG_INFO, "ProvBPF: prov_machine initialization ended...");
+    syslog(LOG_INFO, "ProvBPF: prov_machine initialization ended.");
 
     syslog(LOG_INFO, "ProvBPF: Attaching BPF programs...");
     err = bpf_camflow_kern__attach(skel);
