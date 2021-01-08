@@ -18,7 +18,6 @@ jobs:
       - run: 'make submodule'
       - run: 'make build_libbpf'
       - run: 'make build_libprovenance'
-      - run: 'make build_threadpool'
       - run: 'make clean'
       - run: 'make btf_circle'
       - run: 'make kern'
