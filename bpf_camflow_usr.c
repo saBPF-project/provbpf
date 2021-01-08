@@ -16,12 +16,16 @@
 #include "camflow_bpf_record.h"
 #include "camflow_bpf_id.h"
 #include "camflow_bpf_configuration.h"
+#include "thpool.h"
 
 
 #define DM_AGENT                                0x1000000000000000UL
 /* NODE IS LONG*/
 #define ND_LONG                                 0x0400000000000000UL
 #define AGT_MACHINE                             (DM_AGENT | ND_LONG | (0x0000000000000001ULL << 4))
+
+
+static threadpool thpool=NULL;
 
 /* Callback function called whenever a new ring
  * buffer entry is polled from the buffer. */
@@ -33,7 +37,7 @@ static int buf_process_entry(void *ctx, void *data, size_t len) {
     union long_prov_elt *prov = (union long_prov_elt*)data;
 
     /* Userspace processing the provenance record. */
-    bpf_prov_record(prov);
+    thpool_add_work(thpool, (void*)bpf_prov_record, (void*)prov);
 
     return 0;
 }
@@ -259,8 +263,13 @@ int main(void) {
     }
     close(search_map_fd);
 
+    /* initialize worked threads */
+    syslog(LOG_INFO, "ProvBPF: Initializing thread pool...");
+    thpool = thpool_init(sysconf(_SC_NPROCESSORS_ONLN));
+
     ringbuf = ring_buffer__new(map_fd, buf_process_entry, NULL, NULL);
     syslog(LOG_INFO, "ProvBPF: Start polling forever...");
+
     /* ring_buffer__poll polls for available data and consume records,
      * if any are available. Returns number of records consumed, or
      * negative number, if any of the registered callbacks returned error. */
