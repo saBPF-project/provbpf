@@ -39,7 +39,7 @@ struct bpf_map_def SEC("maps") task_map = {
 };
 
 struct bpf_map_def SEC("maps") tmp_prov_map = {
-    .type = BPF_MAP_TYPE_PERCPU_ARRAY,
+    .type = BPF_MAP_TYPE_ARRAY,
     .key_size = sizeof(uint32_t),
     .value_size = sizeof(union long_prov_elt),
     .max_entries = 4,
@@ -60,7 +60,7 @@ struct bpf_map_def SEC("maps") prov_machine_map = {
 };
 
 struct bpf_map_def SEC("maps") tmp_prov_elt_map = {
-    .type = BPF_MAP_TYPE_PERCPU_ARRAY,
+    .type = BPF_MAP_TYPE_ARRAY,
     .key_size = sizeof(uint32_t),
     .value_size = sizeof(union prov_elt),
     .max_entries = 2,
