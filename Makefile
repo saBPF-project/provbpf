@@ -79,12 +79,13 @@ usr_dbg:
 	clang -g camflow_bpf_configuration.c -o camflow_bpf_configuration.o \
 	-Icamflow-dev/include/uapi -Iinclude -c
 	clang -g $(target)_usr.c -o $(target)_usr.o -Icamflow-dev/include/uapi \
-	-Iinclude -c
+	-Iinclude -Ithreadpool/C-Thread-Pool -c
 	clang -g -o provbpfd \
 	$(target)_usr.o \
 	camflow_bpf_record.o \
 	camflow_bpf_id.o \
 	camflow_bpf_configuration.o \
+	threadpool/thpool.a \
 	-lbpf -lprovenance -lpthread -linih
 
 all: clean btf kern skel usr
