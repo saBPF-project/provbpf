@@ -46,11 +46,11 @@ static __always_inline union prov_elt* get_or_create_inode_prov(struct inode *in
       return NULL;
     }
 
-    int map_id = 0;
-    union prov_elt *prov_tmp = bpf_map_lookup_elem(&tmp_prov_elt_map, &map_id);
-    if (!prov_tmp)
-        return NULL;
     uint64_t key = get_key(inode);
+    union prov_elt *prov_tmp = bpf_map_lookup_elem(&tmp_prov_elt_map, &key);
+    if (!prov_tmp) {
+      return NULL;
+    }
     union prov_elt *prov_on_map = bpf_map_lookup_elem(&inode_map, &key);
 
     if (prov_on_map) {
@@ -90,6 +90,16 @@ static __always_inline union prov_elt* get_or_create_inode_prov(struct inode *in
         bpf_map_update_elem(&inode_map, &key, prov_tmp, BPF_NOEXIST);
         prov_on_map = bpf_map_lookup_elem(&inode_map, &key);
     }
+
+    bpf_map_delete_elem(&tmp_prov_elt_map, &key);
+
+  	// if (bpf_map_lookup_elem(&tmp_prov_elt_map, &key) != NULL) {
+  	//   char err[] = "[get_or_create_inode_prov] Error: prov_tmp prov still in tmp_prov_elt_map...\n";
+  	//   bpf_trace_printk(err, sizeof(err));
+  	// } else {
+  	//   char err[] = "[get_or_create_inode_prov] prov_tmp prov deleted from tmp_prov_elt_map...\n";
+  	//   bpf_trace_printk(err, sizeof(err));
+  	// }
     return prov_on_map;
 }
 

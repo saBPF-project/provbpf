@@ -83,7 +83,8 @@ static __always_inline void __write_relation(const uint64_t type,
     union long_prov_elt *f, *t;
     f = from;
     t = to;
-    int map_id = 1;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    uint32_t map_id = get_key(current_task);
     union prov_elt *prov_tmp = bpf_map_lookup_elem(&tmp_prov_elt_map, &map_id);
     if (!prov_tmp)
         return;
@@ -99,6 +100,16 @@ static __always_inline void __write_relation(const uint64_t type,
     record_provenance(to_is_long, to);
     // record relation provenance
     record_provenance(false, prov_tmp);
+
+    bpf_map_delete_elem(&tmp_prov_elt_map, &map_id);
+
+  	// if (bpf_map_lookup_elem(&tmp_prov_elt_map, &map_id) != NULL) {
+  	//   char err[] = "[__write_relation] ERROR: prov_tmp prov still in tmp_prov_elt_map...\n";
+  	//   bpf_trace_printk(err, sizeof(err));
+  	// } else {
+  	//   char err[] = "[__write_relation] prov_tmp prov deleted from tmp_prov_elt_map...\n";
+  	//   bpf_trace_printk(err, sizeof(err));
+  	// }
 }
 
 static __always_inline void record_terminate(uint64_t type,
@@ -205,6 +216,16 @@ static __always_inline void update_version_long(const uint64_t type,
     clear_has_outgoing(p);
     // For inode provenance persistance
     clear_saved(p);
+
+    bpf_map_delete_elem(&tmp_prov_map, &map_id);
+
+  	// if (bpf_map_lookup_elem(&tmp_prov_map, &map_id) != NULL) {
+  	//   char err[] = "[update_version_long] Error: old_prov prov still in tmp_prov_map...\n";
+  	//   bpf_trace_printk(err, sizeof(err));
+  	// } else {
+  	//   char err[] = "[update_version_long] old_prov prov deleted from tmp_prov_map...\n";
+  	//   bpf_trace_printk(err, sizeof(err));
+  	// }
 }
 
 static __always_inline void record_relation(uint64_t type,
@@ -530,6 +551,16 @@ static __always_inline int record_write_xattr(uint64_t type,
       record_relation(RL_RMVXATTR_INODE, ptr_prov_xattr, true, iprov, false, NULL, flags);
     }
 
+    bpf_map_delete_elem(&tmp_prov_map, &map_id);
+
+  	// if (bpf_map_lookup_elem(&tmp_prov_map, &map_id) != NULL) {
+  	//   char err[] = "[record_write_xattr] Error: ptr_prov_xattr prov still in tmp_prov_map...\n";
+  	//   bpf_trace_printk(err, sizeof(err));
+  	// } else {
+  	//   char err[] = "[record_write_xattr] ptr_prov_xattr prov deleted from tmp_prov_map...\n";
+  	//   bpf_trace_printk(err, sizeof(err));
+  	// }
+
     return 0;
 }
 
@@ -582,6 +613,16 @@ static __always_inline void record_read_xattr(void *cprov,
     __write_relation(RL_GETXATTR_INODE, iprov, false, xattr, true, NULL, 0);
     record_relation(RL_GETXATTR, xattr, true, tprov, false, NULL, 0);
     record_relation(RL_PROC_WRITE, tprov, false, cprov, false, NULL, 0);
+
+    bpf_map_delete_elem(&tmp_prov_map, &map_id);
+
+  	// if (bpf_map_lookup_elem(&tmp_prov_map, &map_id) != NULL) {
+  	//   char err[] = "[record_read_xattr] Error: xattr prov still in tmp_prov_map...\n";
+  	//   bpf_trace_printk(err, sizeof(err));
+  	// } else {
+  	//   char err[] = "[record_read_xattr] xattr prov deleted from tmp_prov_map...\n";
+  	//   bpf_trace_printk(err, sizeof(err));
+  	// }
 }
 
 static __always_inline int record_influences_kernel(const uint64_t type,

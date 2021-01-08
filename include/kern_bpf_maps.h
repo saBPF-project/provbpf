@@ -60,10 +60,10 @@ struct bpf_map_def SEC("maps") prov_machine_map = {
 };
 
 struct bpf_map_def SEC("maps") tmp_prov_elt_map = {
-    .type = BPF_MAP_TYPE_PERCPU_ARRAY,
+    .type = BPF_MAP_TYPE_ARRAY,
     .key_size = sizeof(uint32_t),
     .value_size = sizeof(union prov_elt),
-    .max_entries = 2,
+    .max_entries = 4096,
 };
 
 struct bpf_map_def SEC("maps") inode_map = {
