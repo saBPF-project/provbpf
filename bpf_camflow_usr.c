@@ -160,6 +160,7 @@ int main(void) {
 
     // Initialize provenance policy
     struct capture_policy prov_policy;
+    memset(&prov_policy, 0, sizeof(struct capture_policy));
 
     syslog(LOG_INFO, "ProvBPF: policy initialization started...");
     prov_policy.prov_enabled = true;
@@ -178,6 +179,7 @@ int main(void) {
 
     syslog(LOG_INFO, "ProvBPF: prov_machine initialization started...");
     union long_prov_elt prov_machine;
+    memset(&prov_machine, 0, sizeof(union long_prov_elt));
 
     prov_machine.machine_info.cam_major = CAMFLOW_VERSION_MAJOR;
     prov_machine.machine_info.cam_minor = CAMFLOW_VERSION_MINOR;
@@ -240,7 +242,7 @@ int main(void) {
       goto close_prog;
     }
 
-    search_map_key = -1;
+    search_map_key = prev_search_map_key = -1;
     while (bpf_map_get_next_key(search_map_fd, &prev_search_map_key, &search_map_key) == 0) {
       res = bpf_map_lookup_elem(search_map_fd, &search_map_key, &search_map_value);
       if (res > -1) {
