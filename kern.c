@@ -13,14 +13,15 @@
  * published by the Free Software Foundation; either version 2 of the License,
  * or (at your option) any later version.
  */
-#include "vmlinux.h"
+#include "kern/vmlinux.h"
+
 #include <linux/libc-compat.h>
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
 
 #include <linux/limits.h>
 
-#include "sockaddr.h"
+#include "kern/sockaddr.h"
 
 #include "shared/prov_struct.h"
 #include "shared/prov_types.h"

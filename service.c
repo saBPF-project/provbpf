@@ -24,11 +24,10 @@
 #include <sys/utsname.h>
 #include <signal.h>
 
-#include "provbpf.skel.h"
-
 #include "shared/prov_struct.h"
 #include "shared/id.h"
 
+#include "usr/provbpf.skel.h"
 #include "usr/record.h"
 #include "usr/configuration.h"
 

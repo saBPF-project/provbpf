@@ -15,11 +15,11 @@ build_kernel:
 prepare: build_libbpf build_kernel
 
 btf:
-	bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
-	cp -f vmlinux.h .circleci/_vmlinux.h
+	bpftool btf dump file /sys/kernel/btf/vmlinux format c > include/kern/vmlinux.h
+	cp -f include/kern/vmlinux.h .circleci/_vmlinux.h
 
 btf_circle:
-	cp -f .circleci/_vmlinux.h vmlinux.h
+	cp -f .circleci/_vmlinux.h include/kern/vmlinux.h
 
 kern:
 	clang -O2 -Wall \
@@ -35,7 +35,7 @@ kern:
 	-target bpf -c kern.c -o provbpf.o
 
 skel:
-	bpftool gen skeleton provbpf.o > provbpf.skel.h
+	bpftool gen skeleton provbpf.o > include/usr/provbpf.skel.h
 
 usr:
 	clang utils.c -o utils.o -Iinclude -c
@@ -114,6 +114,6 @@ rpm:
 
 clean:
 	rm -f *.o
-	rm -f *.skel.h
-	rm -rf vmlinux.h
+	rm -f include/usr/provbpf.skel.h
+	rm -f include/kern/vmlinux.h
 	rm -rf output
