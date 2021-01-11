@@ -24,11 +24,12 @@
 #include <sys/utsname.h>
 #include <signal.h>
 
-#include "bpf_camflow.skel.h"
+#include "provbpf.skel.h"
 
 #include "shared/prov_struct.h"
+#include "shared/id.h"
+
 #include "usr/record.h"
-#include "usr/id.h"
 #include "usr/configuration.h"
 
 
@@ -52,7 +53,7 @@ static int buf_process_entry(void *ctx, void *data, size_t len) {
     return 0;
 }
 
-void set_id(struct bpf_camflow_kern *skel, uint32_t index, uint64_t value) {
+void set_id(struct provbpf *skel, uint32_t index, uint64_t value) {
     int map_fd;
     struct id_elem id;
     map_fd = bpf_object__find_map_fd_by_name(skel->obj, "ids_map");
@@ -60,7 +61,7 @@ void set_id(struct bpf_camflow_kern *skel, uint32_t index, uint64_t value) {
     bpf_map_update_elem(map_fd, &index, &id, BPF_ANY);
 }
 
-static __always_inline uint64_t prov_next_id(uint32_t key, struct bpf_camflow_kern *skel)	{
+static __always_inline uint64_t prov_next_id(uint32_t key, struct provbpf *skel)	{
     int map_fd = bpf_object__find_map_fd_by_name(skel->obj, "ids_map");
     if (map_fd < 0) {
       syslog(LOG_ERR, "ProvBPF: Failed loading ids_map (%d).", map_fd);
@@ -78,7 +79,7 @@ static __always_inline uint64_t prov_next_id(uint32_t key, struct bpf_camflow_ke
     return val.id;
 }
 
-static __always_inline uint64_t prov_get_id(uint32_t key, struct bpf_camflow_kern *skel) {
+static __always_inline uint64_t prov_get_id(uint32_t key, struct provbpf *skel) {
     int map_fd = bpf_object__find_map_fd_by_name(skel->obj, "ids_map");
     if (map_fd < 0) {
       syslog(LOG_ERR, "ProvBPF: Failed loading ids_map (%d).", map_fd);
@@ -105,12 +106,12 @@ static inline uint64_t djb2_hash(const char *str)
 	return hash;
 }
 
-static struct bpf_camflow_kern *skel = NULL;
+static struct provbpf *skel = NULL;
 
 void sig_handler(int sig) {
     if (sig == SIGTERM) {
         syslog(LOG_INFO, "ProvBPF: Received termination signal...");
-        bpf_camflow_kern__destroy(skel);
+        provbpf__destroy(skel);
         prov_refresh_records();
         syslog(LOG_INFO, "ProvBPF: Good bye!");
         exit(0);
@@ -142,7 +143,7 @@ int main(void) {
     }
 
     syslog(LOG_INFO, "ProvBPF: Open and loading...");
-    skel = bpf_camflow_kern__open_and_load();
+    skel = provbpf__open_and_load();
     if (!skel) {
         syslog(LOG_ERR, "ProvBPF: Failed loading ...");
         syslog(LOG_ERR, "ProvBPF: Kernel doesn't support this program type.");
@@ -210,7 +211,7 @@ int main(void) {
     syslog(LOG_INFO, "ProvBPF: prov_machine initialization ended.");
 
     syslog(LOG_INFO, "ProvBPF: Attaching BPF programs...");
-    err = bpf_camflow_kern__attach(skel);
+    err = provbpf__attach(skel);
     if (err) {
         syslog(LOG_ERR, "ProvBPF: Failed attaching %d.", err);
         goto close_prog;
@@ -285,6 +286,6 @@ int main(void) {
     }
 
 close_prog:
-    bpf_camflow_kern__destroy(skel);
+    provbpf__destroy(skel);
     return 0;
 }

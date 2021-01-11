@@ -1,5 +1,3 @@
-target := bpf_camflow
-
 build_libbpf:
 	cd ~ && git clone https://github.com/libbpf/libbpf
 	cd ~/libbpf/src && make
@@ -34,10 +32,10 @@ kern:
 	-Wno-address-of-packed-member -Wno-tautological-compare \
 	-Wno-unknown-warning-option \
 	-Iinclude \
-	-target bpf -c $(target)_kern.c -o $(target)_kern.o
+	-target bpf -c kern.c -o provbpf.o
 
 skel:
-	bpftool gen skeleton $(target)_kern.o > $(target).skel.h
+	bpftool gen skeleton provbpf.o > provbpf.skel.h
 
 usr:
 	clang utils.c -o utils.o -Iinclude -c

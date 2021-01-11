@@ -17,7 +17,7 @@
 #define __CAMFLOW_BPF_RECORD_H
 
 #include "shared/prov_struct.h"
-#include "kern_bpf_policy.h"
+#include "shared/policy.h"
 
 struct provenance_ops{
   void (*init)(void);
