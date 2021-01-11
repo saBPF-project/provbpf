@@ -247,13 +247,6 @@ char* packet_to_spade_json(struct pck_struct* n) {
   return buffer;
 }
 
-char* str_msg_to_spade_json(struct str_struct* n) {
-  NODE_START("Entity");
-  __add_string_attribute("log", n->str, true);
-  NODE_END();
-  return buffer;
-}
-
 char* addr_to_spade_json(struct address_struct* n) {
   char host[NI_MAXHOST];
   char serv[NI_MAXSERV];

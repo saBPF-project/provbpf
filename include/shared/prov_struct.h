@@ -251,13 +251,6 @@ union prov_elt {
 	struct iattr_prov_struct iattr_info;
 };
 
-struct str_struct {
-	basic_elements;
-	shared_node_elements;
-	char str[PATH_MAX];
-	size_t length;
-};
-
 struct file_name_struct {
 	basic_elements;
 	shared_node_elements;
@@ -322,7 +315,6 @@ union long_prov_elt {
 	struct sb_struct sb_info;
 	struct pck_struct pck_info;
 	struct iattr_prov_struct iattr_info;
-	struct str_struct str_info;
 	struct file_name_struct file_name_info;
 	struct arg_struct arg_info;
 	struct address_struct address_info;

@@ -29,7 +29,6 @@ char* sb_to_spade_json(struct sb_struct* n);
 char* msg_to_spade_json(struct msg_msg_struct* n);
 char* shm_to_spade_json(struct shm_struct* n);
 char* packet_to_spade_json(struct pck_struct* n);
-char* str_msg_to_spade_json(struct str_struct* n);
 char* addr_to_spade_json(struct address_struct* n);
 char* pathname_to_spade_json(struct file_name_struct* n);
 char* iattr_to_spade_json(struct iattr_prov_struct* n);

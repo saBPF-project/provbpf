@@ -24473,6 +24473,7 @@ struct pseudo_lock_region {
 struct mbm_state {
 	u64 chunks;
 	u64 prev_msr;
+	u64 chunks_bw;
 	u64 prev_bw_msr;
 	u32 prev_bw;
 	u32 delta_bw;
@@ -28855,7 +28856,6 @@ struct ptrace_peeksiginfo_args {
 
 struct ptrace_syscall_info {
 	__u8 op;
-	__u8 pad[3];
 	__u32 arch;
 	__u64 instruction_pointer;
 	__u64 stack_pointer;

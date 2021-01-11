@@ -53,7 +53,6 @@ struct provenance_ops null_ops = {
   .log_proc=NULL,
   .log_task=NULL,
   .log_inode=NULL,
-  .log_str=NULL,
   .log_msg=NULL,
   .log_shm=NULL,
   .log_packet=NULL,
@@ -66,10 +65,6 @@ struct provenance_ops null_ops = {
   .log_machine=NULL,
   .log_error=&log_error
 };
-
-void w3c_str(struct str_struct* data){
-  append_entity(str_msg_to_json(data));
-}
 
 void w3c_derived(struct relation_struct* relation){
   append_derived(derived_to_json(relation));
@@ -159,7 +154,6 @@ struct provenance_ops w3c_ops = {
   .log_proc=&w3c_proc,
   .log_task=&w3c_task,
   .log_inode=&w3c_inode,
-  .log_str=&w3c_str,
   .log_msg=&w3c_msg,
   .log_shm=&w3c_shm,
   .log_packet=&w3c_packet,
@@ -261,7 +255,6 @@ struct provenance_ops spade_ops = {
   .log_proc=&spade_proc,
   .log_task=&spade_task,
   .log_inode=&spade_inode,
-  .log_str=NULL,
   .log_msg=&spade_msg,
   .log_shm=&spade_shm,
   .log_packet=&spade_packet,
@@ -345,10 +338,6 @@ void node_record(union prov_elt *msg){
 
 void long_prov_record(union long_prov_elt* msg){
   switch(prov_type(msg)){
-    case ENT_STR:
-      if(prov_ops.log_str!=NULL)
-        prov_ops.log_str(&(msg->str_info));
-      break;
     case ENT_PATH:
       if(prov_ops.log_file_name!=NULL)
         prov_ops.log_file_name(&(msg->file_name_info));

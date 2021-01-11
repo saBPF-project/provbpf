@@ -571,22 +571,6 @@ char* packet_to_json(struct pck_struct* p){
   return buffer;
 }
 
-char* str_msg_to_json(struct str_struct* n){
-  int i=0;
-  NODE_PREP_IDs(n);
-  __node_start(id, &(n->identifier.node_id), n->taint, n->jiffies, n->epoch);
-  for(i=0; i < n->length; i++){
-    if(n->str[i]=='"')
-      n->str[i]=' ';
-    if(n->str[i]<32 || n->str[i]>125)
-      n->str[i]='_';
-  }
-  __add_string_attribute("cf:log", n->str, true);
-  __add_label_attribute("log", n->str, true);
-  __close_json_entry(buffer);
-  return buffer;
-}
-
 char* sockaddr_to_json(char* buf, size_t blen, struct sockaddr_storage* addr, size_t length){
   char host[NI_MAXHOST];
   char serv[NI_MAXSERV];

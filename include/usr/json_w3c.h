@@ -44,7 +44,6 @@ char* sb_to_json(struct sb_struct* n);
 char* msg_to_json(struct msg_msg_struct* n);
 char* shm_to_json(struct shm_struct* n);
 char* packet_to_json(struct pck_struct* n);
-char* str_msg_to_json(struct str_struct* n);
 char* addr_to_json(struct address_struct* n);
 char* pathname_to_json(struct file_name_struct* n);
 const char* prefix_json();
