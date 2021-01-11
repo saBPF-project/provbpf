@@ -113,7 +113,6 @@ static inline void __relation_to_spade_json(struct relation_struct* e) {
   if(e->set==FILE_INFO_SET && e->offset>0)
     __add_int64_attribute("offset", e->offset, true); // just offset for now
   __add_uint64hex_attribute("flags", e->flags, true);
-  __add_uint64_attribute("task_id", e->task_id, true);
   __add_string_attribute("from_type", node_id_to_str(e->rcv.node_id.type), true);
   __add_string_attribute("to_type", node_id_to_str(e->snd.node_id.type), true);
 }

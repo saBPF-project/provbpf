@@ -156,7 +156,6 @@ struct relation_struct {
 	uint8_t set;
 	int64_t offset;
 	uint64_t flags;
-	uint64_t task_id;
 };
 
 struct node_struct {
@@ -192,7 +191,6 @@ struct task_prov_struct {
 	uint64_t rbytes;
 	uint64_t wbytes;
 	uint64_t cancel_wbytes;
-	union long_prov_elt *disc;
 };
 
 #define PROV_SBUUID_LEN 16
@@ -291,14 +289,6 @@ struct arg_struct {
 	uint8_t truncated;
 };
 
-struct disc_node_struct {
-	basic_elements;
-	shared_node_elements;
-	size_t length;
-	char content[PATH_MAX];
-	union prov_identifier parent;
-};
-
 #define PROV_XATTR_NAME_SIZE            256
 #define PROV_XATTR_VALUE_SIZE           (PATH_MAX - PROV_XATTR_NAME_SIZE)
 struct xattr_prov_struct {
@@ -337,7 +327,6 @@ union long_prov_elt {
 	struct arg_struct arg_info;
 	struct address_struct address_info;
 	struct pckcnt_struct pckcnt_info;
-	struct disc_node_struct disc_node_info;
 	struct xattr_prov_struct xattr_info;
 	struct machine_struct machine_info;
 };

@@ -123,12 +123,6 @@ static const char RL_STR_PTRACE_READ[] = "ptrace_read";                         
 static const char RL_STR_PTRACE_ATTACH_TASK[] = "ptrace_attach_task";                                   // write info via ptrace effect on task
 static const char RL_STR_PTRACE_READ_TASK[] = "ptrace_read_task";                                       // read info via ptrace effect on task
 static const char RL_STR_PTRACE_TRACEME[] = "ptrace_traceme";                                           // track ptrace_traceme
-static const char RL_STR_DERIVED_DISC[] = "derived_disc";                                               // disclosed type
-static const char RL_STR_GENERATED_DISC[] = "generated_disc";                                           // disclosed type
-static const char RL_STR_USED_DISC[] = "used_disc";                                                     // disclosed type
-static const char RL_STR_INFORMED_DISC[] = "informed_disc";                                             // disclosed type
-static const char RL_STR_INFLUENCED_DISC[] = "influenced_disc";                                         // disclosed type
-static const char RL_STR_ASSOCIATED_DISC[] = "associated_disc";                                         // disclosed type
 
 /* node string name */
 static const char ND_STR_UNKNOWN[] = "unknown";                                 // unkown node type should normally not appear
@@ -147,9 +141,6 @@ static const char ND_STR_SHM[] = "shm";                                         
 static const char ND_STR_ADDR[] = "address";                                    // network address
 static const char ND_STR_SB[] = "sb";                                           // superblock
 static const char ND_STR_PATH[] = "path";                                       // path associated with a file
-static const char ND_STR_DISC_ENTITY[] = "disc_entity";                         // descilosed node representing an entity
-static const char ND_STR_DISC_ACTIVITY[] = "disc_activity";                     // descilosed node representing an activity
-static const char ND_STR_DISC_AGENT[] = "disc_agent";                           // disclosed node representing an agent
 static const char ND_STR_MACHINE[] = "machine";                                 // machine representing an agent
 static const char ND_STR_PACKET[] = "packet";                                   // network packet
 static const char ND_STR_IATTR[] = "iattr";                                     // inode attributes value
@@ -367,18 +358,6 @@ const char *relation_id_to_str(uint64_t type)
 		return RL_STR_PTRACE_TRACEME;
 	case RL_RAN_ON:
 		return RL_STR_RAN_ON;
-	case RL_DERIVED_DISC:
-		return RL_STR_DERIVED_DISC;
-	case RL_GENERATED_DISC:
-		return RL_STR_GENERATED_DISC;
-	case RL_USED_DISC:
-		return RL_STR_USED_DISC;
-	case RL_INFORMED_DISC:
-		return RL_STR_INFORMED_DISC;
-	case RL_INFLUENCED_DISC:
-		return RL_STR_INFLUENCED_DISC;
-	case RL_ASSOCIATED_DISC:
-		return RL_STR_ASSOCIATED_DISC;
 	default:
 		return RL_STR_UNKNOWN;
 	}
@@ -489,12 +468,6 @@ uint64_t relation_id(const char *str)
 	MATCH_AND_RETURN(str, RL_STR_PTRACE_READ_TASK, RL_PTRACE_READ_TASK);
 	MATCH_AND_RETURN(str, RL_STR_PTRACE_TRACEME, RL_PTRACE_TRACEME);
 	MATCH_AND_RETURN(str, RL_STR_RAN_ON, RL_RAN_ON);
-	MATCH_AND_RETURN(str, RL_STR_DERIVED_DISC, RL_DERIVED_DISC);
-	MATCH_AND_RETURN(str, RL_STR_GENERATED_DISC, RL_GENERATED_DISC);
-	MATCH_AND_RETURN(str, RL_STR_USED_DISC, RL_USED_DISC);
-	MATCH_AND_RETURN(str, RL_STR_INFORMED_DISC, RL_INFORMED_DISC);
-	MATCH_AND_RETURN(str, RL_STR_INFLUENCED_DISC, RL_INFLUENCED_DISC);
-	MATCH_AND_RETURN(str, RL_STR_ASSOCIATED_DISC, RL_ASSOCIATED_DISC);
 
 	return 0;
 }
@@ -533,12 +506,6 @@ const char *node_id_to_str(uint64_t type)
 		return ND_STR_SB;
 	case ENT_PATH:
 		return ND_STR_PATH;
-	case ENT_DISC:
-		return ND_STR_DISC_ENTITY;
-	case ACT_DISC:
-		return ND_STR_DISC_ACTIVITY;
-	case AGT_DISC:
-		return ND_STR_DISC_AGENT;
 	case AGT_MACHINE:
 		return ND_STR_MACHINE;
 	case ENT_PACKET:
@@ -577,9 +544,6 @@ uint64_t node_id(const char *str)
 	MATCH_AND_RETURN(str, ND_STR_ADDR, ENT_ADDR);
 	MATCH_AND_RETURN(str, ND_STR_SB, ENT_SBLCK);
 	MATCH_AND_RETURN(str, ND_STR_PATH, ENT_PATH);
-	MATCH_AND_RETURN(str, ND_STR_DISC_ENTITY, ENT_DISC);
-	MATCH_AND_RETURN(str, ND_STR_DISC_ACTIVITY, ACT_DISC);
-	MATCH_AND_RETURN(str, ND_STR_DISC_AGENT, AGT_DISC);
 	MATCH_AND_RETURN(str, ND_STR_MACHINE, AGT_MACHINE);
 	MATCH_AND_RETURN(str, ND_STR_PACKET, ENT_PACKET);
 	MATCH_AND_RETURN(str, ND_STR_IATTR, ENT_IATTR);

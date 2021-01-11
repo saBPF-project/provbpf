@@ -382,7 +382,6 @@ static char* __relation_to_json(struct relation_struct* e, const char* snd, cons
   if(e->set==FILE_INFO_SET && e->offset>0)
     __add_int64_attribute("cf:offset", e->offset, true); // just offset for now
   __add_uint64hex_attribute("cf:flags", e->flags, true);
-  __add_uint64_attribute("cf:task_id", e->task_id, true);
   __close_json_entry(buffer);
   return buffer;
 }
