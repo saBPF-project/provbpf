@@ -21,7 +21,7 @@
 #include <time.h>
 #include <syslog.h>
 
-#include "camflow_bpf_configuration.h"
+#include "usr/configuration.h"
 
 #define CONFIG_PATH "/etc/provbpf.ini"
 

@@ -20,8 +20,8 @@
 #include <unistd.h>
 #include <syslog.h>
 
-#include "linux/provenance.h"
-#include "camflow_bpf_id.h"
+#include "shared/prov_struct.h"
+#include "usr/id.h"
 
 static uint32_t __boot_id = 0;
 static uint32_t __machine_id = 0;

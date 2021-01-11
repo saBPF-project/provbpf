@@ -13,13 +13,25 @@
  * published by the Free Software Foundation; either version 2 of the License,
  * or (at your option) any later version.
  */
-#ifndef __CAMFLOW_BPF_RECORD_H
-#define __CAMFLOW_BPF_RECORD_H
+#ifndef __CAMFLOW_BPF_ID_H
+#define __CAMFLOW_BPF_ID_H
 
-#include "linux/provenance.h"
-#include "kern_bpf_policy.h"
+struct id_elem {
+    uint64_t id;
+};
 
-void bpf_prov_record(union long_prov_elt* msg);
-void prov_refresh_records(void);
-void prov_init(void);
+#define RELATION_ID_INDEX 0
+#define NODE_ID_INDEX 1
+#define BOOT_ID_INDEX 2
+#define MACHINE_ID_INDEX 3
+
+#define ID_MAX_ENTRY 4
+
+#define CAMFLOW_MACHINE_ID_FILE "/etc/camflow-machine_id"
+#define CAMFLOW_BOOT_ID_FILE "/etc/camflow-boot_id"
+
+// implemented for user space
+uint32_t get_boot_id(void);
+uint32_t get_machine_id(void);
+
 #endif

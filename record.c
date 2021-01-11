@@ -20,13 +20,14 @@
 #include <sys/types.h>
 #include <syslog.h>
 #include <stdlib.h>
-#include <provenance.h>
-#include <provenanceW3CJSON.h>
-#include <provenanceSPADEJSON.h>
 #include <pthread.h>
 
-#include "camflow_bpf_record.h"
-#include "camflow_bpf_configuration.h"
+#include <shared/prov_struct.h>
+#include <shared/prov_types.h>
+#include <usr/json_spade.h>
+#include <usr/json_w3c.h>
+#include "usr/record.h"
+#include "usr/configuration.h"
 
 static struct provenance_ops prov_ops;
 
@@ -53,9 +54,6 @@ struct provenance_ops null_ops = {
   .log_task=NULL,
   .log_inode=NULL,
   .log_str=NULL,
-  .log_act_disc=NULL,
-  .log_agt_disc=NULL,
-  .log_ent_disc=NULL,
   .log_msg=NULL,
   .log_shm=NULL,
   .log_packet=NULL,
@@ -107,18 +105,6 @@ void w3c_task(struct task_prov_struct* task){
 
 void w3c_inode(struct inode_prov_struct* inode){
   append_entity(inode_to_json(inode));
-}
-
-void w3c_act_disc(struct disc_node_struct* node){
-  append_activity(disc_to_json(node));
-}
-
-void w3c_agt_disc(struct disc_node_struct* node){
-  append_agent(disc_to_json(node));
-}
-
-void w3c_ent_disc(struct disc_node_struct* node){
-  append_entity(disc_to_json(node));
 }
 
 void w3c_msg(struct msg_msg_struct* msg){
@@ -174,9 +160,6 @@ struct provenance_ops w3c_ops = {
   .log_task=&w3c_task,
   .log_inode=&w3c_inode,
   .log_str=&w3c_str,
-  .log_act_disc=&w3c_act_disc,
-  .log_agt_disc=&w3c_agt_disc,
-  .log_ent_disc=&w3c_ent_disc,
   .log_msg=&w3c_msg,
   .log_shm=&w3c_shm,
   .log_packet=&w3c_packet,
@@ -224,18 +207,6 @@ void spade_task(struct task_prov_struct* task){
 
 void spade_inode(struct inode_prov_struct* inode){
   spade_json_append(inode_to_spade_json(inode));
-}
-
-void spade_act_disc(struct disc_node_struct* node){
-  spade_json_append(disc_to_spade_json(node));
-}
-
-void spade_agt_disc(struct disc_node_struct* node){
-  spade_json_append(disc_to_spade_json(node));
-}
-
-void spade_ent_disc(struct disc_node_struct* node){
-  spade_json_append(disc_to_spade_json(node));
 }
 
 void spade_msg(struct msg_msg_struct* msg){
@@ -291,9 +262,6 @@ struct provenance_ops spade_ops = {
   .log_task=&spade_task,
   .log_inode=&spade_inode,
   .log_str=NULL,
-  .log_act_disc=&spade_act_disc,
-  .log_agt_disc=&spade_agt_disc,
-  .log_ent_disc=&spade_ent_disc,
   .log_msg=&spade_msg,
   .log_shm=&spade_shm,
   .log_packet=&spade_packet,
@@ -392,18 +360,6 @@ void long_prov_record(union long_prov_elt* msg){
     case ENT_XATTR:
       if(prov_ops.log_xattr!=NULL)
         prov_ops.log_xattr(&(msg->xattr_info));
-      break;
-    case ENT_DISC:
-      if(prov_ops.log_ent_disc!=NULL)
-        prov_ops.log_ent_disc(&(msg->disc_node_info));
-      break;
-    case ACT_DISC:
-      if(prov_ops.log_act_disc!=NULL)
-        prov_ops.log_act_disc(&(msg->disc_node_info));
-      break;
-    case AGT_DISC:
-      if(prov_ops.log_agt_disc!=NULL)
-        prov_ops.log_agt_disc(&(msg->disc_node_info));
       break;
     case ENT_PCKCNT:
       if(prov_ops.log_packet_content!=NULL)

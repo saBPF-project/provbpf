@@ -14,14 +14,15 @@
  * or (at your option) any later version.
  */
 #include "vmlinux.h"
+#include <linux/libc-compat.h>
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
 
 #include <linux/limits.h>
 
 #include "sockaddr.h"
-#include "linux/provenance.h"
-#include "linux/provenance_types.h"
+#include "shared/prov_struct.h"
+#include "shared/prov_types.h"
 #include "camflow_bpf_id.h"
 
 #include "kern_bpf_policy.h"

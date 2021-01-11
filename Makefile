@@ -1,8 +1,4 @@
 target := bpf_camflow
-kernel-version := 5.8
-
-submodule:
-	git submodule update --init --recursive
 
 build_libbpf:
 	cd ~ && git clone https://github.com/libbpf/libbpf
@@ -25,7 +21,7 @@ build_libprovenance:
 	cd libprovenance && $(MAKE) install
 	cd libprovenance/src && sed -i -e "s/INCLUDES = -I..\/include -I..\/..\/camflow-dev\/include\/uapi/INCLUDES = -I..\/include/g" Makefile
 
-prepare: submodule build_libbpf build_kernel build_libprovenance
+prepare: build_libbpf build_kernel build_libprovenance
 
 btf:
 	bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
@@ -44,7 +40,6 @@ kern:
 	-Wno-gnu-variable-sized-type-not-at-end \
 	-Wno-address-of-packed-member -Wno-tautological-compare \
 	-Wno-unknown-warning-option \
-	-Icamflow-dev/include/uapi \
 	-Iinclude \
 	-target bpf -c $(target)_kern.c -o $(target)_kern.o
 
@@ -52,36 +47,43 @@ skel:
 	bpftool gen skeleton $(target)_kern.o > $(target).skel.h
 
 usr:
-	clang camflow_bpf_record.c -o camflow_bpf_record.o \
-	-Icamflow-dev/include/uapi -Iinclude -c
-	clang camflow_bpf_id.c -o camflow_bpf_id.o \
-	-Icamflow-dev/include/uapi -Iinclude -c
-	clang camflow_bpf_configuration.c -o camflow_bpf_configuration.o \
-	-Icamflow-dev/include/uapi -Iinclude -c
-	clang $(target)_usr.c -o $(target)_usr.o -Icamflow-dev/include/uapi \
-	-Iinclude -c
+	clang utils.c -o utils.o -Iinclude -c
+	clang types.c -o types.o -Iinclude -c
+	clang spade.c -o spade.o -Iinclude -c
+	clang w3c.c -o w3c.o -Iinclude -c
+	clang record.c -o record.o -Iinclude -c
+	clang configuration.c -o configuration.o -Iinclude -c
+	clang id.c -o id.o -Iinclude -c
+	clang service.c -o service.o -Iinclude -c
 	clang -o provbpfd \
-	$(target)_usr.o \
-	camflow_bpf_record.o \
-	camflow_bpf_id.o \
-	camflow_bpf_configuration.o \
-	-lbpf -lprovenance -lpthread -linih
+	service.o \
+	record.o \
+	id.o \
+	configuration.o \
+	spade.o \
+	w3c.o \
+	types.o \
+	utils.o \
+	-lbpf -lpthread -linih
 
 usr_dbg:
-	clang -g camflow_bpf_record.c -o camflow_bpf_record.o \
-	-Icamflow-dev/include/uapi -Iinclude -c
-	clang -g camflow_bpf_id.c -o camflow_bpf_id.o \
-	-Icamflow-dev/include/uapi -Iinclude -c
-	clang -g camflow_bpf_configuration.c -o camflow_bpf_configuration.o \
-	-Icamflow-dev/include/uapi -Iinclude -c
-	clang -g $(target)_usr.c -o $(target)_usr.o -Icamflow-dev/include/uapi \
-	-Iinclude -c
+	clang -g utils.c -o utils.o -Iinclude -c
+	clang -g types.c -o types.o -Iinclude -c
+	clang -g spade.c -o spade.o -Iinclude -c
+	clang -g w3c.c -o w3c.o -Iinclude -c
+	clang -g record.c -o record.o -Iinclude -c
+	clang -g configuration.c -o configuration.o -Iinclude -c
+	clang -g id.c -o id.o -Iinclude -c
+	clang -g service.c -o service.o -Iinclude -c
 	clang -g -o provbpfd \
-	$(target)_usr.o \
-	camflow_bpf_record.o \
-	camflow_bpf_id.o \
-	camflow_bpf_configuration.o \
-	-lbpf -lprovenance -lpthread -linih
+	service.o \
+	record.o \
+	id.o \
+	configuration.o \
+	spade.o \
+	w3c.o \
+	types.o \
+	-lbpf -lpthread -linih
 
 all: clean btf kern skel usr
 
