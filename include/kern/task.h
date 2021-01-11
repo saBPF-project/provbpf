@@ -16,7 +16,7 @@
 #ifndef __KERN_BPF_TASK_H
 #define __KERN_BPF_TASK_H
 
-#include "kern_bpf_node.h"
+#include "kern/node.h"
 
 #define KB 1024
 #define KB_MASK         (~(KB - 1))

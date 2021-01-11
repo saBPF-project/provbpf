@@ -16,7 +16,7 @@
 #ifndef __KERN_BPF_COMMON_H
 #define __KERN_BPF_COMMON_H
 
-#include "kern_bpf_maps.h"
+#include "kern/maps.h"
 
 // probably bad, find where it is defined
 #define NULL 0

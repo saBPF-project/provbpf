@@ -21,7 +21,7 @@
 #include <syslog.h>
 
 #include "shared/prov_struct.h"
-#include "usr/id.h"
+#include "shared/id.h"
 
 static uint32_t __boot_id = 0;
 static uint32_t __machine_id = 0;

@@ -21,23 +21,24 @@
 #include <linux/limits.h>
 
 #include "sockaddr.h"
+
 #include "shared/prov_struct.h"
 #include "shared/prov_types.h"
-#include "camflow_bpf_id.h"
+#include "shared/id.h"
 
-#include "kern_bpf_policy.h"
-#include "kern_bpf_maps.h"
-#include "kern_bpf_common.h"
-#include "kern_bpf_node.h"
-#include "kern_bpf_task.h"
-#include "kern_bpf_inode.h"
-#include "kern_bpf_cred.h"
-#include "kern_bpf_msg_msg.h"
-#include "kern_bpf_kern_ipc_perm.h"
-#include "kern_bpf_iattr.h"
-#include "kern_bpf_filter.h"
-#include "kern_bpf_relation.h"
-#include "kern_bpf_provenance_net.h"
+#include "kern/policy.h"
+#include "kern/maps.h"
+#include "kern/common.h"
+#include "kern/node.h"
+#include "kern/task.h"
+#include "kern/inode.h"
+#include "kern/cred.h"
+#include "kern/msg_msg.h"
+#include "kern/ipc_perm.h"
+#include "kern/iattr.h"
+#include "kern/filter.h"
+#include "kern/relation.h"
+#include "kern/net.h"
 
 char _license[] SEC("license") = "GPL";
 
