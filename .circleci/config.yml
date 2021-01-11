@@ -16,7 +16,6 @@ jobs:
       - run: 'sudo dnf install -y ruby uthash-devel inih-devel'
       - run: 'sudo dnf install -y rpm-build redhat-rpm-config'
       - run: 'make build_libbpf'
-      - run: 'make build_libprovenance'
       - run: 'make clean'
       - run: 'make btf_circle'
       - run: 'make kern'

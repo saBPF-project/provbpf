@@ -14,14 +14,7 @@ build_kernel:
 	cd ~/fedora && sudo $(MAKE) modules_install
 	cd ~/fedora && sudo $(MAKE) install
 
-build_libprovenance:
-	cd libprovenance/src && sed -i -e "s/INCLUDES = -I..\/include/INCLUDES = -I..\/include -I..\/..\/camflow-dev\/include\/uapi/g" Makefile
-	cd libprovenance && $(MAKE) prepare
-	cd libprovenance && $(MAKE) all
-	cd libprovenance && $(MAKE) install
-	cd libprovenance/src && sed -i -e "s/INCLUDES = -I..\/include -I..\/..\/camflow-dev\/include\/uapi/INCLUDES = -I..\/include/g" Makefile
-
-prepare: build_libbpf build_kernel build_libprovenance
+prepare: build_libbpf build_kernel
 
 btf:
 	bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
