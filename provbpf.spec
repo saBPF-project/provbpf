@@ -6,7 +6,7 @@ Group: audit/provbpf
 License: GPLv2
 Source: %{expand:%%(pwd)}
 BuildRoot: %{_topdir}/BUILD/%{name}-%{version}-%{release}
-Requires: glibc, libbpf, libinih, libpthread, libprovenance
+Requires: glibc, libbpf, libinih, libpthread
 
 %description
 %{summary}
