@@ -22,7 +22,7 @@
 static __always_inline void prov_init_relation(union prov_elt *prov,
                                                 uint64_t type,
                                                 const struct file *file,
-					                                      const uint64_t flags)
+					                            const uint64_t flags)
 {
     loff_t offset;
     relation_identifier(prov).type=type;
