@@ -37,7 +37,7 @@
 	"."xstr (PROVBPF_VERSION_MINOR)					\
 	"."xstr (PROVBPF_VERSION_PATCH)					\
 
-#define PROVBPF_COMMIT "7f7a223477f0b95fbbf87e8e0044ff2c7b860820"
+#define PROVBPF_COMMIT "fcc54731d261afee029f6c0b9cb60275bfc4c95b"
 
 #define PROVENANCE_HASH                 "sha256"
 
