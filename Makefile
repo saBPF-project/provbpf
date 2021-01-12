@@ -76,7 +76,10 @@ usr_dbg:
 	types.o \
 	-lbpf -lpthread -linih
 
-all: clean btf kern skel usr
+update_commit:
+	ruby ./scripts/commit.rb
+
+all: clean btf update_commit kern skel usr
 
 install:
 	sudo cp --force ./provbpf.ini /etc/provbpf.ini
