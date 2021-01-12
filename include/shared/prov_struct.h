@@ -188,9 +188,6 @@ struct task_prov_struct {
 	uint64_t rss;
 	uint64_t hw_vm;
 	uint64_t hw_rss;
-	uint64_t rbytes;
-	uint64_t wbytes;
-	uint64_t cancel_wbytes;
 };
 
 #define PROV_SBUUID_LEN 16

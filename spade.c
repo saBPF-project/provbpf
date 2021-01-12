@@ -185,9 +185,6 @@ char* task_to_spade_json(struct task_prov_struct* n) {
   __add_uint64_attribute("rss", n->rss, true);
   __add_uint64_attribute("hw_vm", n->hw_vm, true);
   __add_uint64_attribute("hw_rss", n->hw_rss, true);
-  __add_uint64_attribute("rbytes", n->rbytes, true);
-  __add_uint64_attribute("wbytes", n->wbytes, true);
-  __add_uint64_attribute("cancel_wbytes", n->cancel_wbytes, true);
   __add_uint32_attribute("secid", n->secid, true);
   NODE_END();
   return buffer;
