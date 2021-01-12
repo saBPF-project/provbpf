@@ -37,7 +37,11 @@
 	"."xstr (PROVBPF_VERSION_MINOR)					\
 	"."xstr (PROVBPF_VERSION_PATCH)					\
 
+<<<<<<< HEAD
 #define PROVBPF_COMMIT ""
+=======
+#define PROVBPF_COMMIT "7f7a223477f0b95fbbf87e8e0044ff2c7b860820"
+>>>>>>> parent of 14bd195 (clean up map)
 
 #define PROVENANCE_HASH                 "sha256"
 
