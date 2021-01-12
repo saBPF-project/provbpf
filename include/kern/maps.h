@@ -59,15 +59,6 @@ struct bpf_map_def SEC("maps") prov_machine_map = {
     .max_entries = 1,
 };
 
-#define INODE_PERCPU_TMP 0
-
-struct bpf_map_def SEC("maps") tmp_prov_elt_map = {
-    .type = BPF_MAP_TYPE_PERCPU_ARRAY,
-    .key_size = sizeof(uint32_t),
-    .value_size = sizeof(union prov_elt),
-    .max_entries = 1,
-};
-
 struct bpf_map_def SEC("maps") inode_map = {
     .type = BPF_MAP_TYPE_HASH,
     .key_size = sizeof(uint64_t),
