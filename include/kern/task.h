@@ -84,10 +84,9 @@ static __always_inline void prov_update_task(struct task_struct *task,
  * and insert it into the @task_map; otherwise, updates its
  * existing provenance. Return either the new provenance entry
  * pointer or the updated provenance entry pointer. */
-static __always_inline union prov_elt* get_or_create_task_prov(struct task_struct *task) {
-		if (!task) {
-			return NULL;
-		}
+ static __always_inline union prov_elt* get_or_create_task_prov(struct task_struct *task) {
+    if (!task)
+        return NULL;
 
     union prov_elt prov_tmp;
     uint64_t key = get_key(task);
@@ -110,5 +109,5 @@ static __always_inline union prov_elt* get_or_create_task_prov(struct task_struc
         prov_on_map = bpf_map_lookup_elem(&task_map, &key);
     }
     return prov_on_map;
-}
+ }
 #endif

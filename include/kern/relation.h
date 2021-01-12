@@ -83,8 +83,9 @@ static __always_inline void __write_relation(const uint64_t type,
     union long_prov_elt *f, *t;
     f = from;
     t = to;
-    int map_id = 1;
+    int map_id = RELATION_PERCPU_TMP;
     union prov_elt *prov_tmp = bpf_map_lookup_elem(&tmp_prov_elt_map, &map_id);
+
     if (!prov_tmp)
         return;
 
