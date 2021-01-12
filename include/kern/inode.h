@@ -58,6 +58,7 @@ static __always_inline union prov_elt* get_or_create_inode_prov(struct inode *in
         // update the inode provenance in case it changed
         prov_update_inode(inode, prov_on_map);
     } else {
+        // we only create this if we could not find the inode prov
         map_id = INODE_PERCPU_TMP;
         prov_tmp= bpf_map_lookup_elem(&tmp_prov_elt_map, &map_id);
         if (!prov_tmp)
