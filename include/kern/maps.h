@@ -16,11 +16,6 @@
 #ifndef __KERN_BPF_MAPS_H
 #define __KERN_BPF_MAPS_H
 
-struct bpf_provenance {
-    union prov_elt prov;
-    struct bpf_spin_lock lock;
-};
-
 // NOTE: ring buffer reference:
 // https://elixir.bootlin.com/linux/v5.8/source/tools/testing/selftests/bpf/progs/test_ringbuf.c
 struct bpf_map_def SEC("maps") r_buf = {
