@@ -128,6 +128,9 @@ int main(void) {
 
     syslog(LOG_INFO, "ProvBPF: Starting...");
 
+    syslog(LOG_INFO, "ProvBPF: %s.", PROVBPF_VERSION_STR);
+    syslog(LOG_INFO, "ProvBPF: commit %s.", PROVBPF_COMMIT);
+
     syslog(LOG_INFO, "ProvBPF: Registering signal handler...");
     signal(SIGTERM, sig_handler);
 
