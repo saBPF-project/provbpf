@@ -43,10 +43,9 @@ static __always_inline void prov_update_inode(struct inode *inode, union prov_el
 
 static __always_inline union prov_elt* get_or_create_inode_prov(struct inode *inode) {
     int map_id;
-    union prov_elt *prov_tmp;
     uint64_t key;
-    union prov_elt *prov_on_map;
     umode_t imode;
+    union prov_elt *prov_on_map, *prov_tmp;
 
     if (!inode)
       return NULL;
@@ -64,7 +63,7 @@ static __always_inline union prov_elt* get_or_create_inode_prov(struct inode *in
         if (!prov_tmp)
             return NULL;
 
-        __builtin_memset(&prov_tmp, 0, sizeof(union prov_elt));
+        __builtin_memset(prov_tmp, 0, sizeof(union prov_elt));
         bpf_probe_read(&imode, sizeof(imode), &inode->i_mode);
         if (S_ISREG(imode)) {
             // inode mode is regular file
