@@ -80,21 +80,23 @@ static __always_inline void __write_relation(const uint64_t type,
                                              const struct file *file,
                                              const uint64_t flags)
 {
-    union long_prov_elt *f=from, *t=to;
-    union prov_elt relation;
+    int map_id = RELATION_PERCPU_TMP;
+    union prov_elt *prov_tmp = bpf_map_lookup_elem(&tmp_prov_elt_map, &map_id);
 
-    __builtin_memset(&relation, 0, sizeof(union prov_elt));
-    prov_init_relation(&relation, type, file, flags);
+    if (!prov_tmp)
+        return;
+
+    prov_init_relation(prov_tmp, type, file, flags);
 
     // set send node
-    __builtin_memcpy(&(relation.relation_info.snd), &node_identifier(f), sizeof(union prov_identifier));
+    __builtin_memcpy(&(prov_tmp->relation_info.snd), &node_identifier((union long_prov_elt *)from), sizeof(union prov_identifier));
     // set rcv node
-    __builtin_memcpy(&(relation.relation_info.rcv), &node_identifier(t), sizeof(union prov_identifier));
+    __builtin_memcpy(&(prov_tmp->relation_info.rcv), &node_identifier((union long_prov_elt *)to), sizeof(union prov_identifier));
 
     record_provenance(from_is_long, from);
     record_provenance(to_is_long, to);
     // record relation provenance
-    record_provenance(false, &relation);
+    record_provenance(false, prov_tmp);
 }
 
 static __always_inline void record_terminate(uint64_t type,

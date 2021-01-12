@@ -47,7 +47,8 @@ static __always_inline void prov_init_inode(struct inode *inode, union prov_elt 
 static union prov_elt* get_or_create_inode_prov(struct inode *inode) {
     uint64_t key;
     umode_t imode;
-    union prov_elt *prov_on_map, prov_tmp;
+    int map_id = INODE_PERCPU_TMP;
+    union prov_elt *prov_on_map, *prov_tmp;
 
     if (!inode)
       return NULL;
@@ -60,36 +61,39 @@ static union prov_elt* get_or_create_inode_prov(struct inode *inode) {
         // update the inode provenance in case it changed
         prov_update_inode(inode, prov_on_map);
     } else {
-        __builtin_memset(&prov_tmp, 0, sizeof(union prov_elt));
+        prov_tmp = bpf_map_lookup_elem(&tmp_prov_elt_map, &map_id);
+        if (!prov_tmp)
+            return NULL;
+        __builtin_memset(prov_tmp, 0, sizeof(union prov_elt));
         bpf_probe_read(&imode, sizeof(imode), &inode->i_mode);
         if (S_ISREG(imode)) {
             // inode mode is regular file
-            prov_init_node(&prov_tmp, ENT_INODE_FILE);
+            prov_init_node(prov_tmp, ENT_INODE_FILE);
         } else if (S_ISDIR(imode)) {
             // inode mode is directory
-            prov_init_node(&prov_tmp, ENT_INODE_DIRECTORY);
+            prov_init_node(prov_tmp, ENT_INODE_DIRECTORY);
         } else if (S_ISCHR(imode)) {
             // inode mode is character device
-            prov_init_node(&prov_tmp, ENT_INODE_CHAR);
+            prov_init_node(prov_tmp, ENT_INODE_CHAR);
         } else if (S_ISBLK(imode)) {
             // inode mode is block device
-            prov_init_node(&prov_tmp, ENT_INODE_BLOCK);
+            prov_init_node(prov_tmp, ENT_INODE_BLOCK);
         } else if (S_ISFIFO(imode)) {
             // inode mode is FIFO (named pipe)
-            prov_init_node(&prov_tmp, ENT_INODE_PIPE);
+            prov_init_node(prov_tmp, ENT_INODE_PIPE);
         } else if (S_ISLNK(imode)) {
             // inode mode is symbolic link
-            prov_init_node(&prov_tmp, ENT_INODE_LINK);
+            prov_init_node(prov_tmp, ENT_INODE_LINK);
         } else if (S_ISSOCK(imode)) {
             // inode mode is socket
-            prov_init_node(&prov_tmp, ENT_INODE_SOCKET);
+            prov_init_node(prov_tmp, ENT_INODE_SOCKET);
         } else {
             // inode mode is unknown
-            prov_init_node(&prov_tmp, ENT_INODE_UNKNOWN);
+            prov_init_node(prov_tmp, ENT_INODE_UNKNOWN);
         }
 
-        prov_init_inode(inode, &prov_tmp);
-        bpf_map_update_elem(&inode_map, &key, &prov_tmp, BPF_NOEXIST);
+        prov_init_inode(inode, prov_tmp);
+        bpf_map_update_elem(&inode_map, &key, prov_tmp, BPF_NOEXIST);
         prov_on_map = bpf_map_lookup_elem(&inode_map, &key);
     }
     return prov_on_map;

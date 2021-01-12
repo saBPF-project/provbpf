@@ -1598,9 +1598,6 @@ SEC("lsm/file_send_sigiotask")
 int BPF_PROG(file_send_sigiotask, struct task_struct *task, struct fown_struct *fown, int signum) {
     struct file *file = container_of(fown, struct file, f_owner);
 
-    if (is_inode_dir(file->f_inode))
-        return 0;
-
     struct inode *inode;
     bpf_probe_read(&inode, sizeof(inode), &file->f_inode);
 
