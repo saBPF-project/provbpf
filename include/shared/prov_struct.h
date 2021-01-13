@@ -37,7 +37,7 @@
 	"."xstr (PROVBPF_VERSION_MINOR)					\
 	"."xstr (PROVBPF_VERSION_PATCH)					\
 
-#define PROVBPF_COMMIT "dbbf68c903815334906f03b45b4a8c3aec341ee5"
+#define PROVBPF_COMMIT ""
 
 #define PROVENANCE_HASH                 "sha256"
 
@@ -188,9 +188,6 @@ struct task_prov_struct {
 	uint64_t rss;
 	uint64_t hw_vm;
 	uint64_t hw_rss;
-	uint64_t rbytes;
-	uint64_t wbytes;
-	uint64_t cancel_wbytes;
 };
 
 #define PROV_SBUUID_LEN 16

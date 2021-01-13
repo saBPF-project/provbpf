@@ -64,30 +64,15 @@ static __always_inline void prov_update_task(struct task_struct *task,
     prov->task_info.hw_vm = u64_max(current_task_hw_vm, prov->task_info.vm) * IOC_PAGE_SIZE / KB;
     bpf_probe_read(&current_task_hw_rss, sizeof(current_task_hw_rss), &mm->hiwater_rss);
     prov->task_info.hw_rss = u64_max(current_task_hw_rss, prov->task_info.rss) * IOC_PAGE_SIZE / KB;
-#ifdef CONFIG_TASK_IO_ACCOUNTING
-    bpf_probe_read(&prov->task_info.rbytes, sizeof(prov->task_info.rbytes), &task->ioac.read_bytes);
-    prov->task_info.rbytes &= KB_MASK;
-    bpf_probe_read(&prov->task_info.wbytes, sizeof(prov->task_info.wbytes), &task->ioac.write_bytes);
-    prov->task_info.wbytes &= KB_MASK;
-    bpf_probe_read(&prov->task_info.cancel_wbytes, sizeof(prov->task_info.cancel_wbytes), &task->ioac.cancelled_write_bytes);
-    prov->task_info.cancel_wbytes &= KB_MASK;
-#else
-    bpf_probe_read(&prov->task_info.rbytes, sizeof(prov->task_info.rbytes), &task->ioac.rchar);
-    prov->task_info.rbytes &= KB_MASK;
-    bpf_probe_read(&prov->task_info.wbytes, sizeof(prov->task_info.wbytes), &task->ioac.wchar);
-    prov->task_info.wbytes &= KB_MASK;
-    prov->task_info.cancel_wbytes = 0;
-#endif
 }
 
 /* Create a provenance entry for a task if it does not exist
  * and insert it into the @task_map; otherwise, updates its
  * existing provenance. Return either the new provenance entry
  * pointer or the updated provenance entry pointer. */
-static __always_inline union prov_elt* get_or_create_task_prov(struct task_struct *task) {
-		if (!task) {
-			return NULL;
-		}
+ static __always_inline union prov_elt* get_or_create_task_prov(struct task_struct *task) {
+    if (!task)
+        return NULL;
 
     union prov_elt prov_tmp;
     uint64_t key = get_key(task);
@@ -110,5 +95,5 @@ static __always_inline union prov_elt* get_or_create_task_prov(struct task_struc
         prov_on_map = bpf_map_lookup_elem(&task_map, &key);
     }
     return prov_on_map;
-}
+ }
 #endif
