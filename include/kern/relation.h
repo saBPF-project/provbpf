@@ -180,13 +180,13 @@ static __always_inline void update_version_long(const uint64_t type,
                                           void *prov,
                                           bool prov_is_long)
 {
-    int map_id = 3;
-    union long_prov_elt *old_prov = bpf_map_lookup_elem(&tmp_prov_map, &map_id);
+    int map_id = UPDATE_PERCPU_LONG_TMP;
+    union long_prov_elt *old_prov = bpf_map_lookup_elem(&long_tmp_prov_map, &map_id);
     if (!old_prov)
         return;
 
     union long_prov_elt *p = prov;
-    bpf_map_update_elem(&tmp_prov_map, &map_id, p, BPF_NOEXIST);
+    bpf_map_update_elem(&long_tmp_prov_map, &map_id, p, BPF_NOEXIST);
     // __builtin_memcpy(old_prov, p, sizeof(union prov_elt));
 
     // Update the version of prov to the newer version
@@ -506,8 +506,8 @@ static __always_inline int record_write_xattr(uint64_t type,
       return 0;
     }
 
-    int map_id = 0;
-    union long_prov_elt *ptr_prov_xattr = bpf_map_lookup_elem(&tmp_prov_map, &map_id);
+    int map_id = XATTR_PERCPU_LONG_TMP;
+    union long_prov_elt *ptr_prov_xattr = bpf_map_lookup_elem(&long_tmp_prov_map, &map_id);
     if (!ptr_prov_xattr) {
       return 0;
     }
@@ -567,8 +567,8 @@ static __always_inline void record_read_xattr(void *cprov,
       return;
     }
 
-    int map_id = 0;
-    union long_prov_elt *xattr = bpf_map_lookup_elem(&tmp_prov_map, &map_id);
+    int map_id = XATTR_PERCPU_LONG_TMP;
+    union long_prov_elt *xattr = bpf_map_lookup_elem(&long_tmp_prov_map, &map_id);
     if (!xattr)
       return;
     prov_init_node((union prov_elt *)xattr, ENT_XATTR);

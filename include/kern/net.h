@@ -38,8 +38,8 @@
  *
  */
 static __always_inline int record_address(struct sockaddr *address, int addrlen, union prov_elt *prov) {
-	int map_id = 0;
-	union long_prov_elt *ptr_prov_addr = bpf_map_lookup_elem(&tmp_prov_map, &map_id);
+	int map_id = ADDRESS_PERCPU_LONG_TMP;
+	union long_prov_elt *ptr_prov_addr = bpf_map_lookup_elem(&long_tmp_prov_map, &map_id);
 	if (!ptr_prov_addr) {
 		return 0;
 	}
