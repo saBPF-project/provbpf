@@ -5,11 +5,6 @@ No need to build CamFlow.
 
 ## Setting things up
 
-Getting submodules:
-```
-make submodule
-```
-
 Building libbpf:
 ```
 make build_libbpf

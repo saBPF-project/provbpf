@@ -1,3 +1,18 @@
+/* SPDX-License-Identifier: GPL-2.0 */
+/*
+ * Copyright (C) 2020-2021 Harvard University
+ * Copyright (C) 2020-2021 University of Bristol
+ *
+ * Author: Thomas Pasquier <thomas.pasquier@bristol.ac.uk>
+ * Author: Bogdan Stelea <bs17580@bristol.ac.uk>
+ * Author: Soo Yee Lim <sooyee.lim@bristol.ac.uk>
+ * Author: Xueyuan "Michael" Han <hanx@g.harvard.edu>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2, as
+ * published by the Free Software Foundation; either version 2 of the License,
+ * or (at your option) any later version.
+ */
 #define _GNU_SOURCE
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -5,13 +20,14 @@
 #include <sys/types.h>
 #include <syslog.h>
 #include <stdlib.h>
-#include <provenance.h>
-#include <provenanceW3CJSON.h>
-#include <provenanceSPADEJSON.h>
 #include <pthread.h>
 
-#include "camflow_bpf_record.h"
-#include "camflow_bpf_configuration.h"
+#include <shared/prov_struct.h>
+#include <shared/prov_types.h>
+#include <usr/json_spade.h>
+#include <usr/json_w3c.h>
+#include "usr/record.h"
+#include "usr/configuration.h"
 
 static struct provenance_ops prov_ops;
 
@@ -37,10 +53,6 @@ struct provenance_ops null_ops = {
   .log_proc=NULL,
   .log_task=NULL,
   .log_inode=NULL,
-  .log_str=NULL,
-  .log_act_disc=NULL,
-  .log_agt_disc=NULL,
-  .log_ent_disc=NULL,
   .log_msg=NULL,
   .log_shm=NULL,
   .log_packet=NULL,
@@ -53,10 +65,6 @@ struct provenance_ops null_ops = {
   .log_machine=NULL,
   .log_error=&log_error
 };
-
-void w3c_str(struct str_struct* data){
-  append_entity(str_msg_to_json(data));
-}
 
 void w3c_derived(struct relation_struct* relation){
   append_derived(derived_to_json(relation));
@@ -92,18 +100,6 @@ void w3c_task(struct task_prov_struct* task){
 
 void w3c_inode(struct inode_prov_struct* inode){
   append_entity(inode_to_json(inode));
-}
-
-void w3c_act_disc(struct disc_node_struct* node){
-  append_activity(disc_to_json(node));
-}
-
-void w3c_agt_disc(struct disc_node_struct* node){
-  append_agent(disc_to_json(node));
-}
-
-void w3c_ent_disc(struct disc_node_struct* node){
-  append_entity(disc_to_json(node));
 }
 
 void w3c_msg(struct msg_msg_struct* msg){
@@ -158,10 +154,6 @@ struct provenance_ops w3c_ops = {
   .log_proc=&w3c_proc,
   .log_task=&w3c_task,
   .log_inode=&w3c_inode,
-  .log_str=&w3c_str,
-  .log_act_disc=&w3c_act_disc,
-  .log_agt_disc=&w3c_agt_disc,
-  .log_ent_disc=&w3c_ent_disc,
   .log_msg=&w3c_msg,
   .log_shm=&w3c_shm,
   .log_packet=&w3c_packet,
@@ -209,18 +201,6 @@ void spade_task(struct task_prov_struct* task){
 
 void spade_inode(struct inode_prov_struct* inode){
   spade_json_append(inode_to_spade_json(inode));
-}
-
-void spade_act_disc(struct disc_node_struct* node){
-  spade_json_append(disc_to_spade_json(node));
-}
-
-void spade_agt_disc(struct disc_node_struct* node){
-  spade_json_append(disc_to_spade_json(node));
-}
-
-void spade_ent_disc(struct disc_node_struct* node){
-  spade_json_append(disc_to_spade_json(node));
 }
 
 void spade_msg(struct msg_msg_struct* msg){
@@ -275,10 +255,6 @@ struct provenance_ops spade_ops = {
   .log_proc=&spade_proc,
   .log_task=&spade_task,
   .log_inode=&spade_inode,
-  .log_str=NULL,
-  .log_act_disc=&spade_act_disc,
-  .log_agt_disc=&spade_agt_disc,
-  .log_ent_disc=&spade_ent_disc,
   .log_msg=&spade_msg,
   .log_shm=&spade_shm,
   .log_packet=&spade_packet,
@@ -314,7 +290,7 @@ void relation_record(union long_prov_elt *msg){
     if (prov_ops.log_associated!=NULL)
         prov_ops.log_associated(&(msg->relation_info));
   } else
-    printf("Error: unknown relation type %lu\n", prov_type(msg));
+    syslog(LOG_ERR, "ProvBPF: unknown relation type %lu.", prov_type(msg));
 }
 
 void node_record(union prov_elt *msg){
@@ -355,17 +331,13 @@ void node_record(union prov_elt *msg){
         prov_ops.log_iattr(&(msg->iattr_info));
       break;
     default:
-      printf("Error: unknown node type %lu\n", prov_type(msg));
+      syslog(LOG_ERR, "ProvBPF: unknown node type %lu.", prov_type(msg));
       break;
   }
 }
 
 void long_prov_record(union long_prov_elt* msg){
   switch(prov_type(msg)){
-    case ENT_STR:
-      if(prov_ops.log_str!=NULL)
-        prov_ops.log_str(&(msg->str_info));
-      break;
     case ENT_PATH:
       if(prov_ops.log_file_name!=NULL)
         prov_ops.log_file_name(&(msg->file_name_info));
@@ -377,18 +349,6 @@ void long_prov_record(union long_prov_elt* msg){
     case ENT_XATTR:
       if(prov_ops.log_xattr!=NULL)
         prov_ops.log_xattr(&(msg->xattr_info));
-      break;
-    case ENT_DISC:
-      if(prov_ops.log_ent_disc!=NULL)
-        prov_ops.log_ent_disc(&(msg->disc_node_info));
-      break;
-    case ACT_DISC:
-      if(prov_ops.log_act_disc!=NULL)
-        prov_ops.log_act_disc(&(msg->disc_node_info));
-      break;
-    case AGT_DISC:
-      if(prov_ops.log_agt_disc!=NULL)
-        prov_ops.log_agt_disc(&(msg->disc_node_info));
       break;
     case ENT_PCKCNT:
       if(prov_ops.log_packet_content!=NULL)
@@ -404,7 +364,7 @@ void long_prov_record(union long_prov_elt* msg){
         prov_ops.log_machine(&(msg->machine_info));
       break;
     default:
-      printf("Error: unknown node long type %lx\n", prov_type(msg));
+      syslog(LOG_ERR, "ProvBPF: unknown node long type %lx.", prov_type(msg));
       break;
   }
 }
@@ -436,23 +396,18 @@ static inline void log_to_terminal(char* json){
 }
 
 void prov_init() {
-    printf("\n\n");
-    printf("############################\n");
-    printf("CONFIGURATION TYPE: %d\n", __config.output);
-    printf("############################\n\n");
-
     if (__config.output == CF_BPF_LOG) {
         /* setup log file */
-        printf("Log file %s.\n", __config.log_path);
+        syslog(LOG_INFO, "ProvBPF: Log file %s.", __config.log_path);
         __log_fd = open(__config.log_path, O_CREAT|O_WRONLY, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
         if (__log_fd < 0) {
-            printf("Cannot open log file.\n");
+            syslog(LOG_ERR, "ProvBPF: Cannot open log file.");
             exit(-1);
         }
         lseek(__log_fd, 0, SEEK_SET);
 
         if (pthread_mutex_init(&__file_lock, NULL) != 0) {
-            printf("File mutex init failed.\n");
+            syslog(LOG_ERR, "ProvBPF: File mutex init failed.");
             exit(-1);
         }
 
@@ -464,7 +419,7 @@ void prov_init() {
             memcpy(&prov_ops, &spade_ops, sizeof(struct provenance_ops));
             set_SPADEJSON_callback(log_to_file);
         } else {
-            printf("Unknown format.\n");
+            syslog(LOG_ERR, "ProvBPF: Unknown format.");
             exit(-1);
         }
     } else if (__config.output == CF_BPF_TERMINAL) {
@@ -476,14 +431,14 @@ void prov_init() {
             memcpy(&prov_ops, &spade_ops, sizeof(struct provenance_ops));
             set_SPADEJSON_callback(log_to_terminal);
         } else {
-            printf("Unknown format.\n");
+            syslog(LOG_ERR, "ProvBPF: Unknown format.");
             exit(-1);
         }
     } else if (__config.output == CF_BPF_NULL) {
         /* ready the recording hooks */
         memcpy(&prov_ops, &null_ops, sizeof(struct provenance_ops));
     }  else {
-        printf("ERROR initializing logging\n");
+        syslog(LOG_ERR, "ProvBPF: error initializing logging.");
         exit(-1);
     }
 }

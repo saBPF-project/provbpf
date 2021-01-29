@@ -1,9 +1,22 @@
-/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
-
+/* SPDX-License-Identifier: GPL-2.0 */
+/*
+ * Copyright (C) 2020-2021 Harvard University
+ * Copyright (C) 2020-2021 University of Bristol
+ *
+ * Author: Thomas Pasquier <thomas.pasquier@bristol.ac.uk>
+ * Author: Bogdan Stelea <bs17580@bristol.ac.uk>
+ * Author: Soo Yee Lim <sooyee.lim@bristol.ac.uk>
+ * Author: Xueyuan "Michael" Han <hanx@g.harvard.edu>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2, as
+ * published by the Free Software Foundation; either version 2 of the License,
+ * or (at your option) any later version.
+ */
 #ifndef __KERN_BPF_TASK_H
 #define __KERN_BPF_TASK_H
 
-#include "kern_bpf_node.h"
+#include "kern/node.h"
 
 #define KB 1024
 #define KB_MASK         (~(KB - 1))
@@ -51,30 +64,15 @@ static __always_inline void prov_update_task(struct task_struct *task,
     prov->task_info.hw_vm = u64_max(current_task_hw_vm, prov->task_info.vm) * IOC_PAGE_SIZE / KB;
     bpf_probe_read(&current_task_hw_rss, sizeof(current_task_hw_rss), &mm->hiwater_rss);
     prov->task_info.hw_rss = u64_max(current_task_hw_rss, prov->task_info.rss) * IOC_PAGE_SIZE / KB;
-#ifdef CONFIG_TASK_IO_ACCOUNTING
-    bpf_probe_read(&prov->task_info.rbytes, sizeof(prov->task_info.rbytes), &task->ioac.read_bytes);
-    prov->task_info.rbytes &= KB_MASK;
-    bpf_probe_read(&prov->task_info.wbytes, sizeof(prov->task_info.wbytes), &task->ioac.write_bytes);
-    prov->task_info.wbytes &= KB_MASK;
-    bpf_probe_read(&prov->task_info.cancel_wbytes, sizeof(prov->task_info.cancel_wbytes), &task->ioac.cancelled_write_bytes);
-    prov->task_info.cancel_wbytes &= KB_MASK;
-#else
-    bpf_probe_read(&prov->task_info.rbytes, sizeof(prov->task_info.rbytes), &task->ioac.rchar);
-    prov->task_info.rbytes &= KB_MASK;
-    bpf_probe_read(&prov->task_info.wbytes, sizeof(prov->task_info.wbytes), &task->ioac.wchar);
-    prov->task_info.wbytes &= KB_MASK;
-    prov->task_info.cancel_wbytes = 0;
-#endif
 }
 
 /* Create a provenance entry for a task if it does not exist
  * and insert it into the @task_map; otherwise, updates its
  * existing provenance. Return either the new provenance entry
  * pointer or the updated provenance entry pointer. */
-static __always_inline union prov_elt* get_or_create_task_prov(struct task_struct *task) {
-		if (!task) {
-			return NULL;
-		}
+ static __always_inline union prov_elt* get_or_create_task_prov(struct task_struct *task) {
+    if (!task)
+        return NULL;
 
     union prov_elt prov_tmp;
     uint64_t key = get_key(task);
@@ -97,5 +95,5 @@ static __always_inline union prov_elt* get_or_create_task_prov(struct task_struc
         prov_on_map = bpf_map_lookup_elem(&task_map, &key);
     }
     return prov_on_map;
-}
+ }
 #endif

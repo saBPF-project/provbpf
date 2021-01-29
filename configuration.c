@@ -1,11 +1,27 @@
+/* SPDX-License-Identifier: GPL-2.0 */
+/*
+ * Copyright (C) 2020-2021 Harvard University
+ * Copyright (C) 2020-2021 University of Bristol
+ *
+ * Author: Thomas Pasquier <thomas.pasquier@bristol.ac.uk>
+ * Author: Bogdan Stelea <bs17580@bristol.ac.uk>
+ * Author: Soo Yee Lim <sooyee.lim@bristol.ac.uk>
+ * Author: Xueyuan "Michael" Han <hanx@g.harvard.edu>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2, as
+ * published by the Free Software Foundation; either version 2 of the License,
+ * or (at your option) any later version.
+ */
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ini.h>
 #include <time.h>
+#include <syslog.h>
 
-#include "camflow_bpf_configuration.h"
+#include "usr/configuration.h"
 
 #define CONFIG_PATH "/etc/provbpf.ini"
 
@@ -43,7 +59,7 @@ static int handler(void* user, const char* section, const char* name,
         } else if(strcmp(value, "terminal")==0) {
             pconfig->output = CF_BPF_TERMINAL;
         } else {
-            printf("\n\nUnknown output: %s\n\n", value);
+            syslog(LOG_ERR, "ProvBPF: Unknown output type: %s.", value);
             return -1;
         }
     } else if(MATCH("general", "format")) {
@@ -52,7 +68,7 @@ static int handler(void* user, const char* section, const char* name,
         } else if(strcmp(value, "spade")==0) {
             pconfig->format = CF_BPF_SPADE;
         } else {
-            printf("\n\nUnknown output: %s\n\n", value);
+            syslog(LOG_ERR, "ProvBPF: Unknown output format: %s.", value);
             return -1;
         }
     } else {
@@ -64,7 +80,7 @@ static int handler(void* user, const char* section, const char* name,
 void read_config(void){
   memset(&__config, 0, sizeof(configuration));
   if (ini_parse(CONFIG_PATH, handler, &__config) < 0) {
-      printf("Can't load configuration: %s\n", CONFIG_PATH);
+      syslog(LOG_ERR, "ProvBPF: Can't load configuration: %s.", CONFIG_PATH);
       exit(-1);
   }
 }

@@ -1,9 +1,3 @@
-target := bpf_camflow
-kernel-version := 5.8
-
-submodule:
-	git submodule update --init --recursive
-
 build_libbpf:
 	cd ~ && git clone https://github.com/libbpf/libbpf
 	cd ~/libbpf/src && make
@@ -18,21 +12,14 @@ build_kernel:
 	cd ~/fedora && sudo $(MAKE) modules_install
 	cd ~/fedora && sudo $(MAKE) install
 
-build_libprovenance:
-	cd libprovenance/src && sed -i -e "s/INCLUDES = -I..\/include/INCLUDES = -I..\/include -I..\/..\/camflow-dev\/include\/uapi/g" Makefile
-	cd libprovenance && $(MAKE) prepare
-	cd libprovenance && $(MAKE) all
-	cd libprovenance && $(MAKE) install
-	cd libprovenance/src && sed -i -e "s/INCLUDES = -I..\/include -I..\/..\/camflow-dev\/include\/uapi/INCLUDES = -I..\/include/g" Makefile
-
-prepare: submodule build_libbpf build_kernel build_libprovenance
+prepare: build_libbpf build_kernel
 
 btf:
-	bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
-	cp -f vmlinux.h .circleci/_vmlinux.h
+	bpftool btf dump file /sys/kernel/btf/vmlinux format c > include/kern/vmlinux.h
+	cp -f include/kern/vmlinux.h .circleci/_vmlinux.h
 
 btf_circle:
-	cp -f .circleci/_vmlinux.h vmlinux.h
+	cp -f .circleci/_vmlinux.h include/kern/vmlinux.h
 
 kern:
 	clang -O2 -Wall \
@@ -44,36 +31,70 @@ kern:
 	-Wno-gnu-variable-sized-type-not-at-end \
 	-Wno-address-of-packed-member -Wno-tautological-compare \
 	-Wno-unknown-warning-option \
-	-Icamflow-dev/include/uapi \
 	-Iinclude \
-	-target bpf -c $(target)_kern.c -o $(target)_kern.o
+	-target bpf -c kern.c -o provbpf.o
 
 skel:
-	bpftool gen skeleton $(target)_kern.o > $(target).skel.h
+	bpftool gen skeleton provbpf.o > include/usr/provbpf.skel.h
 
 usr:
-	clang camflow_bpf_record.c -o camflow_bpf_record.o \
-	-Icamflow-dev/include/uapi -Iinclude -c
-	clang camflow_bpf_id.c -o camflow_bpf_id.o \
-	-Icamflow-dev/include/uapi -Iinclude -c
-	clang camflow_bpf_configuration.c -o camflow_bpf_configuration.o \
-	-Icamflow-dev/include/uapi -Iinclude -c
-	clang $(target)_usr.c -o $(target)_usr.o -Icamflow-dev/include/uapi \
-	-Iinclude -c
+	clang utils.c -o utils.o -Iinclude -c
+	clang types.c -o types.o -Iinclude -c
+	clang spade.c -o spade.o -Iinclude -c
+	clang w3c.c -o w3c.o -Iinclude -c
+	clang record.c -o record.o -Iinclude -c
+	clang configuration.c -o configuration.o -Iinclude -c
+	clang id.c -o id.o -Iinclude -c
+	clang service.c -o service.o -Iinclude -c
 	clang -o provbpfd \
-	$(target)_usr.o \
-	camflow_bpf_record.o \
-	camflow_bpf_id.o \
-	camflow_bpf_configuration.o \
-	-lbpf -lprovenance -lpthread -linih
+	service.o \
+	record.o \
+	id.o \
+	configuration.o \
+	spade.o \
+	w3c.o \
+	types.o \
+	utils.o \
+	-lbpf -lpthread -linih
 
-all: clean btf kern skel usr
+usr_dbg:
+	clang -g utils.c -o utils.o -Iinclude -c
+	clang -g types.c -o types.o -Iinclude -c
+	clang -g spade.c -o spade.o -Iinclude -c
+	clang -g w3c.c -o w3c.o -Iinclude -c
+	clang -g record.c -o record.o -Iinclude -c
+	clang -g configuration.c -o configuration.o -Iinclude -c
+	clang -g id.c -o id.o -Iinclude -c
+	clang -g service.c -o service.o -Iinclude -c
+	clang -g -o provbpfd \
+	service.o \
+	record.o \
+	id.o \
+	configuration.o \
+	spade.o \
+	w3c.o \
+	types.o \
+	-lbpf -lpthread -linih
+
+update_commit:
+	ruby ./scripts/update_commit.rb
+
+remove_commit:
+	ruby ./scripts/remove_commit.rb
+
+all: clean btf update_commit kern skel usr remove_commit
 
 install:
 	sudo cp --force ./provbpf.ini /etc/provbpf.ini
 	sudo cp --force ./provbpfd /usr/bin/provbpfd
 	sudo cp --force ./provbpfd.service /etc/systemd/system/provbpfd.service
 	sudo systemctl enable provbpfd.service
+
+start:
+	sudo systemctl start provbpfd.service
+
+stop:
+	sudo systemctl stop provbpfd.service
 
 uninstall:
 	sudo systemctl stop provbpfd.service
@@ -86,6 +107,10 @@ run:
 	rm -rf audit.log
 	sudo ./provbpfd
 
+run_valgrind: usr_dbg
+	rm -rf audit.log
+	sudo valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./provbpfd
+
 rpm:
 	mkdir -p ~/rpmbuild/{RPMS,SRPMS,BUILD,SOURCES,SPECS,tmp}
 	cp -f ./provbpf.spec ~/rpmbuild/SPECS/provbpf.spec
@@ -95,6 +120,6 @@ rpm:
 
 clean:
 	rm -f *.o
-	rm -f *.skel.h
-	rm -rf vmlinux.h
+	rm -f include/usr/provbpf.skel.h
+	rm -f include/kern/vmlinux.h
 	rm -rf output
