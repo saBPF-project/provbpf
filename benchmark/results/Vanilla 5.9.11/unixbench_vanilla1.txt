@@ -1,0 +1,196 @@
+make[1]: Entering directory '/home/soo/Camflow/camflow-bpf/benchmark/build/byte-unixbench/UnixBench'
+gcc -o pgms/arithoh -Wall -pedantic -O3 -ffast-math -march=native -mtune=native -I ./src -DTIME -Darithoh src/arith.c 
+gcc -o pgms/register -Wall -pedantic -O3 -ffast-math -march=native -mtune=native -I ./src -DTIME -Ddatum='register int' src/arith.c 
+gcc -o pgms/short -Wall -pedantic -O3 -ffast-math -march=native -mtune=native -I ./src -DTIME -Ddatum=short src/arith.c 
+gcc -o pgms/int -Wall -pedantic -O3 -ffast-math -march=native -mtune=native -I ./src -DTIME -Ddatum=int src/arith.c 
+gcc -o pgms/long -Wall -pedantic -O3 -ffast-math -march=native -mtune=native -I ./src -DTIME -Ddatum=long src/arith.c 
+gcc -o pgms/float -Wall -pedantic -O3 -ffast-math -march=native -mtune=native -I ./src -DTIME -Ddatum=float src/arith.c 
+gcc -o pgms/double -Wall -pedantic -O3 -ffast-math -march=native -mtune=native -I ./src -DTIME -Ddatum=double src/arith.c 
+gcc -o pgms/hanoi -Wall -pedantic -O3 -ffast-math -march=native -mtune=native -I ./src -DTIME src/hanoi.c 
+gcc -o pgms/syscall -Wall -pedantic -O3 -ffast-math -march=native -mtune=native -I ./src -DTIME src/syscall.c 
+gcc -o pgms/context1 -Wall -pedantic -O3 -ffast-math -march=native -mtune=native -I ./src -DTIME src/context1.c 
+gcc -o pgms/pipe -Wall -pedantic -O3 -ffast-math -march=native -mtune=native -I ./src -DTIME src/pipe.c 
+gcc -o pgms/spawn -Wall -pedantic -O3 -ffast-math -march=native -mtune=native -I ./src -DTIME src/spawn.c 
+gcc -o pgms/execl -Wall -pedantic -O3 -ffast-math -march=native -mtune=native -I ./src -DTIME src/execl.c 
+gcc -o pgms/dhry2 -Wall -pedantic -O3 -ffast-math -march=native -mtune=native -I ./src -DTIME -DHZ= ./src/dhry_1.c ./src/dhry_2.c
+gcc -o pgms/dhry2reg -Wall -pedantic -O3 -ffast-math -march=native -mtune=native -I ./src -DTIME -DHZ= -DREG=register ./src/dhry_1.c ./src/dhry_2.c
+gcc -o pgms/looper -Wall -pedantic -O3 -ffast-math -march=native -mtune=native -I ./src -DTIME src/looper.c 
+gcc -o pgms/fstime -Wall -pedantic -O3 -ffast-math -march=native -mtune=native -I ./src -DTIME src/fstime.c 
+gcc -o pgms/whetstone-double -Wall -pedantic -O3 -ffast-math -march=native -mtune=native -I ./src -DTIME -DDP -DGTODay -DUNIXBENCH src/whets.c -lm
+make all
+make[2]: Entering directory '/home/soo/Camflow/camflow-bpf/benchmark/build/byte-unixbench/UnixBench'
+make distr
+make[3]: Entering directory '/home/soo/Camflow/camflow-bpf/benchmark/build/byte-unixbench/UnixBench'
+Checking distribution of files
+./pgms  exists
+./src  exists
+./testdir  exists
+make[3]: Leaving directory '/home/soo/Camflow/camflow-bpf/benchmark/build/byte-unixbench/UnixBench'
+make programs
+make[3]: Entering directory '/home/soo/Camflow/camflow-bpf/benchmark/build/byte-unixbench/UnixBench'
+make[3]: Nothing to be done for 'programs'.
+make[3]: Leaving directory '/home/soo/Camflow/camflow-bpf/benchmark/build/byte-unixbench/UnixBench'
+make[2]: Leaving directory '/home/soo/Camflow/camflow-bpf/benchmark/build/byte-unixbench/UnixBench'
+make[1]: Leaving directory '/home/soo/Camflow/camflow-bpf/benchmark/build/byte-unixbench/UnixBench'
+
+   #    #  #    #  #  #    #          #####   ######  #    #   ####   #    #
+   #    #  ##   #  #   #  #           #    #  #       ##   #  #    #  #    #
+   #    #  # #  #  #    ##            #####   #####   # #  #  #       ######
+   #    #  #  # #  #    ##            #    #  #       #  # #  #       #    #
+   #    #  #   ##  #   #  #           #    #  #       #   ##  #    #  #    #
+    ####   #    #  #  #    #          #####   ######  #    #   ####   #    #
+
+   Version 5.1.3                      Based on the Byte Magazine Unix Benchmark
+
+   Multi-CPU version                  Version 5 revisions by Ian Smith,
+                                      Sunnyvale, CA, USA
+   January 13, 2011                   johantheghost at yahoo period com
+
+
+1 x Dhrystone 2 using register variables  1 2 3 4 5 6 7 8 9 10
+
+1 x Double-Precision Whetstone  1 2 3 4 5 6 7 8 9 10
+
+1 x Execl Throughput  1 2 3
+
+1 x File Copy 1024 bufsize 2000 maxblocks  1 2 3
+
+1 x File Copy 256 bufsize 500 maxblocks  1 2 3
+
+1 x File Copy 4096 bufsize 8000 maxblocks  1 2 3
+
+1 x Pipe Throughput  1 2 3 4 5 6 7 8 9 10
+
+1 x Pipe-based Context Switching  1 2 3 4 5 6 7 8 9 10
+
+1 x Process Creation  1 2 3
+
+1 x System Call Overhead  1 2 3 4 5 6 7 8 9 10
+
+1 x Shell Scripts (1 concurrent)  1 2 3
+
+1 x Shell Scripts (8 concurrent)  1 2 3
+
+12 x Dhrystone 2 using register variables  1 2 3 4 5 6 7 8 9 10
+
+12 x Double-Precision Whetstone  1 2 3 4 5 6 7 8 9 10
+
+12 x Execl Throughput  1 2 3
+
+12 x File Copy 1024 bufsize 2000 maxblocks  1 2 3
+
+12 x File Copy 256 bufsize 500 maxblocks  1 2 3
+
+12 x File Copy 4096 bufsize 8000 maxblocks  1 2 3
+
+12 x Pipe Throughput  1 2 3 4 5 6 7 8 9 10
+
+12 x Pipe-based Context Switching  1 2 3 4 5 6 7 8 9 10
+
+12 x Process Creation  1 2 3
+
+12 x System Call Overhead  1 2 3 4 5 6 7 8 9 10
+
+12 x Shell Scripts (1 concurrent)  1 2 3
+
+12 x Shell Scripts (8 concurrent)  1 2 3
+
+========================================================================
+   BYTE UNIX Benchmarks (Version 5.1.3)
+
+   System: 192.168.1.110: GNU/Linux
+   OS: GNU/Linux -- 5.9.11nocamflow0.7.1+ -- #1 SMP Thu Jan 7 19:48:24 GMT 2021
+   Machine: x86_64 (x86_64)
+   Language: en_US.utf8 (charmap="UTF-8", collate="UTF-8")
+   CPU 0: Intel(R) Core(TM) i7-8850H CPU @ 2.60GHz (5200.0 bogomips)
+          Hyper-Threading, x86-64, MMX, Physical Address Ext, SYSENTER/SYSEXIT, SYSCALL/SYSRET, Intel virtualization
+   CPU 1: Intel(R) Core(TM) i7-8850H CPU @ 2.60GHz (5200.0 bogomips)
+          Hyper-Threading, x86-64, MMX, Physical Address Ext, SYSENTER/SYSEXIT, SYSCALL/SYSRET, Intel virtualization
+   CPU 2: Intel(R) Core(TM) i7-8850H CPU @ 2.60GHz (5200.0 bogomips)
+          Hyper-Threading, x86-64, MMX, Physical Address Ext, SYSENTER/SYSEXIT, SYSCALL/SYSRET, Intel virtualization
+   CPU 3: Intel(R) Core(TM) i7-8850H CPU @ 2.60GHz (5200.0 bogomips)
+          Hyper-Threading, x86-64, MMX, Physical Address Ext, SYSENTER/SYSEXIT, SYSCALL/SYSRET, Intel virtualization
+   CPU 4: Intel(R) Core(TM) i7-8850H CPU @ 2.60GHz (5200.0 bogomips)
+          Hyper-Threading, x86-64, MMX, Physical Address Ext, SYSENTER/SYSEXIT, SYSCALL/SYSRET, Intel virtualization
+   CPU 5: Intel(R) Core(TM) i7-8850H CPU @ 2.60GHz (5200.0 bogomips)
+          Hyper-Threading, x86-64, MMX, Physical Address Ext, SYSENTER/SYSEXIT, SYSCALL/SYSRET, Intel virtualization
+   CPU 6: Intel(R) Core(TM) i7-8850H CPU @ 2.60GHz (5200.0 bogomips)
+          Hyper-Threading, x86-64, MMX, Physical Address Ext, SYSENTER/SYSEXIT, SYSCALL/SYSRET, Intel virtualization
+   CPU 7: Intel(R) Core(TM) i7-8850H CPU @ 2.60GHz (5200.0 bogomips)
+          Hyper-Threading, x86-64, MMX, Physical Address Ext, SYSENTER/SYSEXIT, SYSCALL/SYSRET, Intel virtualization
+   CPU 8: Intel(R) Core(TM) i7-8850H CPU @ 2.60GHz (5200.0 bogomips)
+          Hyper-Threading, x86-64, MMX, Physical Address Ext, SYSENTER/SYSEXIT, SYSCALL/SYSRET, Intel virtualization
+   CPU 9: Intel(R) Core(TM) i7-8850H CPU @ 2.60GHz (5200.0 bogomips)
+          Hyper-Threading, x86-64, MMX, Physical Address Ext, SYSENTER/SYSEXIT, SYSCALL/SYSRET, Intel virtualization
+   CPU 10: Intel(R) Core(TM) i7-8850H CPU @ 2.60GHz (5200.0 bogomips)
+          Hyper-Threading, x86-64, MMX, Physical Address Ext, SYSENTER/SYSEXIT, SYSCALL/SYSRET, Intel virtualization
+   CPU 11: Intel(R) Core(TM) i7-8850H CPU @ 2.60GHz (5200.0 bogomips)
+          Hyper-Threading, x86-64, MMX, Physical Address Ext, SYSENTER/SYSEXIT, SYSCALL/SYSRET, Intel virtualization
+   22:23:33 up  2:09,  1 user,  load average: 0.61, 0.32, 0.13; runlevel 2021-01-07
+
+------------------------------------------------------------------------
+Benchmark Run: Thu Jan 07 2021 22:23:33 - 22:51:34
+12 CPUs in system; running 1 parallel copy of tests
+
+Dhrystone 2 using register variables       54119770.5 lps   (10.0 s, 7 samples)
+Double-Precision Whetstone                     8840.0 MWIPS (9.9 s, 7 samples)
+Execl Throughput                               5408.2 lps   (30.0 s, 2 samples)
+File Copy 1024 bufsize 2000 maxblocks        793799.0 KBps  (30.0 s, 2 samples)
+File Copy 256 bufsize 500 maxblocks          203321.0 KBps  (30.0 s, 2 samples)
+File Copy 4096 bufsize 8000 maxblocks       2397223.2 KBps  (30.0 s, 2 samples)
+Pipe Throughput                             1024975.8 lps   (10.0 s, 7 samples)
+Pipe-based Context Switching                 213372.1 lps   (10.0 s, 7 samples)
+Process Creation                              13840.4 lps   (30.0 s, 2 samples)
+Shell Scripts (1 concurrent)                   4032.8 lpm   (60.0 s, 2 samples)
+Shell Scripts (8 concurrent)                   3071.7 lpm   (60.0 s, 2 samples)
+System Call Overhead                         581071.0 lps   (10.0 s, 7 samples)
+
+System Benchmarks Index Values               BASELINE       RESULT    INDEX
+Dhrystone 2 using register variables         116700.0   54119770.5   4637.5
+Double-Precision Whetstone                       55.0       8840.0   1607.3
+Execl Throughput                                 43.0       5408.2   1257.7
+File Copy 1024 bufsize 2000 maxblocks          3960.0     793799.0   2004.5
+File Copy 256 bufsize 500 maxblocks            1655.0     203321.0   1228.5
+File Copy 4096 bufsize 8000 maxblocks          5800.0    2397223.2   4133.1
+Pipe Throughput                               12440.0    1024975.8    823.9
+Pipe-based Context Switching                   4000.0     213372.1    533.4
+Process Creation                                126.0      13840.4   1098.4
+Shell Scripts (1 concurrent)                     42.4       4032.8    951.1
+Shell Scripts (8 concurrent)                      6.0       3071.7   5119.5
+System Call Overhead                          15000.0     581071.0    387.4
+                                                                   ========
+System Benchmarks Index Score                                        1450.7
+
+------------------------------------------------------------------------
+Benchmark Run: Thu Jan 07 2021 22:51:34 - 23:19:43
+12 CPUs in system; running 12 parallel copies of tests
+
+Dhrystone 2 using register variables      326593719.4 lps   (10.0 s, 7 samples)
+Double-Precision Whetstone                    75607.6 MWIPS (10.5 s, 7 samples)
+Execl Throughput                              30119.8 lps   (30.0 s, 2 samples)
+File Copy 1024 bufsize 2000 maxblocks       1304805.9 KBps  (30.0 s, 2 samples)
+File Copy 256 bufsize 500 maxblocks          332662.7 KBps  (30.0 s, 2 samples)
+File Copy 4096 bufsize 8000 maxblocks       3996395.1 KBps  (30.0 s, 2 samples)
+Pipe Throughput                             6087936.8 lps   (10.0 s, 7 samples)
+Pipe-based Context Switching                1346998.9 lps   (10.0 s, 7 samples)
+Process Creation                              69376.9 lps   (30.0 s, 2 samples)
+Shell Scripts (1 concurrent)                  41080.8 lpm   (60.0 s, 2 samples)
+Shell Scripts (8 concurrent)                   5537.4 lpm   (60.1 s, 2 samples)
+System Call Overhead                        3391789.2 lps   (10.0 s, 7 samples)
+
+System Benchmarks Index Values               BASELINE       RESULT    INDEX
+Dhrystone 2 using register variables         116700.0  326593719.4  27985.8
+Double-Precision Whetstone                       55.0      75607.6  13746.8
+Execl Throughput                                 43.0      30119.8   7004.6
+File Copy 1024 bufsize 2000 maxblocks          3960.0    1304805.9   3295.0
+File Copy 256 bufsize 500 maxblocks            1655.0     332662.7   2010.0
+File Copy 4096 bufsize 8000 maxblocks          5800.0    3996395.1   6890.3
+Pipe Throughput                               12440.0    6087936.8   4893.8
+Pipe-based Context Switching                   4000.0    1346998.9   3367.5
+Process Creation                                126.0      69376.9   5506.1
+Shell Scripts (1 concurrent)                     42.4      41080.8   9688.9
+Shell Scripts (8 concurrent)                      6.0       5537.4   9229.0
+System Call Overhead                          15000.0    3391789.2   2261.2
+                                                                   ========
+System Benchmarks Index Score                                        6018.0
+

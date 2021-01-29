@@ -1,0 +1,295 @@
+make[1]: Entering directory '/home/soo/Camflow/camflow-bpf/benchmark/build/lmbench/results'
+
+                 L M B E N C H  3 . 0   S U M M A R Y
+                 ------------------------------------
+		 (Alpha software, do not distribute)
+
+Basic system parameters
+------------------------------------------------------------------------------
+Host                 OS Description              Mhz  tlb  cache  mem   scal
+                                                     pages line   par   load
+                                                           bytes  
+--------- ------------- ----------------------- ---- ----- ----- ------ ----
+192.168.1  Linux 5.9.11        x86_64-linux-gnu 1000                       1
+192.168.1  Linux 5.9.11        x86_64-linux-gnu 1000                       1
+camflow1  Linux 5.7.7ca        x86_64-linux-gnu 1000                       1
+camflow2  Linux 5.7.7ca        x86_64-linux-gnu 1000                       1
+nocamflow Linux 5.7.7ca        x86_64-linux-gnu 1000                       1
+nocamflow Linux 5.7.7ca        x86_64-linux-gnu 1000                       1
+nocamflow Linux 5.9.11c        x86_64-linux-gnu 1000                       1
+nocamflow Linux 5.9.11c        x86_64-linux-gnu 1000                       1
+provbpfv1  Linux 5.9.16        x86_64-linux-gnu 2142                       1
+provbpfv1  Linux 5.9.16        x86_64-linux-gnu 2142                       1
+provbpfv1  Linux 5.9.11        x86_64-linux-gnu 1000                       1
+provbpfv1  Linux 5.9.11        x86_64-linux-gnu 1000                       1
+provbpfv2  Linux 5.9.11        x86_64-linux-gnu 1000                       1
+provbpfv2  Linux 5.9.11        x86_64-linux-gnu 1000                       1
+vanilla1  Linux 5.7.7no        x86_64-linux-gnu 1000                       1
+vanilla2  Linux 5.7.7no        x86_64-linux-gnu 1000                       1
+vanilla3  Linux 5.9.11n        x86_64-linux-gnu 1000                       1
+vanilla4  Linux 5.9.11n        x86_64-linux-gnu 1000                       1
+
+Processor, Processes - times in microseconds - smaller is better
+------------------------------------------------------------------------------
+Host                 OS  Mhz null null      open slct sig  sig  fork exec sh  
+                             call  I/O stat clos TCP  inst hndl proc proc proc
+--------- ------------- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+192.168.1  Linux 5.9.11 1000                                                  
+192.168.1  Linux 5.9.11 1000                                                  
+camflow1  Linux 5.7.7ca 1000                                                  
+camflow2  Linux 5.7.7ca 1000                                                  
+nocamflow Linux 5.7.7ca 1000                                                  
+nocamflow Linux 5.7.7ca 1000                                                  
+nocamflow Linux 5.9.11c 1000                                                  
+nocamflow Linux 5.9.11c 1000                                                  
+provbpfv1  Linux 5.9.16 2142                                                  
+provbpfv1  Linux 5.9.16 2142                                                  
+provbpfv1  Linux 5.9.11 1000                                                  
+provbpfv1  Linux 5.9.11 1000                                                  
+provbpfv2  Linux 5.9.11 1000                                                  
+provbpfv2  Linux 5.9.11 1000                                                  
+vanilla1  Linux 5.7.7no 1000                                                  
+vanilla2  Linux 5.7.7no 1000                                                  
+vanilla3  Linux 5.9.11n 1000                                                  
+vanilla4  Linux 5.9.11n 1000                                                  
+
+Basic integer operations - times in nanoseconds - smaller is better
+-------------------------------------------------------------------
+Host                 OS  intgr intgr  intgr  intgr  intgr  
+                          bit   add    mul    div    mod   
+--------- ------------- ------ ------ ------ ------ ------ 
+192.168.1  Linux 5.9.11                                   
+192.168.1  Linux 5.9.11                                   
+camflow1  Linux 5.7.7ca                                   
+camflow2  Linux 5.7.7ca                                   
+nocamflow Linux 5.7.7ca                                   
+nocamflow Linux 5.7.7ca                                   
+nocamflow Linux 5.9.11c                                   
+nocamflow Linux 5.9.11c                                   
+provbpfv1  Linux 5.9.16                                   
+provbpfv1  Linux 5.9.16                                   
+provbpfv1  Linux 5.9.11                                   
+provbpfv1  Linux 5.9.11                                   
+provbpfv2  Linux 5.9.11                                   
+provbpfv2  Linux 5.9.11                                   
+vanilla1  Linux 5.7.7no                                   
+vanilla2  Linux 5.7.7no                                   
+vanilla3  Linux 5.9.11n                                   
+vanilla4  Linux 5.9.11n                                   
+
+Basic uint64 operations - times in nanoseconds - smaller is better
+------------------------------------------------------------------
+Host                 OS int64  int64  int64  int64  int64  
+                         bit    add    mul    div    mod   
+--------- ------------- ------ ------ ------ ------ ------ 
+192.168.1  Linux 5.9.11                                   
+192.168.1  Linux 5.9.11                                   
+camflow1  Linux 5.7.7ca                                   
+camflow2  Linux 5.7.7ca                                   
+nocamflow Linux 5.7.7ca                                   
+nocamflow Linux 5.7.7ca                                   
+nocamflow Linux 5.9.11c                                   
+nocamflow Linux 5.9.11c                                   
+provbpfv1  Linux 5.9.16                                   
+provbpfv1  Linux 5.9.16                                   
+provbpfv1  Linux 5.9.11                                   
+provbpfv1  Linux 5.9.11                                   
+provbpfv2  Linux 5.9.11                                   
+provbpfv2  Linux 5.9.11                                   
+vanilla1  Linux 5.7.7no                                   
+vanilla2  Linux 5.7.7no                                   
+vanilla3  Linux 5.9.11n                                   
+vanilla4  Linux 5.9.11n                                   
+
+Basic float operations - times in nanoseconds - smaller is better
+-----------------------------------------------------------------
+Host                 OS  float  float  float  float
+                         add    mul    div    bogo
+--------- ------------- ------ ------ ------ ------ 
+192.168.1  Linux 5.9.11                            
+192.168.1  Linux 5.9.11                            
+camflow1  Linux 5.7.7ca                            
+camflow2  Linux 5.7.7ca                            
+nocamflow Linux 5.7.7ca                            
+nocamflow Linux 5.7.7ca                            
+nocamflow Linux 5.9.11c                            
+nocamflow Linux 5.9.11c                            
+provbpfv1  Linux 5.9.16                            
+provbpfv1  Linux 5.9.16                            
+provbpfv1  Linux 5.9.11                            
+provbpfv1  Linux 5.9.11                            
+provbpfv2  Linux 5.9.11                            
+provbpfv2  Linux 5.9.11                            
+vanilla1  Linux 5.7.7no                            
+vanilla2  Linux 5.7.7no                            
+vanilla3  Linux 5.9.11n                            
+vanilla4  Linux 5.9.11n                            
+
+Basic double operations - times in nanoseconds - smaller is better
+------------------------------------------------------------------
+Host                 OS  double double double double
+                         add    mul    div    bogo
+--------- ------------- ------  ------ ------ ------ 
+192.168.1  Linux 5.9.11                            
+192.168.1  Linux 5.9.11                            
+camflow1  Linux 5.7.7ca                            
+camflow2  Linux 5.7.7ca                            
+nocamflow Linux 5.7.7ca                            
+nocamflow Linux 5.7.7ca                            
+nocamflow Linux 5.9.11c                            
+nocamflow Linux 5.9.11c                            
+provbpfv1  Linux 5.9.16                            
+provbpfv1  Linux 5.9.16                            
+provbpfv1  Linux 5.9.11                            
+provbpfv1  Linux 5.9.11                            
+provbpfv2  Linux 5.9.11                            
+provbpfv2  Linux 5.9.11                            
+vanilla1  Linux 5.7.7no                            
+vanilla2  Linux 5.7.7no                            
+vanilla3  Linux 5.9.11n                            
+vanilla4  Linux 5.9.11n                            
+
+Context switching - times in microseconds - smaller is better
+-------------------------------------------------------------------------
+Host                 OS  2p/0K 2p/16K 2p/64K 8p/16K 8p/64K 16p/16K 16p/64K
+                         ctxsw  ctxsw  ctxsw ctxsw  ctxsw   ctxsw   ctxsw
+--------- ------------- ------ ------ ------ ------ ------ ------- -------
+192.168.1  Linux 5.9.11 1.3900 1.3800 1.6400 1.9100 1.8700 2.58000 2.54000
+192.168.1  Linux 5.9.11 1.4500 1.3800 1.5800 1.9600 2.1900 2.39000 3.17000
+camflow1  Linux 5.7.7ca 1.7400 1.5800 1.5700 2.3400 2.3300 2.98000 2.76000
+camflow2  Linux 5.7.7ca 1.5300 1.5000 2.0400 2.1000 2.4000 2.72000 3.40000
+nocamflow Linux 5.7.7ca        1.5300 2.0600 2.2100 2.7300 2.25000 3.93000
+nocamflow Linux 5.7.7ca        1.4100 1.6000 2.2300 2.3700 2.76000 2.58000
+nocamflow Linux 5.9.11c 1.4400 1.3600 1.7400 1.8900 2.1800 2.38000 2.21000
+nocamflow Linux 5.9.11c 1.2600 1.6000 1.9100 2.0200 2.3800 2.24000 3.00000
+provbpfv1  Linux 5.9.16 1.2600 1.6200 2.2000 2.3700 3.0600 2.25000 2.62000
+provbpfv1  Linux 5.9.16 1.3800 1.5800 1.9000 1.8800 2.0700 3.32000 2.59000
+provbpfv1  Linux 5.9.11 1.4600 1.5200 2.0800 2.0900 2.2300 2.36000 2.83000
+provbpfv1  Linux 5.9.11 1.4400 1.3500 1.2500 1.8900 1.4800 2.78000 2.37000
+provbpfv2  Linux 5.9.11 1.3400 1.4300 1.6600 2.0100 2.0100 2.24000 2.80000
+provbpfv2  Linux 5.9.11 1.3400 1.3900 1.3900 2.0400 2.1500 2.32000 2.86000
+vanilla1  Linux 5.7.7no        1.4900 1.8400 2.1500 2.3600 2.49000 3.00000
+vanilla2  Linux 5.7.7no        1.4800 1.4900 2.2400 2.1900 2.38000 3.26000
+vanilla3  Linux 5.9.11n 1.4300 1.3700 1.7600 1.9100 2.4500 2.36000 3.02000
+vanilla4  Linux 5.9.11n 1.4900 1.5800 1.7300 2.0900 2.1800 2.35000 2.53000
+
+*Local* Communication latencies in microseconds - smaller is better
+---------------------------------------------------------------------
+Host                 OS 2p/0K  Pipe AF     UDP  RPC/   TCP  RPC/ TCP
+                        ctxsw       UNIX         UDP         TCP conn
+--------- ------------- ----- ----- ---- ----- ----- ----- ----- ----
+192.168.1  Linux 5.9.11 1.390             10.7        12.9        37.
+192.168.1  Linux 5.9.11 1.450             10.6        12.9        38.
+camflow1  Linux 5.7.7ca 1.740             17.2        22.7           
+camflow2  Linux 5.7.7ca 1.530             17.2        22.8           
+nocamflow Linux 5.7.7ca                   12.0        14.9           
+nocamflow Linux 5.7.7ca                   12.1        14.7           
+nocamflow Linux 5.9.11c 1.440             12.6        15.0           
+nocamflow Linux 5.9.11c 1.260             12.4        15.1           
+provbpfv1  Linux 5.9.16 1.260             10.4        11.8        36.
+provbpfv1  Linux 5.9.16 1.380             10.4        11.7        66.
+provbpfv1  Linux 5.9.11 1.460             10.4        12.0        38.
+provbpfv1  Linux 5.9.11 1.440             10.2        11.2        38.
+provbpfv2  Linux 5.9.11 1.340             13.3        14.4        49.
+provbpfv2  Linux 5.9.11 1.340             12.8        13.6        74.
+vanilla1  Linux 5.7.7no                   10.6        12.7        50.
+vanilla2  Linux 5.7.7no                   10.4        12.6        50.
+vanilla3  Linux 5.9.11n 1.430             11.2        12.8        26.
+vanilla4  Linux 5.9.11n 1.490             11.1        12.7        25.
+
+*Remote* Communication latencies in microseconds - smaller is better
+---------------------------------------------------------------------
+Host                 OS   UDP  RPC/  TCP   RPC/ TCP
+                               UDP         TCP  conn
+--------- ------------- ----- ----- ----- ----- ----
+192.168.1  Linux 5.9.11                             
+192.168.1  Linux 5.9.11                             
+camflow1  Linux 5.7.7ca                             
+camflow2  Linux 5.7.7ca                             
+nocamflow Linux 5.7.7ca                             
+nocamflow Linux 5.7.7ca                             
+nocamflow Linux 5.9.11c                             
+nocamflow Linux 5.9.11c                             
+provbpfv1  Linux 5.9.16                             
+provbpfv1  Linux 5.9.16                             
+provbpfv1  Linux 5.9.11                             
+provbpfv1  Linux 5.9.11                             
+provbpfv2  Linux 5.9.11                             
+provbpfv2  Linux 5.9.11                             
+vanilla1  Linux 5.7.7no                             
+vanilla2  Linux 5.7.7no                             
+vanilla3  Linux 5.9.11n                             
+vanilla4  Linux 5.9.11n                             
+
+File & VM system latencies in microseconds - smaller is better
+-------------------------------------------------------------------------------
+Host                 OS   0K File      10K File     Mmap    Prot   Page   100fd
+                        Create Delete Create Delete Latency Fault  Fault  selct
+--------- ------------- ------ ------ ------ ------ ------- ----- ------- -----
+192.168.1  Linux 5.9.11   15.1 8.6767   22.6   10.9   61.0K                    
+192.168.1  Linux 5.9.11   14.9 9.0817   22.7   10.9   66.4K                    
+camflow1  Linux 5.7.7ca   16.2   10.1   26.5   11.6   72.9K                    
+camflow2  Linux 5.7.7ca   17.2   10.1   27.8   11.2   73.0K                    
+nocamflow Linux 5.7.7ca   13.4 6.2412   20.2 8.3544   60.4K                    
+nocamflow Linux 5.7.7ca   13.1 6.1902   20.6 8.4047   61.5K                    
+nocamflow Linux 5.9.11c   10.3 6.6484   17.1 8.8750   60.2K                    
+nocamflow Linux 5.9.11c   10.7 6.5330   17.5 8.8613   60.8K                    
+provbpfv1  Linux 5.9.16   48.7   31.5   70.5   33.2   64.3K                    
+provbpfv1  Linux 5.9.16   40.1   31.2   47.2   33.3   67.2K                    
+provbpfv1  Linux 5.9.11   44.6   33.8   52.1   35.9   62.6K                    
+provbpfv1  Linux 5.9.11   45.8   33.7   51.1   35.9   62.5K                    
+provbpfv2  Linux 5.9.11  102.0  110.8  119.8  110.4   63.8K                    
+provbpfv2  Linux 5.9.11  115.4  104.8  120.9  105.4   60.5K                    
+vanilla1  Linux 5.7.7no 9.5982 3.9958   15.6 5.9858   61.5K                    
+vanilla2  Linux 5.7.7no 9.4883 3.9958   16.0 5.8903   65.9K                    
+vanilla3  Linux 5.9.11n 7.1099 4.1166   13.7 6.2645   67.6K                    
+vanilla4  Linux 5.9.11n 7.1979 4.1028   13.5 6.3753   69.3K                    
+
+*Local* Communication bandwidths in MB/s - bigger is better
+-----------------------------------------------------------------------------
+Host                OS  Pipe AF    TCP  File   Mmap  Bcopy  Bcopy  Mem   Mem
+                             UNIX      reread reread (libc) (hand) read write
+--------- ------------- ---- ---- ---- ------ ------ ------ ------ ---- -----
+192.168.1  Linux 5.9.11 5567 8488 7850 8737.9  14.9K 6770.1 5864.7 14.K 8985.
+192.168.1  Linux 5.9.11 5674 8642 8056 8746.6  14.9K 6769.8 5866.9 14.K 9025.
+camflow1  Linux 5.7.7ca 4561 7389 6230 7247.5  13.9K 8497.3 5895.4 13.K 8380.
+camflow2  Linux 5.7.7ca 4603 7652 6490 7206.5  13.8K 8455.4 5898.6 13.K 8430.
+nocamflow Linux 5.7.7ca 5336 12.K 7900 8479.8  14.9K 9094.5 6190.9 14.K 9091.
+nocamflow Linux 5.7.7ca 5368 12.K 8010 8447.2  15.1K 7730.0 6149.7 14.K 9102.
+nocamflow Linux 5.9.11c 5558 10.K 7890 8479.1  14.7K 7727.7 5889.6 14.K 9011.
+nocamflow Linux 5.9.11c 5472 11.K 7754 8420.3  15.0K 6879.4 5902.2 14.K 8996.
+provbpfv1  Linux 5.9.16 5538 8730 8097 8486.8  14.5K 7289.3 5910.3 13.K 8770.
+provbpfv1  Linux 5.9.16 5431 8828 7745 8496.0  14.4K 8804.7 6059.1 13.K 8739.
+provbpfv1  Linux 5.9.11 5784 8327 8032 8446.6  14.6K 7774.3 5814.1 13.K 8761.
+provbpfv1  Linux 5.9.11 5651 8246 7793 8455.5  14.5K 6813.6 6081.9 13.K 8786.
+provbpfv2  Linux 5.9.11 5602 12.K 7876 2399.5  14.7K 8787.6 6280.5 14.K 8940.
+provbpfv2  Linux 5.9.11 5339 4715 5475 7309.1  14.8K 8949.4 6307.3 14.K 8980.
+vanilla1  Linux 5.7.7no 5604 15.K 7901 8863.0  15.3K 6870.4 5930.1 14.K 9151.
+vanilla2  Linux 5.7.7no 5465 14.K 8223 8841.4  14.9K 6880.9 5974.3 14.K 9119.
+vanilla3  Linux 5.9.11n 5357 12.K 7957 8693.7  14.9K 7092.3 5950.9 14.K 8988.
+vanilla4  Linux 5.9.11n 5440 12.K 8222 8704.4  14.7K 7204.1 5980.5 14.K 8970.
+
+Memory latencies in nanoseconds - smaller is better
+    (WARNING - may not be correct, check graphs)
+------------------------------------------------------------------------------
+Host                 OS   Mhz   L1 $   L2 $    Main mem    Rand mem    Guesses
+--------- -------------   ---   ----   ----    --------    --------    -------
+192.168.1  Linux 5.9.11  1000     -      -           -    Bad mhz?
+192.168.1  Linux 5.9.11  1000     -      -           -    Bad mhz?
+camflow1  Linux 5.7.7ca  1000     -      -           -    Bad mhz?
+camflow2  Linux 5.7.7ca  1000     -      -           -    Bad mhz?
+nocamflow Linux 5.7.7ca  1000     -      -           -    Bad mhz?
+nocamflow Linux 5.7.7ca  1000     -      -           -    Bad mhz?
+nocamflow Linux 5.9.11c  1000     -      -           -    Bad mhz?
+nocamflow Linux 5.9.11c  1000     -      -           -    Bad mhz?
+provbpfv1  Linux 5.9.16  2142     -      -           -    Bad mhz?
+provbpfv1  Linux 5.9.16  2142     -      -           -    Bad mhz?
+provbpfv1  Linux 5.9.11  1000     -      -           -    Bad mhz?
+provbpfv1  Linux 5.9.11  1000     -      -           -    Bad mhz?
+provbpfv2  Linux 5.9.11  1000     -      -           -    Bad mhz?
+provbpfv2  Linux 5.9.11  1000     -      -           -    Bad mhz?
+vanilla1  Linux 5.7.7no  1000     -      -           -    Bad mhz?
+vanilla2  Linux 5.7.7no  1000     -      -           -    Bad mhz?
+vanilla3  Linux 5.9.11n  1000     -      -           -    Bad mhz?
+vanilla4  Linux 5.9.11n  1000     -      -           -    Bad mhz?
+make[1]: Leaving directory '/home/soo/Camflow/camflow-bpf/benchmark/build/lmbench/results'
