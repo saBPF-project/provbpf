@@ -18,20 +18,20 @@
 
 // NOTE: ring buffer reference:
 // https://elixir.bootlin.com/linux/v5.8/source/tools/testing/selftests/bpf/progs/test_ringbuf.c
-struct {
-	__uint(type, BPF_MAP_TYPE_RINGBUF);
-	/* NOTE: The minimum size seems to be 1 << 12.
-         * Any value smaller than this results in
-         * runtime error. */
-	__uint(max_entries, 4096 * 64);
-} r_buf SEC(".maps");
+struct bpf_map_def SEC("maps") r_buf = {
+    .type = BPF_MAP_TYPE_RINGBUF,
+    /* NOTE: The minimum size seems to be 1 << 12.
+     * Any value smaller than this results in
+     * runtime error. */
+    .max_entries = 4096 * 64,
+};
 
-struct {
-	__uint(type, BPF_MAP_TYPE_ARRAY);
-	__type(key, uint32_t);
-	__type(value, struct capture_policy);
-	__uint(max_entries, 1); 
-} policy_map SEC(".maps");
+struct bpf_map_def SEC("maps") policy_map = {
+    .type = BPF_MAP_TYPE_ARRAY,
+    .key_size = sizeof(uint32_t),
+    .value_size = sizeof(struct capture_policy),
+    .max_entries = 1,
+};
 
 #define INODE_PERCPU_TMP 0
 #define RELATION_PERCPU_TMP 1
@@ -75,20 +75,12 @@ struct bpf_map_def SEC("maps") inode_map = {
     .max_entries = 4096, // TODO: set as big as possible; real size is dynamically adjusted
 };
 
-struct {
-	__uint(type, BPF_MAP_TYPE_INODE_STORAGE);
-	__uint(map_flags, BPF_F_NO_PREALLOC);
-//	__uint(max_entries, 4096);
-	__type(key, int);
-	__type(value, union prov_elt);
-} inode_storage_map SEC(".maps");
-
-struct {
-	__uint(type, BPF_MAP_TYPE_HASH);
-	__type(key, uint64_t);
-	__type(value, union prov_elt);
-	__uint(max_entries, 4096); // TODO: set as big as possible; real size is dynamically adjusted
-} cred_map SEC(".maps");
+struct bpf_map_def SEC("maps") cred_map = {
+    .type = BPF_MAP_TYPE_HASH,
+    .key_size = sizeof(uint64_t),
+    .value_size = sizeof(union prov_elt),
+    .max_entries = 4096, // TODO: set as big as possible; real size is dynamically adjusted
+};
 
 struct bpf_map_def SEC("maps") iattr_map = {
     .type = BPF_MAP_TYPE_HASH,

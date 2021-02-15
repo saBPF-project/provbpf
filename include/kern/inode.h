@@ -55,6 +55,7 @@ static union prov_elt* get_or_create_inode_prov(struct inode *inode) {
 
     key = get_key(inode);
     prov_on_map = bpf_map_lookup_elem(&inode_map, &key);
+//    prov_on_map = bpf_inode_storage_get(&inode_map, inode, 0, BPF_LOCAL_STORAGE_GET_F_CREATE);
 
     // inode provenance already being tracked
     if (prov_on_map) {
@@ -94,7 +95,9 @@ static union prov_elt* get_or_create_inode_prov(struct inode *inode) {
 
         prov_init_inode(inode, prov_tmp);
         bpf_map_update_elem(&inode_map, &key, prov_tmp, BPF_NOEXIST);
+//        bpf_inode_storage_get(&inode_map, inode, prov_tmp, BPF_NOEXIST | BPF_LOCAL_STORAGE_GET_F_CREATE);
         prov_on_map = bpf_map_lookup_elem(&inode_map, &key);
+//        prov_on_map = bpf_inode_storage_get(&inode_map, inode, 0, BPF_LOCAL_STORAGE_GET_F_CREATE);        
     }
     return prov_on_map;
 }

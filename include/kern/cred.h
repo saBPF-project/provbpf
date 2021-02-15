@@ -69,18 +69,18 @@ static __always_inline union prov_elt* get_or_create_cred_prov(const struct cred
 
     union prov_elt prov_tmp;
     uint64_t key = get_key(cred);
-    union prov_elt *prov_on_map = bpf_map_lookup_elem(&cred_map, &key);
+    union prov_elt *prov_on_map ;//= bpf_map_lookup_elem(&cred_map, &key);
     // provenance is already tracked
     if (prov_on_map) {
       // update the cred's provenance since it may have changed
-      prov_update_cred(current_task, prov_on_map);
+//      prov_update_cred(current_task, prov_on_map);
     } else {
       // a new cred
       __builtin_memset(&prov_tmp, 0, sizeof(union prov_elt));
-      prov_init_node(&prov_tmp, ENT_PROC);
+/*      prov_init_node(&prov_tmp, ENT_PROC);
       prov_update_cred(current_task, &prov_tmp);
       bpf_map_update_elem(&cred_map, &key, &prov_tmp, BPF_NOEXIST);
-      prov_on_map = bpf_map_lookup_elem(&cred_map, &key);
+      prov_on_map = bpf_map_lookup_elem(&cred_map, &key);*/
     }
     return prov_on_map;
 }

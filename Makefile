@@ -35,7 +35,7 @@ kern:
 	-Wno-address-of-packed-member -Wno-tautological-compare \
 	-Wno-unknown-warning-option \
 	-Iinclude \
-	-target bpf -c kern.c -o provbpf.o
+	-target bpf -g -c kern.c -o provbpf.o
 
 skel:
 	bpftool gen skeleton provbpf.o > include/usr/provbpf.skel.h
