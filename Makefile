@@ -1,5 +1,8 @@
+libbpf-version=0.3
+
 build_libbpf:
 	cd ~ && git clone https://github.com/libbpf/libbpf
+	cd ~/libbpf/src && git checkout tags/v${libbpf-version}
 	cd ~/libbpf/src && make
 	cd ~/libbpf/src && sudo $(MAKE) install
 
