@@ -1,4 +1,5 @@
 libbpf-version=0.3
+kernel-version=5.11
 
 build_libbpf:
 	cd ~ && git clone https://github.com/libbpf/libbpf
@@ -7,13 +8,13 @@ build_libbpf:
 	cd ~/libbpf/src && sudo $(MAKE) install
 
 build_kernel:
-	cd ~ && git clone -b f32 --single-branch git://git.kernel.org/pub/scm/linux/kernel/git/jwboyer/fedora.git
-	cd ~/fedora && $(MAKE) olddefconfig
-	cd ~/fedora && sed -i -e "s/CONFIG_LSM=\"yama,loadpin,safesetid,integrity,selinux,smack,tomoyo,apparmor\"/CONFIG_LSM=\"yama,loadpin,safesetid,integrity,selinux,smack,tomoyo,apparmor,bpf\"/g" .config
-	cd ~/fedora && sed -i -e "s/# CONFIG_BPF_LSM is not set/CONFIG_BPF_LSM=y/g" .config
-	cd ~/fedora && $(MAKE) -j16
-	cd ~/fedora && sudo $(MAKE) modules_install
-	cd ~/fedora && sudo $(MAKE) install
+	cd ~ && git clone -b v$(kernel-version) --single-branch git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+	cd ~/linux-stable && $(MAKE) olddefconfig
+	cd ~/linux-stable && sed -i -e "s/CONFIG_LSM=\"yama,loadpin,safesetid,integrity,selinux,smack,tomoyo,apparmor\"/CONFIG_LSM=\"yama,loadpin,safesetid,integrity,selinux,smack,tomoyo,apparmor,bpf\"/g" .config
+	cd ~/linux-stable && sed -i -e "s/# CONFIG_BPF_LSM is not set/CONFIG_BPF_LSM=y/g" .config
+	cd ~/linux-stable && $(MAKE) -j16
+	cd ~/linux-stable && sudo $(MAKE) modules_install
+	cd ~/linux-stable && sudo $(MAKE) install
 
 prepare: build_libbpf build_kernel
 
