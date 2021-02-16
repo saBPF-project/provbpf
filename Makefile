@@ -17,6 +17,10 @@ build_kernel:
 
 prepare: build_libbpf build_kernel
 
+delete_dependency:
+	rm -rf ~/libbpf
+	rm -rf ~/linux-stable
+
 btf:
 	bpftool btf dump file /sys/kernel/btf/vmlinux format c > include/kern/vmlinux.h
 	cp -f include/kern/vmlinux.h .circleci/_vmlinux.h
