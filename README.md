@@ -25,6 +25,11 @@ All of the build in one go:
 make prepare
 ```
 
+Delete the dependencies' build folders:
+```
+make delete_dependency
+```
+
 ## Building and running
 
 Building bpf kernel and user space program:
