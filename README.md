@@ -15,11 +15,6 @@ Building latest fedora kernel:
 make build_kernel
 ```
 
-Building libprovenance:
-```
-make build_libprovenance
-```
-
 All of the build in one go:
 ```
 make prepare
