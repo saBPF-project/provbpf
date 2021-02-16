@@ -23,14 +23,14 @@ struct {
 	/* NOTE: The minimum size seems to be 1 << 12.
          * Any value smaller than this results in
          * runtime error. */
-	__uint(max_entries, 4096 * 64);
+	__uint(max_entries, 1 << 18);
 } r_buf SEC(".maps");
 
 struct {
 	__uint(type, BPF_MAP_TYPE_ARRAY);
 	__type(key, uint32_t);
 	__type(value, struct capture_policy);
-	__uint(max_entries, 1); 
+	__uint(max_entries, 1);
 } policy_map SEC(".maps");
 
 #define INODE_PERCPU_TMP 0
