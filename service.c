@@ -165,11 +165,6 @@ int main(void) {
   	prov_policy.should_duplicate = false;
   	prov_policy.should_compress_node = true;
   	prov_policy.should_compress_edge = true;
-#ifdef CONFIG_SECURITY_PROVENANCE_BOOT
-  	prov_policy.prov_all = true;
-#else
-  	prov_policy.prov_all = false;
-#endif
 
     map_fd = bpf_object__find_map_fd_by_name(skel->obj, "policy_map");
     bpf_map_update_elem(map_fd, &key, &prov_policy, BPF_ANY);

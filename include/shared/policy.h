@@ -21,15 +21,13 @@
  *
  */
 struct capture_policy {
-	// Whether to record provenance of all kernel object.
-	bool prov_all;
 	// Whether nodes should be compressed into one if possible.
 	bool should_compress_node;
 	// Whether edges should be compressed into one if possible.
 	bool should_compress_edge;
 	// every time a relation is recorded the two end nodes will be recorded
 	// again if set to true.
-	bool should_duplicate;
+	bool should_duplicate; // will probably still be needed by spade
 };
 
 #endif
