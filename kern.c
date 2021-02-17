@@ -37,7 +37,6 @@
 #include "kern/msg_msg.h"
 #include "kern/ipc_perm.h"
 #include "kern/iattr.h"
-#include "kern/filter.h"
 #include "kern/relation.h"
 #include "kern/net.h"
 

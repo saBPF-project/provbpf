@@ -162,7 +162,6 @@ int main(void) {
     memset(&prov_policy, 0, sizeof(struct capture_policy));
 
     syslog(LOG_INFO, "ProvBPF: policy initialization started...");
-    prov_policy.prov_enabled = true;
   	prov_policy.should_duplicate = false;
   	prov_policy.should_compress_node = true;
   	prov_policy.should_compress_edge = true;
