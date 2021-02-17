@@ -97,7 +97,7 @@ static union prov_elt* get_or_create_inode_prov(struct inode *inode) {
         bpf_map_update_elem(&inode_map, &key, prov_tmp, BPF_NOEXIST);
 //        bpf_inode_storage_get(&inode_map, inode, prov_tmp, BPF_NOEXIST | BPF_LOCAL_STORAGE_GET_F_CREATE);
         prov_on_map = bpf_map_lookup_elem(&inode_map, &key);
-//        prov_on_map = bpf_inode_storage_get(&inode_map, inode, 0, BPF_LOCAL_STORAGE_GET_F_CREATE);        
+//        prov_on_map = bpf_inode_storage_get(&inode_map, inode, 0, BPF_LOCAL_STORAGE_GET_F_CREATE);
     }
     return prov_on_map;
 }

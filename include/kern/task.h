@@ -50,6 +50,7 @@ static __always_inline void prov_update_task(struct task_struct *task,
     bpf_probe_read(&prov->task_info.vpid, sizeof(prov->task_info.vpid), &task->tgid);
     bpf_probe_read(&prov->task_info.utime, sizeof(prov->task_info.utime), &task->utime);
     bpf_probe_read(&prov->task_info.stime, sizeof(prov->task_info.stime), &task->stime);
+    /*
     struct mm_struct *mm;
     bpf_probe_read(&mm, sizeof(mm), &task->mm);
     bpf_probe_read(&prov->task_info.vm, sizeof(prov->task_info.vm), &mm->total_vm);
@@ -64,6 +65,7 @@ static __always_inline void prov_update_task(struct task_struct *task,
     prov->task_info.hw_vm = u64_max(current_task_hw_vm, prov->task_info.vm) * IOC_PAGE_SIZE / KB;
     bpf_probe_read(&current_task_hw_rss, sizeof(current_task_hw_rss), &mm->hiwater_rss);
     prov->task_info.hw_rss = u64_max(current_task_hw_rss, prov->task_info.rss) * IOC_PAGE_SIZE / KB;
+    */
 }
 
 /* Create a provenance entry for a task if it does not exist

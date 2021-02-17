@@ -31,7 +31,7 @@ static __always_inline void prov_init_relation(union prov_elt *prov,
     relation_identifier(prov).machine_id = prov_get_id(MACHINE_ID_INDEX);
     if (file) {
 		prov->relation_info.set = FILE_INFO_SET;
-    bpf_probe_read(&offset, sizeof(offset), &file->f_pos);
+        bpf_probe_read(&offset, sizeof(offset), &file->f_pos);
 		prov->relation_info.offset = offset;
 	}
     prov->relation_info.flags = flags;
