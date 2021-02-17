@@ -106,9 +106,9 @@ stop:
 uninstall:
 	sudo systemctl stop provbpfd.service
 	sudo systemctl disable provbpfd.service
-	rm -f /etc/provbpf.ini
-	rm -f /usr/bin/provbpfd
-	rm -f /etc/systemd/system/provbpfd.service
+	sudo rm -f /etc/provbpf.ini
+	sudo rm -f /usr/bin/provbpfd
+	sudo rm -f /etc/systemd/system/provbpfd.service
 
 run:
 	rm -rf audit.log
