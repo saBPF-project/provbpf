@@ -5403,6 +5403,8 @@ struct module {
 	struct srcu_struct **srcu_struct_ptrs;
 	unsigned int num_bpf_raw_events;
 	struct bpf_raw_event_map *bpf_raw_events;
+	unsigned int btf_data_size;
+	void *btf_data;
 	struct jump_entry *jump_entries;
 	unsigned int num_jump_entries;
 	unsigned int num_trace_bprintk_fmt;
@@ -5429,8 +5431,6 @@ struct module {
 	struct error_injection_entry *ei_funcs;
 	unsigned int num_ei_funcs;
 	long: 32;
-	long: 64;
-	long: 64;
 	long: 64;
 	long: 64;
 };
@@ -14879,6 +14879,7 @@ enum syscall_work_bit {
 	SYSCALL_WORK_BIT_SYSCALL_EMU = 3,
 	SYSCALL_WORK_BIT_SYSCALL_AUDIT = 4,
 	SYSCALL_WORK_BIT_SYSCALL_USER_DISPATCH = 5,
+	SYSCALL_WORK_BIT_SYSCALL_EXIT_TRAP = 6,
 };
 
 struct seccomp_data {
@@ -43371,6 +43372,13 @@ struct btf_show_snprintf {
 	int len;
 };
 
+struct btf_module {
+	struct list_head list;
+	struct module *module;
+	struct btf *btf;
+	struct bin_attribute *sysfs_attr;
+};
+
 struct bpf_dispatcher_prog {
 	struct bpf_prog *prog;
 	refcount_t users;
@@ -50666,11 +50674,8 @@ struct wait_exceptional_entry_queue {
 	struct exceptional_entry_key key;
 };
 
-struct fscrypt_blk_crypto_key;
-
 struct fscrypt_prepared_key {
 	struct crypto_skcipher *tfm;
-	struct fscrypt_blk_crypto_key *blk_key;
 };
 
 struct fscrypt_mode;
@@ -50680,7 +50685,6 @@ struct fscrypt_direct_key;
 struct fscrypt_info {
 	struct fscrypt_prepared_key ci_enc_key;
 	bool ci_owns_key;
-	bool ci_inlinecrypt;
 	struct fscrypt_mode *ci_mode;
 	struct inode *ci_inode;
 	struct key *ci_master_key;
@@ -50867,12 +50871,6 @@ struct fscrypt_get_policy_ex_arg {
 
 struct fscrypt_dummy_policy {
 	const union fscrypt_policy *policy;
-};
-
-struct fscrypt_blk_crypto_key {
-	struct blk_crypto_key base;
-	int num_devs;
-	struct request_queue *devs[0];
 };
 
 struct fsverity_hash_alg;
@@ -56810,6 +56808,7 @@ enum {
 	BTRFS_FS_CSUM_IMPL_FAST = 15,
 	BTRFS_FS_DISCARD_RUNNING = 16,
 	BTRFS_FS_CLEANUP_SPACE_CACHE_V1 = 17,
+	BTRFS_FS_FREE_SPACE_TREE_UNTRUSTED = 18,
 };
 
 struct btrfs_qgroup_swapped_blocks {
@@ -72326,6 +72325,11 @@ struct sg_mapping_iter {
 
 typedef int (*cmp_func)(void *, const struct list_head *, const struct list_head *);
 
+struct csum_state {
+	__wsum csum;
+	size_t off;
+};
+
 struct rhltable {
 	struct rhashtable ht;
 };
@@ -77688,31 +77692,6 @@ struct fb_cmap32 {
 	compat_caddr_t transp;
 };
 
-struct dmt_videomode {
-	u32 dmt_id;
-	u32 std_2byte_code;
-	u32 cvt_3byte_code;
-	const struct fb_videomode *mode;
-};
-
-struct broken_edid {
-	u8 manufacturer[4];
-	u32 model;
-	u32 fix;
-};
-
-struct __fb_timings {
-	u32 dclk;
-	u32 hfreq;
-	u32 vfreq;
-	u32 hactive;
-	u32 vactive;
-	u32 hblank;
-	u32 vblank;
-	u32 htotal;
-	u32 vtotal;
-};
-
 struct fb_cvt_data {
 	u32 xres;
 	u32 yres;
@@ -81364,6 +81343,8 @@ struct acpi_thermal {
 	struct thermal_zone_device *thermal_zone;
 	int kelvin_offset;
 	struct work_struct thermal_check_work;
+	struct mutex thermal_check_lock;
+	refcount_t thermal_check_count;
 };
 
 struct acpi_table_slit {
@@ -90000,13 +89981,6 @@ struct pm_clock_entry {
 	enum pce_status status;
 };
 
-struct firmware_fallback_config {
-	unsigned int force_sysfs_fallback;
-	unsigned int ignore_sysfs_fallback;
-	int old_timeout;
-	int loading_timeout;
-};
-
 enum fw_opt {
 	FW_OPT_UEVENT = 1,
 	FW_OPT_NOWAIT = 2,
@@ -90046,8 +90020,6 @@ struct fw_priv {
 	struct page **pages;
 	int nr_pages;
 	int page_array_size;
-	bool need_uevent;
-	struct list_head pending_list;
 	const char *fw_name;
 };
 
@@ -90079,13 +90051,6 @@ struct firmware_work {
 	void *context;
 	void (*cont)(const struct firmware *, void *);
 	u32 opt_flags;
-};
-
-struct fw_sysfs {
-	bool nowait;
-	struct device dev;
-	struct fw_priv *fw_priv;
-	struct firmware *fw;
 };
 
 struct node_access_nodes {
@@ -98667,6 +98632,8 @@ struct xhci_driver_overrides {
 	size_t extra_priv_size;
 	int (*reset)(struct usb_hcd *);
 	int (*start)(struct usb_hcd *);
+	int (*check_bandwidth)(struct usb_hcd *, struct usb_device *);
+	void (*reset_bandwidth)(struct usb_hcd *, struct usb_device *);
 };
 
 typedef void (*xhci_get_quirks_t)(struct device *, struct xhci_hcd *);
@@ -101714,87 +101681,6 @@ struct cooling_dev_stats {
 	ktime_t *time_in_state;
 	unsigned int *trans_table;
 };
-
-struct genl_dumpit_info {
-	const struct genl_family *family;
-	struct genl_ops op;
-	struct nlattr **attrs;
-};
-
-enum thermal_genl_attr {
-	THERMAL_GENL_ATTR_UNSPEC = 0,
-	THERMAL_GENL_ATTR_TZ = 1,
-	THERMAL_GENL_ATTR_TZ_ID = 2,
-	THERMAL_GENL_ATTR_TZ_TEMP = 3,
-	THERMAL_GENL_ATTR_TZ_TRIP = 4,
-	THERMAL_GENL_ATTR_TZ_TRIP_ID = 5,
-	THERMAL_GENL_ATTR_TZ_TRIP_TYPE = 6,
-	THERMAL_GENL_ATTR_TZ_TRIP_TEMP = 7,
-	THERMAL_GENL_ATTR_TZ_TRIP_HYST = 8,
-	THERMAL_GENL_ATTR_TZ_MODE = 9,
-	THERMAL_GENL_ATTR_TZ_NAME = 10,
-	THERMAL_GENL_ATTR_TZ_CDEV_WEIGHT = 11,
-	THERMAL_GENL_ATTR_TZ_GOV = 12,
-	THERMAL_GENL_ATTR_TZ_GOV_NAME = 13,
-	THERMAL_GENL_ATTR_CDEV = 14,
-	THERMAL_GENL_ATTR_CDEV_ID = 15,
-	THERMAL_GENL_ATTR_CDEV_CUR_STATE = 16,
-	THERMAL_GENL_ATTR_CDEV_MAX_STATE = 17,
-	THERMAL_GENL_ATTR_CDEV_NAME = 18,
-	THERMAL_GENL_ATTR_GOV_NAME = 19,
-	__THERMAL_GENL_ATTR_MAX = 20,
-};
-
-enum thermal_genl_sampling {
-	THERMAL_GENL_SAMPLING_TEMP = 0,
-	__THERMAL_GENL_SAMPLING_MAX = 1,
-};
-
-enum thermal_genl_event {
-	THERMAL_GENL_EVENT_UNSPEC = 0,
-	THERMAL_GENL_EVENT_TZ_CREATE = 1,
-	THERMAL_GENL_EVENT_TZ_DELETE = 2,
-	THERMAL_GENL_EVENT_TZ_DISABLE = 3,
-	THERMAL_GENL_EVENT_TZ_ENABLE = 4,
-	THERMAL_GENL_EVENT_TZ_TRIP_UP = 5,
-	THERMAL_GENL_EVENT_TZ_TRIP_DOWN = 6,
-	THERMAL_GENL_EVENT_TZ_TRIP_CHANGE = 7,
-	THERMAL_GENL_EVENT_TZ_TRIP_ADD = 8,
-	THERMAL_GENL_EVENT_TZ_TRIP_DELETE = 9,
-	THERMAL_GENL_EVENT_CDEV_ADD = 10,
-	THERMAL_GENL_EVENT_CDEV_DELETE = 11,
-	THERMAL_GENL_EVENT_CDEV_STATE_UPDATE = 12,
-	THERMAL_GENL_EVENT_TZ_GOV_CHANGE = 13,
-	__THERMAL_GENL_EVENT_MAX = 14,
-};
-
-enum thermal_genl_cmd {
-	THERMAL_GENL_CMD_UNSPEC = 0,
-	THERMAL_GENL_CMD_TZ_GET_ID = 1,
-	THERMAL_GENL_CMD_TZ_GET_TRIP = 2,
-	THERMAL_GENL_CMD_TZ_GET_TEMP = 3,
-	THERMAL_GENL_CMD_TZ_GET_GOV = 4,
-	THERMAL_GENL_CMD_TZ_GET_MODE = 5,
-	THERMAL_GENL_CMD_CDEV_GET = 6,
-	__THERMAL_GENL_CMD_MAX = 7,
-};
-
-struct param {
-	struct nlattr **attrs;
-	struct sk_buff *msg;
-	const char *name;
-	int tz_id;
-	int cdev_id;
-	int trip_id;
-	int trip_temp;
-	int trip_type;
-	int trip_hyst;
-	int temp;
-	int cdev_state;
-	int cdev_max_state;
-};
-
-typedef int (*cb_t)(struct param *);
 
 struct thermal_hwmon_device {
 	char type[20];
@@ -106356,7 +106242,7 @@ typedef int (*snd_pcm_hw_rule_func_t)(struct snd_pcm_hw_params *, struct snd_pcm
 struct snd_pcm_hw_rule {
 	unsigned int cond;
 	int var;
-	int deps[4];
+	int deps[5];
 	snd_pcm_hw_rule_func_t func;
 	void *private;
 };
@@ -113564,6 +113450,12 @@ struct dst_cache_pcpu {
 		struct in_addr in_saddr;
 		struct in6_addr in6_saddr;
 	};
+};
+
+struct genl_dumpit_info {
+	const struct genl_family *family;
+	struct genl_ops op;
+	struct nlattr **attrs;
 };
 
 enum devlink_command {
@@ -122429,8 +122321,7 @@ enum switchdev_attr_id {
 	SWITCHDEV_ATTR_ID_BRIDGE_VLAN_PROTOCOL = 7,
 	SWITCHDEV_ATTR_ID_BRIDGE_MC_DISABLED = 8,
 	SWITCHDEV_ATTR_ID_BRIDGE_MROUTER = 9,
-	SWITCHDEV_ATTR_ID_MRP_PORT_STATE = 10,
-	SWITCHDEV_ATTR_ID_MRP_PORT_ROLE = 11,
+	SWITCHDEV_ATTR_ID_MRP_PORT_ROLE = 10,
 };
 
 struct switchdev_attr {
@@ -122447,7 +122338,6 @@ struct switchdev_attr {
 		bool vlan_filtering;
 		u16 vlan_protocol;
 		bool mc_disabled;
-		u8 mrp_port_state;
 		u8 mrp_port_role;
 	} u;
 };
