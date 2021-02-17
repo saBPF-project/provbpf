@@ -29,7 +29,7 @@
  * and insert it into the @cred_map; otherwise, updates its
  * existing provenance. Return either the new provenance entry
  * pointer or the updated provenance entry pointer. */
-static __always_inline union prov_elt* get_or_create_cred_prov(const struct cred *cred, struct task_struct *current_task) {
+static __always_inline union prov_elt* get_or_create_cred_prov(const struct cred *cred) {
     if (!cred) {
       return NULL;
     }
@@ -51,6 +51,14 @@ static __always_inline union prov_elt* get_or_create_cred_prov(const struct cred
       prov_on_map = bpf_map_lookup_elem(&cred_map, &key);
   }*/
     return prov_on_map;
+}
+
+static __always_inline struct cred* get_task_cred(struct task_struct *task) {
+    return (struct cred*)task->cred;
+}
+
+static __always_inline struct cred* get_task_real_cred(struct task_struct *task) {
+    return (struct cred*)task->real_cred;
 }
 
 #endif
