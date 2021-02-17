@@ -324,34 +324,6 @@ static __always_inline void uses(const uint64_t type,
 }
 
 /*!
- * @brief Record "used" relation from entity provenance node to activity
- * provenance node. This function is a stripped-down version of "uses"
- * function.
- *
- * This function applies to only "used" relation between two provenance nodes.
- * @param type The type of relation (in the category of "used") between entity
- * and activity.
- * @param entity The entity provenance node.
- * @param activity The activity provenance node.
- * @param file Information related to LSM hooks.
- * @param flags Information related to LSM hooks.
- *
- */
-static __always_inline void uses_two(uint64_t type,
-                                     void *entity,
-                                     bool entity_is_long,
-                                     void *activity,
-                                     bool activity_is_long,
-                                     const struct file *file,
-                                     const uint64_t flags) {
-
-    if (!should_record_relation(type, entity, activity)) {
-      return;
-    }
-    record_relation(type, entity, entity_is_long, activity, activity_is_long, file, flags);
-}
-
-/*!
  * @brief Record "informed" relation from one activity provenance node to
  * another activity provenance node.
  *

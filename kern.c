@@ -65,10 +65,8 @@ char _license[] SEC("license") = "GPL";
 #ifndef PROV_FILTER_TASK_ALLOC_OFF
 SEC("lsm/task_alloc")
 int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
-    union prov_elt *ptr_prov, *ptr_prov_current, *ptr_prov_cred;
+    union prov_elt *ptr_prov, *ptr_prov_current;
     struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
-    struct cred* current_cred;
-    current_cred = get_task_real_cred(current_task);
 
     ptr_prov_current = get_or_create_task_prov(current_task);
     if (!ptr_prov_current)
@@ -78,11 +76,7 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
     if (!ptr_prov)
         return 0;
 
-    ptr_prov_cred = get_or_create_cred_prov(current_cred);
-    if (!ptr_prov_cred)
-        return 0;
-
-    uses_two(RL_PROC_READ, ptr_prov_cred, false, ptr_prov_current, false, NULL, clone_flags);
+    //uses_two(RL_PROC_READ, ptr_prov_cred, false, ptr_prov_current, false, NULL, clone_flags);
     informs(RL_CLONE, ptr_prov_current, ptr_prov, NULL, clone_flags);
     return 0;
 }
@@ -1051,14 +1045,15 @@ SEC("lsm/ptrace_access_check")
 int BPF_PROG(ptrace_access_check, struct task_struct *child, unsigned int mode) {
     union prov_elt *ptr_prov_child, *ptr_prov_child_cred, *ptr_prov_current_task, *ptr_prov_current_cred;
     struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
-    struct cred *current_cred;
+    struct cred *current_cred, *child_cred;
     current_cred = get_task_cred(current_task);
+    child_cred = get_task_cred(child);
 
     ptr_prov_child = get_or_create_task_prov(child);
     if (!ptr_prov_child) {
       return 0;
     }
-    ptr_prov_child_cred = get_or_create_cred_prov(child->real_cred);
+    ptr_prov_child_cred = get_or_create_cred_prov(child_cred);
     if (!ptr_prov_child_cred) {
       return 0;
     }
@@ -1814,12 +1809,12 @@ static inline int __mq_msgrcv(union prov_elt *ptr_prov_cred, struct msg_msg *msg
 #ifndef PROV_FILTER_MSG_QUEUE_MSGRCV_OFF
 SEC("lsm/msg_queue_msgrcv")
 int BPF_PROG(msg_queue_msgrcv, struct kern_ipc_perm *msq, struct msg_msg *msg, struct task_struct *target, long type, int mode) {
+    struct cred* cred = get_task_cred(target);
     union prov_elt *ptr_prov_cred;
 
-    ptr_prov_cred = get_or_create_cred_prov(target->real_cred);
-    if (!ptr_prov_cred) {
+    ptr_prov_cred = get_or_create_cred_prov(cred);
+    if (!ptr_prov_cred)
       return 0;
-    }
 
     return __mq_msgrcv(ptr_prov_cred, msg);
 }

@@ -30,16 +30,15 @@
  * existing provenance. Return either the new provenance entry
  * pointer or the updated provenance entry pointer. */
 static __always_inline union prov_elt* get_or_create_cred_prov(const struct cred *cred) {
-    if (!cred) {
+    /*if (!cred) {
       return NULL;
     }
 
     union prov_elt prov_tmp;
     uint64_t key = get_key(cred);
-    union prov_elt *prov_on_map = NULL;
-    // union prov_elt *prov_on_map = bpf_map_lookup_elem(&cred_map, &key);
+    union prov_elt *prov_on_map = bpf_map_lookup_elem(&cred_map, &key);
     // provenance is already tracked
-    /*if (prov_on_map) {
+    if (prov_on_map) {
       // update the cred's provenance since it may have changed
       //prov_update_cred(current_task, prov_on_map);
     } else {
@@ -50,15 +49,11 @@ static __always_inline union prov_elt* get_or_create_cred_prov(const struct cred
       bpf_map_update_elem(&cred_map, &key, &prov_tmp, BPF_NOEXIST);
       prov_on_map = bpf_map_lookup_elem(&cred_map, &key);
   }*/
-    return prov_on_map;
+    return NULL;
 }
 
 static __always_inline struct cred* get_task_cred(struct task_struct *task) {
     return (struct cred*)task->cred;
-}
-
-static __always_inline struct cred* get_task_real_cred(struct task_struct *task) {
-    return (struct cred*)task->real_cred;
 }
 
 #endif
