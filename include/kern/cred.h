@@ -69,7 +69,7 @@ static __always_inline union prov_elt* get_or_create_cred_prov(const struct cred
 
     union prov_elt prov_tmp;
     uint64_t key = get_key(cred);
-    union prov_elt *prov_on_map ;//= bpf_map_lookup_elem(&cred_map, &key);
+    union prov_elt *prov_on_map = NULL ;//= bpf_map_lookup_elem(&cred_map, &key);
     // provenance is already tracked
     if (prov_on_map) {
       // update the cred's provenance since it may have changed
