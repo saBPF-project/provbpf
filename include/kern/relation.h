@@ -38,31 +38,6 @@ static __always_inline void prov_init_relation(union prov_elt *prov,
 }
 
 /*!
- * @brief Whether a provenance relation between two nodes should be recorded
- * based on the user-defined filter.
- *
- * If either the relation type or at least one of the two end nodes are filtered
- * out (i.e., not to be recorded as defined by the user),
- * Then this function will return false.
- * Otherwise, the relation should be recorded and thus the function will return
- * true.
- * @param type The type of the relation
- * @param from The provenance node entry of the source node.
- * @param to The provenance node entry of the destination node.
- * @return True if the relation of type 'type' should be recorded; False if
- * otherwise.
- *
- */
-static __always_inline bool should_record_relation(const uint64_t type,
-						   union prov_elt *from,
-						   union prov_elt *to)
-{
-	if (filter_node(from) || filter_node(to))
-		return false;
-	return true;
-}
-
-/*!
  * @brief Write provenance relation to ring buffer.
  *
  * @param type The type of the relation (i.e., edge)
@@ -104,8 +79,6 @@ static __always_inline void record_terminate(uint64_t type,
 {
     union long_prov_elt *n = node;
     union prov_elt relation;
-    if (filter_node(n))
-      return;
 
     __builtin_memset(&relation, 0, sizeof(union prov_elt));
     prov_init_relation(&relation, type, NULL, 0);
@@ -314,10 +287,6 @@ static __always_inline void uses(const uint64_t type,
                                  void *activity_mem,
                                  const struct file *file,
                                  const uint64_t flags) {
-
-    if (!should_record_relation(type, entity, activity)) {
-      return;
-    }
     record_relation(type, entity, false, activity, false, file, flags);
     record_relation(RL_PROC_WRITE, activity, false, activity_mem, false, NULL, 0);
     current_update_shst(activity_mem, current, false);
@@ -349,10 +318,6 @@ static __always_inline void informs(uint64_t type,
                                      void *to,
                                      const struct file *file,
                                      const uint64_t flags) {
-
-    if (!should_record_relation(type, from, to)) {
-      return;
-    }
     record_relation(type, from, false, to, false, file, flags);
 }
 
@@ -382,10 +347,6 @@ static __always_inline void derives(uint64_t type,
                                      void *to,
                                      const struct file *file,
                                      const uint64_t flags) {
-
-    if (!should_record_relation(type, from, to)) {
-      return;
-    }
     record_relation(type, from, false, to, false, file, flags);
 }
 
@@ -420,9 +381,6 @@ static __always_inline void generates(const uint64_t type,
                                       const struct file *file,
                                       const uint64_t flags)
 {
-    if (!should_record_relation(type, activity, entity)) {
-      return;
-    }
     current_update_shst(activity_mem, current, true);
     record_relation(RL_PROC_READ, activity_mem, false, activity, false, NULL, 0);
     record_relation(type, activity, false, entity, false, file, flags);
@@ -474,10 +432,6 @@ static __always_inline int record_write_xattr(uint64_t type,
                               					       size_t size,
                               					       const uint64_t flags)
 {
-    if (!should_record_relation(type, cprov, iprov)) {
-      return 0;
-    }
-
     int map_id = XATTR_PERCPU_LONG_TMP;
     union long_prov_elt *ptr_prov_xattr = bpf_map_lookup_elem(&long_tmp_prov_map, &map_id);
     if (!ptr_prov_xattr) {
@@ -535,10 +489,6 @@ static __always_inline void record_read_xattr(void *cprov,
                                               void *iprov,
                                               const char *name)
 {
-    if (!should_record_relation(RL_GETXATTR, iprov, cprov)) {
-      return;
-    }
-
     int map_id = XATTR_PERCPU_LONG_TMP;
     union long_prov_elt *xattr = bpf_map_lookup_elem(&long_tmp_prov_map, &map_id);
     if (!xattr)

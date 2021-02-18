@@ -37,7 +37,6 @@
 #include "kern/msg_msg.h"
 #include "kern/ipc_perm.h"
 #include "kern/iattr.h"
-#include "kern/filter.h"
 #include "kern/relation.h"
 #include "kern/net.h"
 
@@ -309,6 +308,9 @@ int BPF_PROG(inode_free_security, struct inode *inode) {
  * entry is NULL. Other error codes unknown.
  *
  */
+ /***********************************************************
+ * this one is commented out as we do not track directories *
+ ************************************************************/
 /*#ifndef PROV_FILTER_INODE_CREATE_OFF
 SEC("lsm/inode_create")
 int BPF_PROG(inode_create, struct inode *dir, struct dentry *dentry, umode_t mode) {
