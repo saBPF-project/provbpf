@@ -17,6 +17,7 @@
 #define __KERN_BPF_INODE_H
 
 #include "kern/node.h"
+#include "kern/common.h"
 
 #define S_PRIVATE	512	/* Inode is fs-internal */
 
@@ -49,13 +50,15 @@ static union prov_elt* get_or_create_inode_prov(struct inode *inode) {
     umode_t imode;
     int map_id = INODE_PERCPU_TMP;
     union prov_elt *prov_on_map, *prov_tmp;
+    struct local_storage *storage;
 
     if (!inode)
       return NULL;
 
     key = get_key(inode);
     prov_on_map = bpf_map_lookup_elem(&inode_map, &key);
-//    prov_on_map = bpf_inode_storage_get(&inode_map, inode, 0, BPF_LOCAL_STORAGE_GET_F_CREATE);
+//    bpf_inode_storage_delete(&inode_storage_map, (struct inode *)inode);
+//    storage = bpf_inode_storage_get(&inode_storage_map, inode, 0, BPF_LOCAL_STORAGE_GET_F_CREATE);
 
     // inode provenance already being tracked
     if (prov_on_map) {

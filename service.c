@@ -228,14 +228,15 @@ int main(void) {
 
     current_pid = getpid();
 
-    syslog(LOG_INFO, "ProvBPF: Searching task_map for current process...");
-    search_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "task_map");
+    syslog(LOG_INFO, "ProvBPF: Searching task_storage_map for current process...");
+    search_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "task_storage_map");
     if (search_map_fd < 0) {
-      syslog(LOG_ERR, "ProvBPF: Failed loading task_map (%d).", search_map_fd);
+      syslog(LOG_ERR, "ProvBPF: Failed loading task__storage_map (%d).", search_map_fd);
       goto close_prog;
     }
 
     search_map_key = prev_search_map_key = -1;
+    res = bpf_map_lookup_elem(search_map_fd, &search_map_key, &search_map_value);
     while (bpf_map_get_next_key(search_map_fd, &prev_search_map_key, &search_map_key) == 0) {
       res = bpf_map_lookup_elem(search_map_fd, &search_map_key, &search_map_value);
       if (res > -1) {
@@ -247,13 +248,25 @@ int main(void) {
       }
       prev_search_map_key = search_map_key;
     }
+/*    // while we iterate through the task fds?:
+    search_map_key = //bpf_get_current_task_btf()?;
+    res = bpf_map_lookup_elem(search_map_fd, &search_map_key, &search_map_value);
+    if (res > -1) {
+        if (search_map_value.task_info.pid == current_pid) {
+          set_opaque(&search_map_value);
+          bpf_map_update_elem(search_map_fd, &search_map_key, &search_map_value, BPF_EXIST);
+          //break;
+        }
+    }
+    prev_search_map_key = search_map_key;
+    // end while loop*/
     close(search_map_fd);
     syslog(LOG_INFO, "ProvBPF: Done searching. Current process pid: %d has been set opaque...", current_pid);
 
     syslog(LOG_INFO, "ProvBPF: Searching cred_map for current cred...");
     search_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "cred_map");
     if (search_map_fd < 0) {
-      syslog(LOG_INFO, "ProvBPF: Failed loading task_map (%d).", search_map_fd);
+      syslog(LOG_INFO, "ProvBPF: Failed loading cred_map (%d).", search_map_fd);
       goto close_prog;
     }
 
