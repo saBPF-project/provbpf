@@ -31,7 +31,7 @@
 #define str(s)          # s
 
 #define PROVBPF_VERSION_MAJOR           0
-#define PROVBPF_VERSION_MINOR           2
+#define PROVBPF_VERSION_MINOR           3
 #define PROVBPF_VERSION_PATCH           0
 #define PROVBPF_VERSION_STR             "v"xstr (PROVBPF_VERSION_MAJOR)	\
 	"."xstr (PROVBPF_VERSION_MINOR)					\
