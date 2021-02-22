@@ -77,7 +77,7 @@ static __always_inline void prov_update_task(struct task_struct *task,
         return NULL;
     
     union prov_elt prov_tmp;
-    uint64_t key = get_key(task);
+/*    uint64_t key = get_key(task);
     union prov_elt *prov_on_map = bpf_map_lookup_elem(&task_map, &key);
     // provenance is already tracked
     if (prov_on_map) {
@@ -95,8 +95,10 @@ static __always_inline void prov_update_task(struct task_struct *task,
         // this function does not return the pointer that sucks
         bpf_map_update_elem(&task_map, &key, &prov_tmp, BPF_NOEXIST);
         prov_on_map = bpf_map_lookup_elem(&task_map, &key);
+    }
+*/
 
-/*    union prov_elt *prov_on_map = bpf_task_storage_get(&task_storage_map, bpf_get_current_task_btf(), 0, 0);
+    union prov_elt *prov_on_map = bpf_task_storage_get(&task_storage_map, task, 0, 0);
     // provenance is already tracked
     if (prov_on_map) {
         // update the task's provenance since it may have changed
@@ -110,8 +112,7 @@ static __always_inline void prov_update_task(struct task_struct *task,
         // }
         prov_init_node(&prov_tmp, ACT_TASK);
         prov_update_task(task, &prov_tmp);
-        prov_on_map = bpf_task_storage_get(&task_storage_map, bpf_get_current_task_btf(), 0, BPF_NOEXIST | BPF_LOCAL_STORAGE_GET_F_CREATE);
-        */
+        prov_on_map = bpf_task_storage_get(&task_storage_map, task, 0, BPF_NOEXIST | BPF_LOCAL_STORAGE_GET_F_CREATE);
     }
     return prov_on_map;
  }

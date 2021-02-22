@@ -37,6 +37,15 @@
 #define ND_LONG                                 0x0400000000000000UL
 #define AGT_MACHINE                             (DM_AGENT | ND_LONG | (0x0000000000000001ULL << 4))
 
+#ifndef __NR_pidfd_open
+#define __NR_pidfd_open 434
+#endif
+
+static inline int sys_pidfd_open(pid_t pid, unsigned int flags)
+{
+	return syscall(__NR_pidfd_open, pid, flags);
+}
+
 /* Callback function called whenever a new ring
  * buffer entry is polled from the buffer. */
 static int buf_process_entry(void *ctx, void *data, size_t len) {
@@ -119,7 +128,7 @@ void sig_handler(int sig) {
 
 int main(void) {
     struct ring_buffer *ringbuf = NULL;
-    int err, map_fd, search_map_fd, res;
+    int err, map_fd, pidfd, search_map_fd, res;
     struct rlimit r = {RLIM_INFINITY, RLIM_INFINITY};
     unsigned int key = 0, value;
     uint64_t search_map_key, prev_search_map_key;
@@ -234,7 +243,7 @@ int main(void) {
       syslog(LOG_ERR, "ProvBPF: Failed loading task__storage_map (%d).", search_map_fd);
       goto close_prog;
     }
-
+/*
     search_map_key = prev_search_map_key = -1;
     res = bpf_map_lookup_elem(search_map_fd, &search_map_key, &search_map_value);
     while (bpf_map_get_next_key(search_map_fd, &prev_search_map_key, &search_map_key) == 0) {
@@ -248,20 +257,19 @@ int main(void) {
       }
       prev_search_map_key = search_map_key;
     }
-/*    // while we iterate through the task fds?:
-    search_map_key = //bpf_get_current_task_btf()?;
-    res = bpf_map_lookup_elem(search_map_fd, &search_map_key, &search_map_value);
+*/    
+    pidfd = sys_pidfd_open(current_pid, 0);
+    res = bpf_map_lookup_elem(search_map_fd, &pidfd, &search_map_value);
+    syslog(LOG_INFO, "ProvBPF: TASK MAP LOOKUP RES: %d, pidfd: %d", res, pidfd);
     if (res > -1) {
+        syslog(LOG_INFO, "ProvBPF: ret pid: %d current pid: %d", search_map_value.task_info.pid, current_pid);
         if (search_map_value.task_info.pid == current_pid) {
           set_opaque(&search_map_value);
-          bpf_map_update_elem(search_map_fd, &search_map_key, &search_map_value, BPF_EXIST);
-          //break;
+          bpf_map_update_elem(search_map_fd, &pidfd, &search_map_value, BPF_EXIST);
+          syslog(LOG_INFO, "ProvBPF: Done searching. Current process pid: %d has been set opaque...", current_pid);
         }
     }
-    prev_search_map_key = search_map_key;
-    // end while loop*/
     close(search_map_fd);
-    syslog(LOG_INFO, "ProvBPF: Done searching. Current process pid: %d has been set opaque...", current_pid);
 
     syslog(LOG_INFO, "ProvBPF: Searching cred_map for current cred...");
     search_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "cred_map");

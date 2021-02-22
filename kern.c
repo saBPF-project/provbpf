@@ -65,7 +65,7 @@ char _license[] SEC("license") = "GPL";
 SEC("lsm/task_alloc")
 int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
     union prov_elt *ptr_prov, *ptr_prov_current;
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
 
     ptr_prov_current = get_or_create_task_prov(current_task);
     if (!ptr_prov_current)
@@ -1089,7 +1089,7 @@ int BPF_PROG(ptrace_access_check, struct task_struct *child, unsigned int mode) 
 SEC("lsm/ptrace_traceme")
 int BPF_PROG(ptrace_traceme, struct task_struct *parent) {
     union prov_elt *ptr_prov, *ptr_prov_current;
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
 
     ptr_prov = get_or_create_task_prov(parent);
     if (!ptr_prov) {
@@ -1150,7 +1150,7 @@ int BPF_PROG(mmap_file, struct file *file, unsigned long reqprot, unsigned long 
     if (is_inode_dir(file->f_inode))
         return 0;
 
-    current_task = (struct task_struct *)bpf_get_current_task();
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
     current_cred = get_task_cred(current_task);
 
     if (__builtin_expect(!file, 0)) {
@@ -1408,7 +1408,7 @@ int BPF_PROG(file_open, struct file *file) {
     if (is_inode_dir(file->f_inode))
         return 0;
 
-    current_task = (struct task_struct *)bpf_get_current_task();
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
 
     current_cred = get_task_cred(current_task);
 
@@ -1455,7 +1455,7 @@ int BPF_PROG(file_receive, struct file *file) {
     if (is_inode_dir(file->f_inode))
         return 0;
 
-    current_task = (struct task_struct *)bpf_get_current_task();
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
     current_cred = get_task_cred(current_task);
 
     ptr_prov_current_task = get_task_provenance(current_task, true);
@@ -1495,7 +1495,7 @@ int BPF_PROG(file_lock, struct file *file, unsigned int cmd) {
     if (is_inode_dir(file->f_inode))
         return 0;
 
-    current_task = (struct task_struct *)bpf_get_current_task();
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
     current_cred = get_task_cred(current_task);
 
     ptr_prov_current_task = get_task_provenance(current_task, true);
@@ -1548,7 +1548,7 @@ int BPF_PROG(file_ioctl, struct file *file, unsigned int cmd, unsigned long arg)
     if (is_inode_dir(file->f_inode))
         return 0;
 
-    current_task = (struct task_struct *)bpf_get_current_task();
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
     current_cred = get_task_cred(current_task);
 
     ptr_prov_current_task = get_task_provenance(current_task, true);
@@ -1579,7 +1579,7 @@ int BPF_PROG(file_send_sigiotask, struct task_struct *task, struct fown_struct *
     bpf_probe_read(&inode, sizeof(inode), &file->f_inode);
 
     union prov_elt *ptr_prov_task, *ptr_prov_cred, *ptr_prov_inode;
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
 
     ptr_prov_task = get_or_create_task_prov(task);
     if (!ptr_prov_task) {
@@ -1627,7 +1627,7 @@ int BPF_PROG(file_send_sigiotask, struct task_struct *task, struct fown_struct *
 SEC("lsm/msg_msg_alloc_security")
 int BPF_PROG(msg_msg_alloc_security, struct msg_msg *msg) {
     union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_msg;
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
     struct cred *current_cred;
     current_cred = get_task_cred(current_task);
 
@@ -1694,7 +1694,7 @@ int BPF_PROG(msg_msg_free_security, struct msg_msg *msg) {
  */
 static inline int __mq_msgsnd(struct msg_msg *msg) {
     union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_msg;
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
     struct cred *current_cred;
     current_cred = get_task_cred(current_task);
 
@@ -1771,7 +1771,7 @@ int BPF_PROG(mq_timedsend, struct inode *inode, struct msg_msg *msg, struct time
  */
 static inline int __mq_msgrcv(union prov_elt *ptr_prov_cred, struct msg_msg *msg) {
     union prov_elt *ptr_prov_msg, *ptr_prov_current_task;
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
 
     ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
@@ -1840,7 +1840,7 @@ int BPF_PROG(msg_queue_msgrcv, struct kern_ipc_perm *msq, struct msg_msg *msg, s
 SEC("lsm/mq_timedreceive")
 int BPF_PROG(mq_timedreceive, struct inode *inode, struct msg_msg *msg, struct timespec64 *ts) {
     union prov_elt *ptr_prov_current_cred;
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
     struct cred *current_cred;
     current_cred = get_task_cred(current_task);
 
@@ -1883,7 +1883,7 @@ int BPF_PROG(mq_timedreceive, struct inode *inode, struct msg_msg *msg, struct t
 SEC("lsm/shm_alloc_security")
 int BPF_PROG(shm_alloc_security, struct kern_ipc_perm *shp) {
     union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_shp;
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
     struct cred *current_cred;
     current_cred = get_task_cred(current_task);
 
@@ -1962,7 +1962,7 @@ int BPF_PROG(shm_free_security, struct kern_ipc_perm *shp) {
 SEC("lsm/shm_shmat")
 int BPF_PROG(shm_shmat, struct kern_ipc_perm *shp, char *shmaddr, int shmflg) {
     union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_shp;
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
     struct cred *current_cred;
     current_cred = get_task_cred(current_task);
 
@@ -2008,7 +2008,7 @@ int BPF_PROG(shm_shmat, struct kern_ipc_perm *shp, char *shmaddr, int shmflg) {
 SEC("lsm/shm_shmdt")
 int BPF_PROG(shm_shmdt, struct kern_ipc_perm *shp) {
     union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_shp;
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
     struct cred *current_cred;
     current_cred = get_task_cred(current_task);
 
@@ -2066,7 +2066,7 @@ int BPF_PROG(shm_shmdt, struct kern_ipc_perm *shp) {
 SEC("lsm/socket_post_create")
 int BPF_PROG(socket_post_create, struct socket *sock, int family, int type, int protocol, int kern) {
     union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_sock_inode;
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
     struct cred *current_cred;
     current_cred = get_task_cred(current_task);
 
@@ -2121,7 +2121,7 @@ int BPF_PROG(socket_post_create, struct socket *sock, int family, int type, int 
 SEC("lsm/socket_bind")
 int BPF_PROG(socket_bind, struct socket *sock, struct sockaddr *address, int addrlen) {
     union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_sock_inode;
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
     struct cred *current_cred;
     current_cred = get_task_cred(current_task);
 
@@ -2171,7 +2171,7 @@ int BPF_PROG(socket_bind, struct socket *sock, struct sockaddr *address, int add
 SEC("lsm/socket_connect")
 int BPF_PROG(socket_connect, struct socket *sock, struct sockaddr *address, int addrlen) {
     union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_sock_inode;
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
     struct cred *current_cred;
     current_cred = get_task_cred(current_task);
 
@@ -2216,7 +2216,7 @@ int BPF_PROG(socket_connect, struct socket *sock, struct sockaddr *address, int 
 SEC("lsm/socket_listen")
 int BPF_PROG(socket_listen, struct socket *sock, int backlog) {
     union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_sock_inode;
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
     struct cred *current_cred;
     current_cred = get_task_cred(current_task);
 
@@ -2268,7 +2268,7 @@ int BPF_PROG(socket_listen, struct socket *sock, int backlog) {
 SEC("lsm/socket_accept")
 int BPF_PROG(socket_accept, struct socket *sock, struct socket *newsock) {
     union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_sock_inode, *ptr_prov_newsock_inode;
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
     struct cred *current_cred;
     current_cred = get_task_cred(current_task);
 
@@ -2324,7 +2324,7 @@ int BPF_PROG(socket_sendmsg, struct socket *sock, struct msghdr *msg, int size) 
     union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_sock_inode_a, *ptr_prov_sock_inode_b;
     struct sock *peer = NULL;
 
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
     struct cred *current_cred;
     current_cred = get_task_cred(current_task);
 
@@ -2382,7 +2382,7 @@ int BPF_PROG(socket_recvmsg, struct socket *sock, struct msghdr *msg, int size, 
     struct sock *peer;
     peer = NULL;
 
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
     struct cred *current_cred;
     current_cred = get_task_cred(current_task);
 
@@ -2413,7 +2413,7 @@ int BPF_PROG(socket_recvmsg, struct socket *sock, struct msghdr *msg, int size, 
 SEC("lsm/socket_socketpair")
 int BPF_PROG(socket_socketpair, struct socket *socka, struct socket *sockb) {
     union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_sock_a, *ptr_prov_sock_b;
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
     struct cred *current_cred;
     current_cred = get_task_cred(current_task);
 
@@ -2464,7 +2464,7 @@ int BPF_PROG(socket_socketpair, struct socket *socka, struct socket *sockb) {
 SEC("lsm/unix_stream_connect")
 int BPF_PROG(unix_stream_connect, struct sock *sock, struct sock *other, struct sock *newsk) {
     union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_sock_inode;
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
     struct cred *current_cred;
     current_cred = get_task_cred(current_task);
 
@@ -2593,7 +2593,7 @@ int BPF_PROG(bprm_creds_for_exec, struct linux_binprm *bprm) {
 SEC("lsm/bprm_committing_creds")
 int BPF_PROG(bprm_committing_creds, struct linux_binprm *bprm) {
     union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_cred;
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
     struct cred *current_cred;
     current_cred = get_task_cred(current_task);
 
@@ -2620,7 +2620,7 @@ int BPF_PROG(bprm_committing_creds, struct linux_binprm *bprm) {
 SEC("lsm/kernel_read_file")
 int BPF_PROG(kernel_read_file, struct file *file, enum kernel_read_file_id id) {
     union prov_elt *ptr_prov_current_task, *ptr_prov_inode;
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
 
     ptr_prov_current_task = get_task_provenance(current_task, true);
     if (!ptr_prov_current_task) {
