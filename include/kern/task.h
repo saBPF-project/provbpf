@@ -112,7 +112,7 @@ static __always_inline void prov_update_task(struct task_struct *task,
         // }
         prov_init_node(&prov_tmp, ACT_TASK);
         prov_update_task(task, &prov_tmp);
-        prov_on_map = bpf_task_storage_get(&task_storage_map, task, 0, BPF_NOEXIST | BPF_LOCAL_STORAGE_GET_F_CREATE);
+        prov_on_map = bpf_task_storage_get(&task_storage_map, task, &prov_tmp, BPF_NOEXIST | BPF_LOCAL_STORAGE_GET_F_CREATE);
     }
     return prov_on_map;
  }
