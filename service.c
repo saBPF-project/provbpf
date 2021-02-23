@@ -243,26 +243,10 @@ int main(void) {
       syslog(LOG_ERR, "ProvBPF: Failed loading task__storage_map (%d).", search_map_fd);
       goto close_prog;
     }
-/*
-    search_map_key = prev_search_map_key = -1;
-    res = bpf_map_lookup_elem(search_map_fd, &search_map_key, &search_map_value);
-    while (bpf_map_get_next_key(search_map_fd, &prev_search_map_key, &search_map_key) == 0) {
-      res = bpf_map_lookup_elem(search_map_fd, &search_map_key, &search_map_value);
-      if (res > -1) {
-          if (search_map_value.task_info.pid == current_pid) {
-            set_opaque(&search_map_value);
-            bpf_map_update_elem(search_map_fd, &search_map_key, &search_map_value, BPF_EXIST);
-            break;
-          }
-      }
-      prev_search_map_key = search_map_key;
-    }
-*/    
+    
     pidfd = sys_pidfd_open(current_pid, 0);
     res = bpf_map_lookup_elem(search_map_fd, &pidfd, &search_map_value);
-    syslog(LOG_INFO, "ProvBPF: TASK MAP LOOKUP RES: %d, pidfd: %d", res, pidfd);
     if (res > -1) {
-        syslog(LOG_INFO, "ProvBPF: ret pid: %d current pid: %d", search_map_value.task_info.pid, current_pid);
         if (search_map_value.task_info.pid == current_pid) {
           set_opaque(&search_map_value);
           bpf_map_update_elem(search_map_fd, &pidfd, &search_map_value, BPF_EXIST);

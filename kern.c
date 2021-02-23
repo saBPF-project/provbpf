@@ -92,7 +92,6 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
 #ifndef PROV_FILTER_TASK_FREE_OFF
 SEC("lsm/task_free")
 int BPF_PROG(task_free, struct task_struct *task) {
-    uint64_t key = get_key(task);
     union prov_elt *ptr_prov;
 
     ptr_prov = get_or_create_task_prov(task);
@@ -103,7 +102,7 @@ int BPF_PROG(task_free, struct task_struct *task) {
     record_terminate(RL_TERMINATE_TASK, ptr_prov);
 
     /* Delete task provenance since the task no longer exists */
-    bpf_map_delete_elem(&task_map, &key);
+    bpf_task_storage_delete(&task_storage_map, task);
 
     return 0;
 }
