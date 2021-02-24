@@ -46,10 +46,23 @@
 static __always_inline void prov_update_task(struct task_struct *task,
                                              union prov_elt *prov) {
 
-    bpf_probe_read(&prov->task_info.pid, sizeof(prov->task_info.pid), &task->pid);
-    bpf_probe_read(&prov->task_info.vpid, sizeof(prov->task_info.vpid), &task->tgid);
-    bpf_probe_read(&prov->task_info.utime, sizeof(prov->task_info.utime), &task->utime);
-    bpf_probe_read(&prov->task_info.stime, sizeof(prov->task_info.stime), &task->stime);
+    // bpf_probe_read(&prov->task_info.pid, sizeof(prov->task_info.pid), &task->pid);
+    // bpf_probe_read(&prov->task_info.vpid, sizeof(prov->task_info.vpid), &task->tgid);
+    // bpf_probe_read(&prov->task_info.utime, sizeof(prov->task_info.utime), &task->utime);
+    // bpf_probe_read(&prov->task_info.stime, sizeof(prov->task_info.stime), &task->stime);
+		//
+		// struct mm_struct *mm;
+		// bpf_probe_read(&mm, sizeof(mm), &task->mm);
+		// char err[] = "prov_update_task sizeof(mm): %d, sizeof(mm_struct): %d \n";
+		// bpf_trace_printk(err, sizeof(err), sizeof(mm), sizeof(struct mm_struct));
+		// bpf_probe_read_kernel(&prov->task_info.vm, sizeof(prov->task_info.vm), &mm->total_vm);
+		// bpf_map_update_elem(&tmp_mm_map, &key, mm, BPF_NOEXIST);
+		// mm = bpf_map_lookup_elem(&tmp_mm_map, &key);
+		//
+		// if (!mm) {
+		// 	return;
+		// }
+
     /*
     struct mm_struct *mm;
     bpf_probe_read(&mm, sizeof(mm), &task->mm);

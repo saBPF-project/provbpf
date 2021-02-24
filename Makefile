@@ -8,7 +8,7 @@ build_libbpf:
 	cd ~/libbpf/src && sudo $(MAKE) install
 
 build_kernel:
-	cd ~ && git clone -b v$(kernel-version) --single-branch git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+	cd ~ && git clone -b v$(kernel-version) --single-branch --depth 1 git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
 	cd ~/linux-stable && $(MAKE) olddefconfig
 	cd ~/linux-stable && sed -i -e "s/CONFIG_LSM=\"yama,loadpin,safesetid,integrity,selinux,smack,tomoyo,apparmor\"/CONFIG_LSM=\"yama,loadpin,safesetid,integrity,selinux,smack,tomoyo,apparmor,bpf\"/g" .config
 	cd ~/linux-stable && sed -i -e "s/# CONFIG_BPF_LSM is not set/CONFIG_BPF_LSM=y/g" .config
@@ -113,7 +113,7 @@ uninstall:
 
 run:
 	rm -rf audit.log
-	sudo ./provbpfd
+	sudo provbpfd
 
 run_valgrind: usr_dbg
 	rm -rf audit.log
