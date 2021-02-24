@@ -104,6 +104,9 @@ start:
 stop:
 	sudo systemctl stop provbpfd.service
 
+status:
+	sudo systemctl status provbpfd.service
+
 uninstall:
 	sudo systemctl stop provbpfd.service
 	sudo systemctl disable provbpfd.service

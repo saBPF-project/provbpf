@@ -70,51 +70,14 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
     pid_t current_tgid = pid_tgid >> 32;
     uint64_t key = get_key(task);
 
-    ptr_prov = bpf_map_lookup_elem(&task_map, &key);
+    ptr_prov = get_or_create_lsm_task_prov(task);
     if (!ptr_prov) {
-        union prov_elt init_prov = {};
-        prov_init_node(&init_prov, ACT_TASK);
-        bpf_map_update_elem(&task_map, &key, &init_prov, BPF_NOEXIST);
-    }
-    ptr_prov = bpf_map_lookup_elem(&task_map, &key);
-    if (ptr_prov) { // Let BPF verifier know that ptr_prov cannot be a NULL pointer
-        ptr_prov->task_info.pid = task->pid;
-        ptr_prov->task_info.vpid = task->tgid;
-        ptr_prov->task_info.utime = task->utime;
-        ptr_prov->task_info.stime = task->stime;
-        ptr_prov->task_info.vm = task->mm->total_vm;
-        // ptr_prov->task_info.rss = (task->mm->rss_stat.count[MM_FILEPAGES].counter +
-        //                           task->mm->rss_stat.count[MM_ANONPAGES].counter +
-        //                           task->mm->rss_stat.count[MM_SHMEMPAGES].counter) * IOC_PAGE_SIZE / KB;
-        ptr_prov->task_info.rss = 0; // TODO: eBPF Verifier error output: "Type 'atomic_long_t' is not a struct". Need to find a fix
-        ptr_prov->task_info.hw_vm = (task->mm->hiwater_vm > ptr_prov->task_info.vm) ? (task->mm->hiwater_vm * IOC_PAGE_SIZE / KB) : (ptr_prov->task_info.vm * IOC_PAGE_SIZE / KB);
-        ptr_prov->task_info.hw_rss = (task->mm->hiwater_rss > ptr_prov->task_info.rss) ? (task->mm->hiwater_rss * IOC_PAGE_SIZE / KB) : (ptr_prov->task_info.rss * IOC_PAGE_SIZE / KB);
-        bpf_map_update_elem(&task_map, &key, ptr_prov, BPF_ANY);
-    }
-    ptr_prov = bpf_map_lookup_elem(&task_map, &key);
-    if (!ptr_prov) {
-      return 0;
+        return 0;
     }
 
-    // Get provenance for the current task detected by eBPF
-    key = get_key(current_task);
-    ptr_prov_current = bpf_map_lookup_elem(&task_map, &key);
+    ptr_prov_current = get_or_create_bpf_task_prov(task, current_pid, current_tgid);
     if (!ptr_prov_current) {
-        union prov_elt init_prov = {};
-        prov_init_node(&init_prov, ACT_TASK);
-        bpf_map_update_elem(&task_map, &key, &init_prov, BPF_NOEXIST);
-    }
-    ptr_prov_current = bpf_map_lookup_elem(&task_map, &key);
-    if (ptr_prov_current) { // Let BPF verifier know that ptr_prov cannot be a NULL pointer
-        ptr_prov_current->task_info.pid = current_pid;
-        ptr_prov_current->task_info.vpid = current_tgid;
-        bpf_probe_read(&ptr_prov_current->task_info.utime, sizeof(ptr_prov_current->task_info.utime), &current_task->utime);
-        bpf_probe_read(&ptr_prov_current->task_info.stime, sizeof(ptr_prov_current->task_info.stime), &current_task->stime);
-        bpf_map_update_elem(&task_map, &key, ptr_prov_current, BPF_ANY);
-    }
-    ptr_prov_current = bpf_map_lookup_elem(&task_map, &key);
-    if (!ptr_prov_current) {
-      return 0;
+        return 0;
     }
 
     //uses_two(RL_PROC_READ, ptr_prov_cred, false, ptr_prov_current, false, NULL, clone_flags);

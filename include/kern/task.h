@@ -41,44 +41,86 @@
 #define vm_read_exec_mayshare(flags) \
 	((vm_read(flags) || vm_exec(flags)) && vm_mayshare(flags))
 
-/* Update fields in a task's provenance */
+/* Update fields in a task's provenance detected by an LSM hook */
 // TODO: further refactor this function.
+static __always_inline void prov_update_lsm_task(struct task_struct *task,
+                                             	 union prov_elt *ptr_prov) {
+    ptr_prov->task_info.pid = task->pid;
+ 	ptr_prov->task_info.vpid = task->tgid;
+ 	ptr_prov->task_info.utime = task->utime;
+ 	ptr_prov->task_info.stime = task->stime;
+ 	ptr_prov->task_info.vm = task->mm->total_vm;
+ 	// ptr_prov->task_info.rss = (task->mm->rss_stat.count[MM_FILEPAGES].counter +
+ 	//                           task->mm->rss_stat.count[MM_ANONPAGES].counter +
+ 	//                           task->mm->rss_stat.count[MM_SHMEMPAGES].counter) * IOC_PAGE_SIZE / KB;
+ 	ptr_prov->task_info.rss = 0; // TODO: eBPF Verifier error output: "Type 'atomic_long_t' is not a struct". Need to find a fix
+ 	ptr_prov->task_info.hw_vm = (task->mm->hiwater_vm > ptr_prov->task_info.vm) ? (task->mm->hiwater_vm * IOC_PAGE_SIZE / KB) : (ptr_prov->task_info.vm * IOC_PAGE_SIZE / KB);
+ 	ptr_prov->task_info.hw_rss = (task->mm->hiwater_rss > ptr_prov->task_info.rss) ? (task->mm->hiwater_rss * IOC_PAGE_SIZE / KB) : (ptr_prov->task_info.rss * IOC_PAGE_SIZE / KB);
+
+}
+
+/* Update fields in a task's provenance instrumented by eBPF */
+static __always_inline void prov_update_bpf_task(struct task_struct *task,
+											 	 pid_t pid, pid_t tgid,
+                                             	 union prov_elt *ptr_prov) {
+
+	ptr_prov->task_info.pid = pid;
+    ptr_prov->task_info.vpid = tgid;
+    bpf_probe_read(&ptr_prov->task_info.utime, sizeof(ptr_prov->task_info.utime), &task->utime);
+    bpf_probe_read(&ptr_prov->task_info.stime, sizeof(ptr_prov->task_info.stime), &task->stime);
+}
+
 static __always_inline void prov_update_task(struct task_struct *task,
-                                             union prov_elt *prov) {
+                                             union prov_elt *ptr_prov) {
+	return;
+}
 
-    // bpf_probe_read(&prov->task_info.pid, sizeof(prov->task_info.pid), &task->pid);
-    // bpf_probe_read(&prov->task_info.vpid, sizeof(prov->task_info.vpid), &task->tgid);
-    // bpf_probe_read(&prov->task_info.utime, sizeof(prov->task_info.utime), &task->utime);
-    // bpf_probe_read(&prov->task_info.stime, sizeof(prov->task_info.stime), &task->stime);
-		//
-		// struct mm_struct *mm;
-		// bpf_probe_read(&mm, sizeof(mm), &task->mm);
-		// char err[] = "prov_update_task sizeof(mm): %d, sizeof(mm_struct): %d \n";
-		// bpf_trace_printk(err, sizeof(err), sizeof(mm), sizeof(struct mm_struct));
-		// bpf_probe_read_kernel(&prov->task_info.vm, sizeof(prov->task_info.vm), &mm->total_vm);
-		// bpf_map_update_elem(&tmp_mm_map, &key, mm, BPF_NOEXIST);
-		// mm = bpf_map_lookup_elem(&tmp_mm_map, &key);
-		//
-		// if (!mm) {
-		// 	return;
-		// }
+/* Create a provenance entry for a task detected by an LSM
+ * hook if it does not exist and insert it into the @task_map;
+ * otherwise, updates its existing provenance.
+ * Return either the new provenance entry pointer or the updated
+ * provenance entry pointer. */
+static __always_inline union prov_elt* get_or_create_lsm_task_prov(struct task_struct *task) {
+	if (!task) {
+		return NULL;
+	}
 
-    /*
-    struct mm_struct *mm;
-    bpf_probe_read(&mm, sizeof(mm), &task->mm);
-    bpf_probe_read(&prov->task_info.vm, sizeof(prov->task_info.vm), &mm->total_vm);
-    prov->task_info.vm = prov->task_info.vm * IOC_PAGE_SIZE / KB;
-    struct mm_rss_stat rss_stat;
-    bpf_probe_read(&rss_stat, sizeof(rss_stat), &mm->rss_stat);
-    prov->task_info.rss = (rss_stat.count[MM_FILEPAGES].counter +
-                           rss_stat.count[MM_ANONPAGES].counter +
-                           rss_stat.count[MM_SHMEMPAGES].counter) * IOC_PAGE_SIZE / KB;
-    uint64_t current_task_hw_vm, current_task_hw_rss;
-    bpf_probe_read(&current_task_hw_vm, sizeof(current_task_hw_vm), &mm->hiwater_vm);
-    prov->task_info.hw_vm = u64_max(current_task_hw_vm, prov->task_info.vm) * IOC_PAGE_SIZE / KB;
-    bpf_probe_read(&current_task_hw_rss, sizeof(current_task_hw_rss), &mm->hiwater_rss);
-    prov->task_info.hw_rss = u64_max(current_task_hw_rss, prov->task_info.rss) * IOC_PAGE_SIZE / KB;
-    */
+	uint64_t key = get_key(task);
+	union prov_elt *prov_on_map = bpf_map_lookup_elem(&task_map, &key);
+	if (prov_on_map) {
+		prov_update_lsm_task(task, prov_on_map);
+	} else {
+		union prov_elt init_prov = {};
+		prov_init_node(&init_prov, ACT_TASK);
+		prov_update_lsm_task(task, &init_prov);
+		bpf_map_update_elem(&task_map, &key, &init_prov, BPF_NOEXIST);
+		prov_on_map = bpf_map_lookup_elem(&task_map, &key);
+	}
+	return prov_on_map;
+}
+
+/* Create a provenance entry for a task instrumented by eBPF
+ * if it does not exist and insert it into the @task_map;
+ * otherwise, updates its existing provenance.
+ * Return either the new provenance entry pointer or the updated
+ * provenance entry pointer. */
+static __always_inline union prov_elt* get_or_create_bpf_task_prov(struct task_struct *task, pid_t pid, pid_t tgid) {
+	if (!task) {
+		return NULL;
+	}
+
+	uint64_t key = get_key(task);
+	union prov_elt *prov_on_map = bpf_map_lookup_elem(&task_map, &key);
+	if (prov_on_map) {
+		prov_update_bpf_task(task, pid, tgid, prov_on_map);
+	} else {
+		union prov_elt init_prov = {};
+		prov_init_node(&init_prov, ACT_TASK);
+		prov_update_bpf_task(task, pid, tgid, &init_prov);
+		bpf_map_update_elem(&task_map, &key, &init_prov, BPF_NOEXIST);
+		prov_on_map = bpf_map_lookup_elem(&task_map, &key);
+	}
+	return prov_on_map;
 }
 
 /* Create a provenance entry for a task if it does not exist
