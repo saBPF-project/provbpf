@@ -75,7 +75,7 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
         return 0;
     }
 
-    ptr_prov_current = get_or_create_bpf_task_prov(task, current_pid, current_tgid);
+    ptr_prov_current = get_or_create_bpf_task_prov(current_task, current_pid, current_tgid);
     if (!ptr_prov_current) {
         return 0;
     }
