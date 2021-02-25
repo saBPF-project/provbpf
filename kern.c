@@ -85,34 +85,34 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
     return 0;
 }
 #endif
-//
-// /*!
-//  * @brief Record provenance when task_free hook is triggered.
-//  *
-//  * Record provenance relation RL_TERMINATE_TASK by calling function
-//  * "record_terminate".
-//  * @param task The task in question (i.e., to be free).
-//  *
-//  */
-// #ifndef PROV_FILTER_TASK_FREE_OFF
-// SEC("lsm/task_free")
-// int BPF_PROG(task_free, struct task_struct *task) {
-//     uint64_t key = get_key(task);
-//     union prov_elt *ptr_prov;
-//
-//     ptr_prov = get_or_create_task_prov(task);
-//     if(!ptr_prov) // something is wrong
-//         return 0;
-//
-//     /* Record task terminate */
-//     record_terminate(RL_TERMINATE_TASK, ptr_prov);
-//
-//     /* Delete task provenance since the task no longer exists */
-//     bpf_map_delete_elem(&task_map, &key);
-//
-//     return 0;
-// }
-// #endif
+
+/*!
+ * @brief Record provenance when task_free hook is triggered.
+ *
+ * Record provenance relation RL_TERMINATE_TASK by calling function
+ * "record_terminate".
+ * @param task The task in question (i.e., to be free).
+ *
+ */
+#ifndef PROV_FILTER_TASK_FREE_OFF
+SEC("lsm/task_free")
+int BPF_PROG(task_free, struct task_struct *task) {
+    uint64_t key = get_key(task);
+    union prov_elt *ptr_prov;
+
+    ptr_prov = get_or_create_lsm_task_prov(task);
+    if (!ptr_prov) // something is wrong
+        return 0;
+
+    /* Record task terminate */
+    record_terminate(RL_TERMINATE_TASK, ptr_prov);
+
+    /* Delete task provenance since the task no longer exists */
+    bpf_map_delete_elem(&task_map, &key);
+
+    return 0;
+}
+#endif
 //
 // /*!
 //  * @brief Record provenance when task_fix_setuid hook is triggered.
@@ -229,44 +229,44 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
 // }
 // #endif
 //
-// /*!
-//  * @brief Record provenance when inode_alloc_security hook is triggered.
-//  *
-//  * This hook is triggered when allocating and attaching a security structure to
-//  * @inode->i_security.
-//  * The i_security field is initialized to NULL when the inode structure is
-//  * allocated.
-//  * When i_security field is initialized, we also initialize i_provenance field
-//  * of the inode.
-//  * Therefore, we create a new ENT_INODE_UNKNOWN provenance entry.
-//  * UUID information from @i_sb (superblock) is copied to the new inode's
-//  * provenance entry.
-//  * We then call function "refresh_inode_provenance" to obtain more information
-//  * about the inode.
-//  * No information flow occurs.
-//  * @param inode The inode structure.
-//  * @return 0 if operation was successful; -ENOMEM if no memory can be allocated
-//  * for the new inode provenance entry. Other error codes unknown.
-//  *
-//  */
-// #ifndef PROV_FILTER_INODE_ALLOC_SECURITY_OFF
-// SEC("lsm/inode_alloc_security")
-// int BPF_PROG(inode_alloc_security, struct inode *inode) {
-//     union prov_elt *ptr_prov;
-//
-//     if (is_inode_dir(inode))
-//         return 0;
-//
-//     ptr_prov = get_or_create_inode_prov(inode);
-//     if(!ptr_prov) // something is wrong
-//         return 0;
-//
-//     record_provenance(false, ptr_prov);
-//
-//     return 0;
-// }
-// #endif
-//
+/*!
+ * @brief Record provenance when inode_alloc_security hook is triggered.
+ *
+ * This hook is triggered when allocating and attaching a security structure to
+ * @inode->i_security.
+ * The i_security field is initialized to NULL when the inode structure is
+ * allocated.
+ * When i_security field is initialized, we also initialize i_provenance field
+ * of the inode.
+ * Therefore, we create a new ENT_INODE_UNKNOWN provenance entry.
+ * UUID information from @i_sb (superblock) is copied to the new inode's
+ * provenance entry.
+ * We then call function "refresh_inode_provenance" to obtain more information
+ * about the inode.
+ * No information flow occurs.
+ * @param inode The inode structure.
+ * @return 0 if operation was successful; -ENOMEM if no memory can be allocated
+ * for the new inode provenance entry. Other error codes unknown.
+ *
+ */
+#ifndef PROV_FILTER_INODE_ALLOC_SECURITY_OFF
+SEC("lsm/inode_alloc_security")
+int BPF_PROG(inode_alloc_security, struct inode *inode) {
+    union prov_elt *ptr_prov;
+
+    if (is_inode_dir(inode))
+        return 0;
+
+    ptr_prov = get_or_create_inode_prov(inode);
+    if(!ptr_prov) // something is wrong
+        return 0;
+
+    record_provenance(false, ptr_prov);
+
+    return 0;
+}
+#endif
+
 // /*!
 //  * @brief Record provenance when inode_free_security hook is triggered.
 //  *
