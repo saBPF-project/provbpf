@@ -31,7 +31,7 @@ static __always_inline void prov_init_relation(union prov_elt *prov,
     relation_identifier(prov).machine_id = prov_get_id(MACHINE_ID_INDEX);
     if (file) {
 		prov->relation_info.set = FILE_INFO_SET;
-        bpf_probe_read(&offset, sizeof(offset), &file->f_pos);
+        offset = file->f_pos;
 		prov->relation_info.offset = offset;
 	}
     prov->relation_info.flags = flags;
@@ -215,8 +215,7 @@ static __always_inline void current_update_shst(union prov_elt *cprov,
                                                struct task_struct *current_task,
 					                                     bool read)
 {
-    struct mm_struct *mm;
-    bpf_probe_read(&mm, sizeof(mm), &current_task->mm);
+    struct mm_struct *mm = current_task->mm;
     struct vm_area_struct *vma;
     struct file *mmapf;
     vm_flags_t flags;
@@ -225,19 +224,19 @@ static __always_inline void current_update_shst(union prov_elt *cprov,
 
     if (!mm)
         return;
-    bpf_probe_read(&vma, sizeof(vma), &mm->mmap);
+    vma = mm->mmap;
 
     for (int i = 0; i < MAX_VMA; i++) {
         // If this is the last mmaped file, break
         if (!vma)
             return;
         // Perform operations of vma
-        bpf_probe_read(&mmapf, sizeof(mmapf), &vma->vm_file);
+        mmapf = vma->vm_file;
         if (!mmapf)
           return;
-        bpf_probe_read(&flags, sizeof(flags), &vma->vm_flags);
+        flags = vma->vm_flags;
 
-        bpf_probe_read(&mmapf_inode, sizeof(mmapf_inode), &mmapf->f_inode);
+        mmapf_inode = mmapf->f_inode;
         mmprov = get_or_create_inode_prov(mmapf_inode);
         if (mmprov) {
             if (vm_read_exec_mayshare(flags) && read) {
@@ -249,7 +248,7 @@ static __always_inline void current_update_shst(union prov_elt *cprov,
             }
         }
         // Get next mmaped file
-        bpf_probe_read(&vma, sizeof(vma), &vma->vm_next);
+        vma = vma->vm_next;
     }
     return;
 }
