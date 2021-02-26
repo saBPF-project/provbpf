@@ -18,6 +18,51 @@
 
 #define MAX_VMA 16
 
+/*!
+ * @brief Record "informed" relation from one activity provenance node to
+ * another activity provenance node.
+ *
+ * This function applies to only "informed" relation between two activity
+ * provenance nodes.
+ * Unless both nodes involved (from, to) are set not to be tracked and prov_all
+ * is also turned off,
+ * or unless the relation type is set not to be tracked,
+ * relation will be captured.
+ * The relation is whatever relation between one activity node to another given
+ * by the argument "type".
+ * @param type The type of relation (in the category of "informed") between
+ * two activities.
+ * @param from The activity provenance node.
+ * @param to The other activity provenance node.
+ * @param file Information related to LSM hooks.
+ * @param flags Information related to LSM hooks.
+ * @return 0 if no error occurred. Other error codes unknown.
+ *
+ */
+#define informs( type, from, to, file, flags ) ( record_relation(type, from, false, to, false, file, flags) )
+/*!
+ * @brief Record "derived" relation from one entity provenance node to another
+ * entity provenance node.
+ *
+ * This function applies to only "derived" relation between two entity
+ * provenance nodes.
+ * Unless both nodes involved (from, to) are set not to be tracked and prov_all
+ * is also turned off,
+ * or unless the relation type is set not to be tracked,
+ * relation will be captured.
+ * The relation is whatever relation between one entity to another given by the
+ * argument "type".
+ * @param type The type of relation (in the category of "derived") between
+ * two entities.
+ * @param from The entity provenance node.
+ * @param to The other entity provenance node.
+ * @param file Information related to LSM hooks.
+ * @param flags Information related to LSM hooks.
+ * @return 0 if no error occurred. Other error codes unknown.
+ *
+ */
+#define derives( type, from, to, file, flags ) ( record_relation(type, from, false, to, false, file, flags) )
+
 /* Initialize common fields of a node's provenance */
 static __always_inline void prov_init_relation(union prov_elt *prov,
                                                 uint64_t type,
@@ -289,64 +334,6 @@ static __always_inline void uses(const uint64_t type,
     record_relation(type, entity, false, activity, false, file, flags);
     record_relation(RL_PROC_WRITE, activity, false, activity_mem, false, NULL, 0);
     current_update_shst(activity_mem, current, false);
-}
-
-/*!
- * @brief Record "informed" relation from one activity provenance node to
- * another activity provenance node.
- *
- * This function applies to only "informed" relation between two activity
- * provenance nodes.
- * Unless both nodes involved (from, to) are set not to be tracked and prov_all
- * is also turned off,
- * or unless the relation type is set not to be tracked,
- * relation will be captured.
- * The relation is whatever relation between one activity node to another given
- * by the argument "type".
- * @param type The type of relation (in the category of "informed") between
- * two activities.
- * @param from The activity provenance node.
- * @param to The other activity provenance node.
- * @param file Information related to LSM hooks.
- * @param flags Information related to LSM hooks.
- * @return 0 if no error occurred. Other error codes unknown.
- *
- */
-static __always_inline void informs(uint64_t type,
-                                     void *from,
-                                     void *to,
-                                     const struct file *file,
-                                     const uint64_t flags) {
-    record_relation(type, from, false, to, false, file, flags);
-}
-
-/*!
- * @brief Record "derived" relation from one entity provenance node to another
- * entity provenance node.
- *
- * This function applies to only "derived" relation between two entity
- * provenance nodes.
- * Unless both nodes involved (from, to) are set not to be tracked and prov_all
- * is also turned off,
- * or unless the relation type is set not to be tracked,
- * relation will be captured.
- * The relation is whatever relation between one entity to another given by the
- * argument "type".
- * @param type The type of relation (in the category of "derived") between
- * two entities.
- * @param from The entity provenance node.
- * @param to The other entity provenance node.
- * @param file Information related to LSM hooks.
- * @param flags Information related to LSM hooks.
- * @return 0 if no error occurred. Other error codes unknown.
- *
- */
-static __always_inline void derives(uint64_t type,
-                                     void *from,
-                                     void *to,
-                                     const struct file *file,
-                                     const uint64_t flags) {
-    record_relation(type, from, false, to, false, file, flags);
 }
 
 /*!
