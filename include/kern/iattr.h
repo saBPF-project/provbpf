@@ -31,15 +31,20 @@ static __always_inline void prov_update_iattr(struct iattr *iattr,
 }
 
 static __always_inline union prov_elt* get_or_create_iattr_prov(struct iattr *iattr) {
-    union prov_elt prov_tmp, *ptr_prov;
+    union prov_elt prov_tmp;
+    uint64_t key = IATTR_PERCPU_TMP;
+    union prov_elt *prov_on_map = bpf_map_lookup_elem(&tmp_prov_elt_map, &key);
 
-    __builtin_memset(&prov_tmp, 0, sizeof(union prov_elt));
-    prov_init_node(&prov_tmp, ENT_IATTR);
-    prov_update_iattr(iattr, &prov_tmp);
-
-    ptr_prov = &prov_tmp;
-
-    return ptr_prov;
+    if (prov_on_map) {
+      prov_update_iattr(iattr, prov_on_map);
+    } else {
+      __builtin_memset(&prov_tmp, 0, sizeof(union prov_elt));
+      prov_init_node(&prov_tmp, ENT_IATTR);
+      prov_update_iattr(iattr, &prov_tmp);
+      bpf_map_update_elem(&tmp_prov_elt_map, &key, &prov_tmp, BPF_NOEXIST);
+      prov_on_map = bpf_map_lookup_elem(&tmp_prov_elt_map, &key);
+    }
+    return prov_on_map;
 }
 
 #endif
