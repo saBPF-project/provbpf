@@ -197,6 +197,18 @@ static __always_inline void record_relation(uint64_t type,
                                             const struct file *file,
                                             const uint64_t flags)
 {
+    uint32_t policy_key = 0;
+    struct capture_policy *prov_policy = bpf_map_lookup_elem(&policy_map, &policy_key);
+
+    if (prov_policy && prov_policy->should_compress_edge) {
+        if (node_previous_id((union prov_elt *)to) == node_identifier((union prov_elt *)from).id
+		    && node_previous_type((union prov_elt *)to) == type)
+            return;
+
+        node_previous_id((union prov_elt *)to) = node_identifier((union prov_elt *)from).id;
+		node_previous_type((union prov_elt *)to) = type;
+    }
+
     // Update node version
     if (to_is_long)
         update_version_long(type, to);
