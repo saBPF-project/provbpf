@@ -128,6 +128,13 @@ static __always_inline void update_version(const uint64_t type,
 {
     union prov_elt old_prov;
 
+    // Check provenance policy
+    uint32_t policy_key = 0;
+    struct capture_policy *prov_policy = bpf_map_lookup_elem(&policy_map, &policy_key);
+
+    if (!provenance_has_outgoing(prov) && prov_policy && prov_policy->should_compress_node)
+        return;
+
     __builtin_memset(&old_prov, 0, sizeof(union prov_elt));
     __builtin_memcpy(&old_prov, prov, sizeof(union prov_elt));
 
@@ -151,6 +158,14 @@ static __always_inline void update_version_long(const uint64_t type,
                                                 union long_prov_elt *prov)
 {
     int map_id = UPDATE_PERCPU_LONG_TMP;
+
+    // Check provenance policy
+    uint32_t policy_key = 0;
+    struct capture_policy *prov_policy = bpf_map_lookup_elem(&policy_map, &policy_key);
+
+    if (!provenance_has_outgoing(prov) && prov_policy && prov_policy->should_compress_node)
+        return;
+
     union long_prov_elt *old_prov = bpf_map_lookup_elem(&long_tmp_prov_map, &map_id);
     if (!old_prov)
         return;
