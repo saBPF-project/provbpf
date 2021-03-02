@@ -198,7 +198,10 @@ static __always_inline void record_relation(uint64_t type,
                                             const uint64_t flags)
 {
     // Update node version
-    update_version(type, to);
+    if (to_is_long)
+        update_version_long(type, to);
+    else
+        update_version(type, to);
 
     // Write relation provenance to ring buffer
     __write_relation(type, from, from_is_long, to, to_is_long, file, flags);
@@ -455,8 +458,7 @@ static __always_inline int record_write_xattr(uint64_t type,
     ptr_prov_xattr->xattr_info.size = (size < PROV_XATTR_VALUE_SIZE) ? size : PROV_XATTR_VALUE_SIZE;
 
     record_relation(RL_PROC_READ, cprov, false, tprov, false, NULL, 0);
-    update_version_long(type, ptr_prov_xattr);
-    __write_relation(type, tprov, false, ptr_prov_xattr, true, NULL, flags);
+    record_relation(type, tprov, false, ptr_prov_xattr, true, NULL, 0);
 
     if (type == RL_SETXATTR) {
       record_relation(RL_SETXATTR_INODE, ptr_prov_xattr, true, iprov, false, NULL, flags);
@@ -508,8 +510,7 @@ static __always_inline void record_read_xattr(void *cprov,
     __builtin_memcpy(&(xattr->xattr_info.name), &name, PROV_XATTR_NAME_SIZE);
     xattr->xattr_info.name[PROV_XATTR_NAME_SIZE - 1] = '\0';
 
-    update_version_long(RL_GETXATTR_INODE, xattr);
-    __write_relation(RL_GETXATTR_INODE, iprov, false, xattr, true, NULL, 0);
+    record_relation(RL_GETXATTR_INODE, iprov, false, xattr, true, NULL, 0);
     record_relation(RL_GETXATTR, xattr, true, tprov, false, NULL, 0);
     record_relation(RL_PROC_WRITE, tprov, false, cprov, false, NULL, 0);
 }
@@ -529,8 +530,7 @@ static __always_inline int record_influences_kernel(const uint64_t type,
 
     record_relation(RL_LOAD_FILE, entity, false, activity, false, file, 0);
     if (ptr_prov_machine) {
-        update_version_long(type, ptr_prov_machine);
-        __write_relation(type, activity, false, ptr_prov_machine, true, NULL, 0);
+        record_relation(type, activity, false, ptr_prov_machine, true, NULL, 0);
     }
 
     return 0;
