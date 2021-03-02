@@ -30420,6 +30420,14 @@ enum {
 	HP_THREAD_PARKED = 2,
 };
 
+struct umd_info {
+	const char *driver_name;
+	struct file *pipe_to_umh;
+	struct file *pipe_from_umh;
+	struct path wd;
+	struct pid *tgid;
+};
+
 struct pin_cookie {};
 
 struct preempt_notifier;
@@ -40630,14 +40638,6 @@ struct tree_descr {
 	int mode;
 };
 
-struct umd_info {
-	const char *driver_name;
-	struct file *pipe_to_umh;
-	struct file *pipe_from_umh;
-	struct path wd;
-	struct pid *tgid;
-};
-
 struct bpf_preload_info {
 	char link_name[16];
 	int link_id;
@@ -50674,8 +50674,11 @@ struct wait_exceptional_entry_queue {
 	struct exceptional_entry_key key;
 };
 
+struct fscrypt_blk_crypto_key;
+
 struct fscrypt_prepared_key {
 	struct crypto_skcipher *tfm;
+	struct fscrypt_blk_crypto_key *blk_key;
 };
 
 struct fscrypt_mode;
@@ -50685,6 +50688,7 @@ struct fscrypt_direct_key;
 struct fscrypt_info {
 	struct fscrypt_prepared_key ci_enc_key;
 	bool ci_owns_key;
+	bool ci_inlinecrypt;
 	struct fscrypt_mode *ci_mode;
 	struct inode *ci_inode;
 	struct key *ci_master_key;
@@ -50871,6 +50875,12 @@ struct fscrypt_get_policy_ex_arg {
 
 struct fscrypt_dummy_policy {
 	const union fscrypt_policy *policy;
+};
+
+struct fscrypt_blk_crypto_key {
+	struct blk_crypto_key base;
+	int num_devs;
+	struct request_queue *devs[0];
 };
 
 struct fsverity_hash_alg;
@@ -62302,7 +62312,6 @@ struct selinux_avc;
 struct selinux_policy;
 
 struct selinux_state {
-	bool disabled;
 	bool enforcing;
 	bool checkreqprot;
 	bool initialized;
@@ -65771,6 +65780,29 @@ struct ima_key_entry {
 	void *payload;
 	size_t payload_len;
 	char *keyring_name;
+};
+
+struct evm_xattr {
+	struct evm_ima_xattr_data data;
+	u8 digest[20];
+};
+
+struct xattr_list {
+	struct list_head list;
+	char *name;
+};
+
+struct evm_digest {
+	struct ima_digest_data hdr;
+	char digest[64];
+};
+
+struct h_misc {
+	long unsigned int ino;
+	__u32 generation;
+	uid_t uid;
+	gid_t gid;
+	umode_t mode;
 };
 
 enum {
@@ -77690,6 +77722,31 @@ struct fb_cmap32 {
 	compat_caddr_t green;
 	compat_caddr_t blue;
 	compat_caddr_t transp;
+};
+
+struct dmt_videomode {
+	u32 dmt_id;
+	u32 std_2byte_code;
+	u32 cvt_3byte_code;
+	const struct fb_videomode *mode;
+};
+
+struct broken_edid {
+	u8 manufacturer[4];
+	u32 model;
+	u32 fix;
+};
+
+struct __fb_timings {
+	u32 dclk;
+	u32 hfreq;
+	u32 vfreq;
+	u32 hactive;
+	u32 vactive;
+	u32 hblank;
+	u32 vblank;
+	u32 htotal;
+	u32 vtotal;
 };
 
 struct fb_cvt_data {
@@ -89981,6 +90038,13 @@ struct pm_clock_entry {
 	enum pce_status status;
 };
 
+struct firmware_fallback_config {
+	unsigned int force_sysfs_fallback;
+	unsigned int ignore_sysfs_fallback;
+	int old_timeout;
+	int loading_timeout;
+};
+
 enum fw_opt {
 	FW_OPT_UEVENT = 1,
 	FW_OPT_NOWAIT = 2,
@@ -90020,6 +90084,8 @@ struct fw_priv {
 	struct page **pages;
 	int nr_pages;
 	int page_array_size;
+	bool need_uevent;
+	struct list_head pending_list;
 	const char *fw_name;
 };
 
@@ -90051,6 +90117,13 @@ struct firmware_work {
 	void *context;
 	void (*cont)(const struct firmware *, void *);
 	u32 opt_flags;
+};
+
+struct fw_sysfs {
+	bool nowait;
+	struct device dev;
+	struct fw_priv *fw_priv;
+	struct firmware *fw;
 };
 
 struct node_access_nodes {
@@ -100315,6 +100388,14 @@ enum {
 	year = 3,
 };
 
+struct nvmem_cell_info {
+	const char *name;
+	unsigned int offset;
+	unsigned int bytes;
+	unsigned int bit_offset;
+	unsigned int nbits;
+};
+
 typedef int (*nvmem_reg_read_t)(void *, unsigned int, void *, size_t);
 
 typedef int (*nvmem_reg_write_t)(void *, unsigned int, void *, size_t);
@@ -100331,8 +100412,6 @@ struct nvmem_keepout {
 	unsigned int end;
 	unsigned char value;
 };
-
-struct nvmem_cell_info;
 
 struct nvmem_config {
 	struct device *dev;
@@ -100358,13 +100437,7 @@ struct nvmem_config {
 	struct device *base_dev;
 };
 
-struct nvmem_cell_info {
-	const char *name;
-	unsigned int offset;
-	unsigned int bytes;
-	unsigned int bit_offset;
-	unsigned int nbits;
-};
+struct nvmem_device;
 
 struct cmos_rtc_board_info {
 	void (*wake_on)(struct device *);
@@ -101681,6 +101754,87 @@ struct cooling_dev_stats {
 	ktime_t *time_in_state;
 	unsigned int *trans_table;
 };
+
+struct genl_dumpit_info {
+	const struct genl_family *family;
+	struct genl_ops op;
+	struct nlattr **attrs;
+};
+
+enum thermal_genl_attr {
+	THERMAL_GENL_ATTR_UNSPEC = 0,
+	THERMAL_GENL_ATTR_TZ = 1,
+	THERMAL_GENL_ATTR_TZ_ID = 2,
+	THERMAL_GENL_ATTR_TZ_TEMP = 3,
+	THERMAL_GENL_ATTR_TZ_TRIP = 4,
+	THERMAL_GENL_ATTR_TZ_TRIP_ID = 5,
+	THERMAL_GENL_ATTR_TZ_TRIP_TYPE = 6,
+	THERMAL_GENL_ATTR_TZ_TRIP_TEMP = 7,
+	THERMAL_GENL_ATTR_TZ_TRIP_HYST = 8,
+	THERMAL_GENL_ATTR_TZ_MODE = 9,
+	THERMAL_GENL_ATTR_TZ_NAME = 10,
+	THERMAL_GENL_ATTR_TZ_CDEV_WEIGHT = 11,
+	THERMAL_GENL_ATTR_TZ_GOV = 12,
+	THERMAL_GENL_ATTR_TZ_GOV_NAME = 13,
+	THERMAL_GENL_ATTR_CDEV = 14,
+	THERMAL_GENL_ATTR_CDEV_ID = 15,
+	THERMAL_GENL_ATTR_CDEV_CUR_STATE = 16,
+	THERMAL_GENL_ATTR_CDEV_MAX_STATE = 17,
+	THERMAL_GENL_ATTR_CDEV_NAME = 18,
+	THERMAL_GENL_ATTR_GOV_NAME = 19,
+	__THERMAL_GENL_ATTR_MAX = 20,
+};
+
+enum thermal_genl_sampling {
+	THERMAL_GENL_SAMPLING_TEMP = 0,
+	__THERMAL_GENL_SAMPLING_MAX = 1,
+};
+
+enum thermal_genl_event {
+	THERMAL_GENL_EVENT_UNSPEC = 0,
+	THERMAL_GENL_EVENT_TZ_CREATE = 1,
+	THERMAL_GENL_EVENT_TZ_DELETE = 2,
+	THERMAL_GENL_EVENT_TZ_DISABLE = 3,
+	THERMAL_GENL_EVENT_TZ_ENABLE = 4,
+	THERMAL_GENL_EVENT_TZ_TRIP_UP = 5,
+	THERMAL_GENL_EVENT_TZ_TRIP_DOWN = 6,
+	THERMAL_GENL_EVENT_TZ_TRIP_CHANGE = 7,
+	THERMAL_GENL_EVENT_TZ_TRIP_ADD = 8,
+	THERMAL_GENL_EVENT_TZ_TRIP_DELETE = 9,
+	THERMAL_GENL_EVENT_CDEV_ADD = 10,
+	THERMAL_GENL_EVENT_CDEV_DELETE = 11,
+	THERMAL_GENL_EVENT_CDEV_STATE_UPDATE = 12,
+	THERMAL_GENL_EVENT_TZ_GOV_CHANGE = 13,
+	__THERMAL_GENL_EVENT_MAX = 14,
+};
+
+enum thermal_genl_cmd {
+	THERMAL_GENL_CMD_UNSPEC = 0,
+	THERMAL_GENL_CMD_TZ_GET_ID = 1,
+	THERMAL_GENL_CMD_TZ_GET_TRIP = 2,
+	THERMAL_GENL_CMD_TZ_GET_TEMP = 3,
+	THERMAL_GENL_CMD_TZ_GET_GOV = 4,
+	THERMAL_GENL_CMD_TZ_GET_MODE = 5,
+	THERMAL_GENL_CMD_CDEV_GET = 6,
+	__THERMAL_GENL_CMD_MAX = 7,
+};
+
+struct param {
+	struct nlattr **attrs;
+	struct sk_buff *msg;
+	const char *name;
+	int tz_id;
+	int cdev_id;
+	int trip_id;
+	int trip_temp;
+	int trip_type;
+	int trip_hyst;
+	int temp;
+	int cdev_state;
+	int cdev_max_state;
+};
+
+typedef int (*cb_t)(struct param *);
 
 struct thermal_hwmon_device {
 	char type[20];
@@ -107908,7 +108062,7 @@ struct nvmem_cell_table {
 	struct list_head node;
 };
 
-struct nvmem_device {
+struct nvmem_device___2 {
 	struct module *owner;
 	struct device dev;
 	int stride;
@@ -107938,7 +108092,7 @@ struct nvmem_cell {
 	int bit_offset;
 	int nbits;
 	struct device_node *np;
-	struct nvmem_device *nvmem;
+	struct nvmem_device___2 *nvmem;
 	struct list_head node;
 };
 
@@ -113450,12 +113604,6 @@ struct dst_cache_pcpu {
 		struct in_addr in_saddr;
 		struct in6_addr in6_saddr;
 	};
-};
-
-struct genl_dumpit_info {
-	const struct genl_family *family;
-	struct genl_ops op;
-	struct nlattr **attrs;
 };
 
 enum devlink_command {

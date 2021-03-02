@@ -57,6 +57,15 @@ static __always_inline void prov_update_task(struct task_struct *task,
   	ptr_prov->task_info.hw_vm = (task->mm->hiwater_vm > ptr_prov->task_info.vm) ? (task->mm->hiwater_vm * IOC_PAGE_SIZE / KB) : (ptr_prov->task_info.vm * IOC_PAGE_SIZE / KB);
   	ptr_prov->task_info.hw_rss = (task->mm->hiwater_rss > ptr_prov->task_info.rss) ? (task->mm->hiwater_rss * IOC_PAGE_SIZE / KB) : (ptr_prov->task_info.rss * IOC_PAGE_SIZE / KB);
 
+	// old proc_prov_struct entries
+	ptr_prov->task_info.tgid = task->tgid;
+	ptr_prov->task_info.utsns = task->nsproxy->uts_ns->ns.inum;
+	ptr_prov->task_info.ipcns = task->nsproxy->ipc_ns->ns.inum;
+	ptr_prov->task_info.mntns = task->nsproxy->mnt_ns->ns.inum;
+	ptr_prov->task_info.pidns = task->thread_pid->numbers[0].ns->ns.inum;
+	ptr_prov->task_info.netns = task->nsproxy->net_ns->ns.inum;
+	ptr_prov->task_info.cgroupns = task->nsproxy->cgroup_ns->ns.inum;
+
 }
 
 /* Create a provenance entry for a task if it does not exist

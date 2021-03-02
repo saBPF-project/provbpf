@@ -188,6 +188,13 @@ struct task_prov_struct {
 	uint64_t rss;
 	uint64_t hw_vm;
 	uint64_t hw_rss;
+	uint32_t tgid;
+	uint32_t utsns;
+	uint32_t ipcns;
+	uint32_t mntns;
+	uint32_t pidns;
+	uint32_t netns;
+	uint32_t cgroupns;
 };
 
 #define PROV_SBUUID_LEN 16
