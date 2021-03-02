@@ -629,7 +629,7 @@ int BPF_PROG(inode_rename, struct inode *old_dir, struct dentry *old_dentry, str
 #ifndef PROV_FILTER_INODE_SETATTR_OFF
 SEC("lsm/inode_setattr")
 int BPF_PROG(inode_setattr, struct dentry *dentry, struct iattr *attr) {
-    union prov_elt *ptr_prov_current_cred, *ptr_prov_current_task, *ptr_prov_inode, *ptr_prov_iattr;
+    union prov_elt *ptr_prov_current_cred, *ptr_prov_current_task, *ptr_prov_inode, prov_iattr;
     struct task_struct *current_task;
     struct cred *current_cred;
 
@@ -651,13 +651,10 @@ int BPF_PROG(inode_setattr, struct dentry *dentry, struct iattr *attr) {
     if (!ptr_prov_inode) {
       return 0;
     }
-    ptr_prov_iattr = get_or_create_iattr_prov(attr);
-    if (!ptr_prov_iattr) {
-      return 0;
-    }
+    iattr_init(&prov_iattr, attr);
 
-    generates(RL_SETATTR, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_iattr, NULL, 0);
-    derives(RL_SETATTR_INODE, ptr_prov_iattr, ptr_prov_inode, NULL, 0);
+    generates(RL_SETATTR, current_task, ptr_prov_current_cred, ptr_prov_current_task, &prov_iattr, NULL, 0);
+    derives(RL_SETATTR_INODE, &prov_iattr, ptr_prov_inode, NULL, 0);
 
     return 0;
 }
