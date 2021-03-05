@@ -956,11 +956,6 @@ struct task_struct {
 	void *migration_pending;
 	short unsigned int migration_disabled;
 	short unsigned int migration_flags;
-	long unsigned int rcu_tasks_nvcsw;
-	u8 rcu_tasks_holdout;
-	u8 rcu_tasks_idx;
-	int rcu_tasks_idle_cpu;
-	struct list_head rcu_tasks_holdout_list;
 	int trc_reader_nesting;
 	int trc_ipi_to_cpu;
 	union rcu_special trc_reader_special;
@@ -1143,8 +1138,6 @@ struct task_struct {
 	struct mem_cgroup *active_memcg;
 	struct request_queue *throttle_queue;
 	struct uprobe_task *utask;
-	unsigned int sequential_io;
-	unsigned int sequential_io_avg;
 	struct kmap_ctrl kmap_ctrl;
 	int pagefault_disabled;
 	struct task_struct *oom_reaper_list;
@@ -1160,9 +1153,6 @@ struct task_struct {
 	__u64 __mce_reserved: 62;
 	struct callback_head mce_kill_me;
 	struct llist_head kretprobe_instances;
-	long: 64;
-	long: 64;
-	long: 64;
 	long: 64;
 	long: 64;
 	long: 64;
@@ -3915,12 +3905,9 @@ enum vm_event_item {
 	THP_ZERO_PAGE_ALLOC_FAILED = 88,
 	THP_SWPOUT = 89,
 	THP_SWPOUT_FALLBACK = 90,
-	BALLOON_INFLATE = 91,
-	BALLOON_DEFLATE = 92,
-	BALLOON_MIGRATE = 93,
-	SWAP_RA = 94,
-	SWAP_RA_HIT = 95,
-	NR_VM_EVENT_ITEMS = 96,
+	SWAP_RA = 91,
+	SWAP_RA_HIT = 92,
+	NR_VM_EVENT_ITEMS = 93,
 };
 
 struct tlb_context {
@@ -5657,7 +5644,7 @@ struct mem_cgroup {
 	long: 64;
 	struct memcg_padding _pad1_;
 	atomic_long_t vmstats[41];
-	atomic_long_t vmevents[96];
+	atomic_long_t vmevents[93];
 	atomic_long_t memory_events[8];
 	atomic_long_t memory_events_local[8];
 	long unsigned int socket_pressure;
@@ -5667,6 +5654,9 @@ struct mem_cgroup {
 	enum memcg_kmem_state kmem_state;
 	struct obj_cgroup *objcg;
 	struct list_head objcg_list;
+	long: 64;
+	long: 64;
+	long: 64;
 	long: 64;
 	struct memcg_padding _pad2_;
 	atomic_t moving_account;
@@ -6789,13 +6779,10 @@ struct dev_pm_ops {
 	int (*runtime_idle)(struct device *);
 };
 
-struct pm_domain_data;
-
 struct pm_subsys_data {
 	spinlock_t lock;
 	unsigned int refcount;
 	struct list_head clock_list;
-	struct pm_domain_data *domain_data;
 };
 
 struct wakeup_source {
@@ -8598,7 +8585,7 @@ enum mem_cgroup_events_target {
 
 struct memcg_vmstats_percpu {
 	long int stat[41];
-	long unsigned int events[96];
+	long unsigned int events[93];
 	long unsigned int nr_page_events;
 	long unsigned int targets[2];
 };
@@ -8923,8 +8910,6 @@ struct dst_entry;
 
 struct socket;
 
-struct net_device;
-
 struct sock_reuseport;
 
 struct bpf_local_storage;
@@ -9025,7 +9010,6 @@ struct sock {
 	void (*sk_write_space)(struct sock *);
 	void (*sk_error_report)(struct sock *);
 	int (*sk_backlog_rcv)(struct sock *, struct sk_buff *);
-	struct sk_buff * (*sk_validate_xmit_skb)(struct sock *, struct net_device *, struct sk_buff *);
 	void (*sk_destruct)(struct sock *);
 	struct sock_reuseport *sk_reuseport_cb;
 	struct bpf_local_storage *sk_bpf_storage;
@@ -9547,8 +9531,6 @@ struct icmpv6msg_mib;
 
 struct linux_xfrm_mib;
 
-struct linux_tls_mib;
-
 struct mptcp_mib;
 
 struct netns_mib {
@@ -9566,7 +9548,6 @@ struct netns_mib {
 	struct icmpv6_mib *icmpv6_statistics;
 	struct icmpv6msg_mib *icmpv6msg_statistics;
 	struct linux_xfrm_mib *xfrm_statistics;
-	struct linux_tls_mib *tls_statistics;
 	struct mptcp_mib *mptcp_statistics;
 };
 
@@ -9662,7 +9643,6 @@ struct netns_ipv4 {
 	struct fib_table *fib_main;
 	struct fib_table *fib_default;
 	bool fib_has_custom_local_routes;
-	int fib_num_tclassid_users;
 	struct hlist_head *fib_table_hash;
 	bool fib_offload_disabled;
 	struct sock *fibnl;
@@ -9839,6 +9819,8 @@ struct netns_sysctl_ipv6 {
 	bool skip_notify_on_dev_down;
 };
 
+struct net_device;
+
 struct neighbour;
 
 struct dst_ops {
@@ -9929,65 +9911,6 @@ struct netns_ipv6 {
 	} ip6addrlbl_table;
 };
 
-struct netns_sysctl_lowpan {
-	struct ctl_table_header *frags_hdr;
-};
-
-struct netns_ieee802154_lowpan {
-	struct netns_sysctl_lowpan sysctl;
-	struct fqdir *fqdir;
-};
-
-struct sctp_mib;
-
-struct netns_sctp {
-	struct sctp_mib *sctp_statistics;
-	struct proc_dir_entry *proc_net_sctp;
-	struct ctl_table_header *sysctl_header;
-	struct sock *ctl_sock;
-	struct sock *udp4_sock;
-	struct sock *udp6_sock;
-	int udp_port;
-	int encap_port;
-	struct list_head local_addr_list;
-	struct list_head addr_waitq;
-	struct timer_list addr_wq_timer;
-	struct list_head auto_asconf_splist;
-	spinlock_t addr_wq_lock;
-	spinlock_t local_addr_lock;
-	unsigned int rto_initial;
-	unsigned int rto_min;
-	unsigned int rto_max;
-	int rto_alpha;
-	int rto_beta;
-	int max_burst;
-	int cookie_preserve_enable;
-	char *sctp_hmac_alg;
-	unsigned int valid_cookie_life;
-	unsigned int sack_timeout;
-	unsigned int hb_interval;
-	int max_retrans_association;
-	int max_retrans_path;
-	int max_retrans_init;
-	int pf_retrans;
-	int ps_retrans;
-	int pf_enable;
-	int pf_expose;
-	int sndbuf_policy;
-	int rcvbuf_policy;
-	int default_auto_asconf;
-	int addip_enable;
-	int addip_noauth;
-	int prsctp_enable;
-	int reconf_enable;
-	int auth_enable;
-	int intl_enable;
-	int ecn_enable;
-	int scope_policy;
-	int rwnd_upd_shift;
-	long unsigned int max_autoclose;
-};
-
 struct nf_queue_handler;
 
 struct nf_logger;
@@ -10002,20 +9925,14 @@ struct netns_nf {
 	struct nf_hook_entries *hooks_ipv4[5];
 	struct nf_hook_entries *hooks_ipv6[5];
 	struct nf_hook_entries *hooks_arp[3];
-	struct nf_hook_entries *hooks_bridge[5];
 	bool defrag_ipv4;
 	bool defrag_ipv6;
 };
-
-struct ebt_table;
 
 struct netns_xt {
 	struct list_head tables[13];
 	bool notrack_deprecated_warning;
 	bool clusterip_deprecated_warning;
-	struct ebt_table *broute_table;
-	struct ebt_table *frame_filter;
-	struct ebt_table *frame_nat;
 };
 
 struct nf_generic_net {
@@ -10046,11 +9963,6 @@ struct nf_sctp_net {
 	unsigned int timeouts[10];
 };
 
-struct nf_gre_net {
-	struct list_head keymap_list;
-	unsigned int timeouts[2];
-};
-
 struct nf_ip_net {
 	struct nf_generic_net generic;
 	struct nf_tcp_net tcp;
@@ -10059,7 +9971,6 @@ struct nf_ip_net {
 	struct nf_icmp_net icmpv6;
 	struct nf_dccp_net dccp;
 	struct nf_sctp_net sctp;
-	struct nf_gre_net gre;
 };
 
 struct ct_pcpu;
@@ -10169,8 +10080,6 @@ struct netns_xfrm {
 	long: 64;
 };
 
-struct netns_ipvs;
-
 struct mpls_route;
 
 struct netns_mpls {
@@ -10179,31 +10088,6 @@ struct netns_mpls {
 	size_t platform_labels;
 	struct mpls_route **platform_label;
 	struct ctl_table_header *ctl;
-};
-
-struct can_dev_rcv_lists;
-
-struct can_pkg_stats;
-
-struct can_rcv_lists_stats;
-
-struct netns_can {
-	struct proc_dir_entry *proc_dir;
-	struct proc_dir_entry *pde_stats;
-	struct proc_dir_entry *pde_reset_stats;
-	struct proc_dir_entry *pde_rcvlist_all;
-	struct proc_dir_entry *pde_rcvlist_fil;
-	struct proc_dir_entry *pde_rcvlist_inv;
-	struct proc_dir_entry *pde_rcvlist_sff;
-	struct proc_dir_entry *pde_rcvlist_eff;
-	struct proc_dir_entry *pde_rcvlist_err;
-	struct proc_dir_entry *bcmproc_dir;
-	struct can_dev_rcv_lists *rx_alldev_list;
-	spinlock_t rcvlists_lock;
-	struct timer_list stattimer;
-	struct can_pkg_stats *pkg_stats;
-	struct can_rcv_lists_stats *rcv_lists_stats;
-	struct hlist_head cgw_list;
 };
 
 struct netns_xdp {
@@ -10249,10 +10133,9 @@ struct net {
 	struct netns_packet packet;
 	struct netns_unix unx;
 	struct netns_nexthop nexthop;
+	long: 64;
 	struct netns_ipv4 ipv4;
 	struct netns_ipv6 ipv6;
-	struct netns_ieee802154_lowpan ieee802154_lowpan;
-	struct netns_sctp sctp;
 	struct netns_nf nf;
 	struct netns_xt xt;
 	struct netns_ct ct;
@@ -10269,16 +10152,13 @@ struct net {
 	long: 64;
 	long: 64;
 	long: 64;
+	long: 64;
+	long: 64;
 	struct netns_xfrm xfrm;
 	atomic64_t net_cookie;
-	struct netns_ipvs *ipvs;
 	struct netns_mpls mpls;
-	struct netns_can can;
 	struct netns_xdp xdp;
-	struct sock *crypto_nlsk;
 	struct sock *diag_nlsk;
-	long: 64;
-	long: 64;
 	long: 64;
 	long: 64;
 	long: 64;
@@ -10916,10 +10796,6 @@ struct netdev_hw_addr_list {
 	int count;
 };
 
-struct tipc_bearer;
-
-struct mpls_dev;
-
 enum rx_handler_result {
 	RX_HANDLER_CONSUMED = 0,
 	RX_HANDLER_ANOTHER = 1,
@@ -10933,16 +10809,12 @@ typedef rx_handler_result_t rx_handler_func_t(struct sk_buff **);
 
 struct pcpu_dstats;
 
-struct garp_port;
-
-struct mrp_port;
-
 struct netdev_tc_txq {
 	u16 count;
 	u16 offset;
 };
 
-struct macsec_ops;
+struct sfp_bus;
 
 struct udp_tunnel_nic;
 
@@ -10957,10 +10829,6 @@ struct netdev_name_node;
 
 struct dev_ifalias;
 
-struct iw_handler_def;
-
-struct iw_public_data;
-
 struct net_device_ops;
 
 struct ethtool_ops;
@@ -10969,15 +10837,7 @@ struct l3mdev_ops;
 
 struct ndisc_ops;
 
-struct xfrmdev_ops;
-
-struct tlsdev_ops;
-
 struct header_ops;
-
-struct vlan_info;
-
-struct dsa_port;
 
 struct in_device;
 
@@ -11001,8 +10861,6 @@ struct xdp_dev_bulk_queue;
 
 struct xps_dev_maps;
 
-struct netpoll_info;
-
 struct pcpu_lstats;
 
 struct pcpu_sw_netstats;
@@ -11014,8 +10872,6 @@ struct dcbnl_rtnl_ops;
 struct netprio_map;
 
 struct phy_device;
-
-struct sfp_bus;
 
 struct udp_tunnel_nic_info;
 
@@ -11053,14 +10909,10 @@ struct net_device {
 	atomic_long_t rx_nohandler;
 	atomic_t carrier_up_count;
 	atomic_t carrier_down_count;
-	const struct iw_handler_def *wireless_handlers;
-	struct iw_public_data *wireless_data;
 	const struct net_device_ops *netdev_ops;
 	const struct ethtool_ops *ethtool_ops;
 	const struct l3mdev_ops *l3mdev_ops;
 	const struct ndisc_ops *ndisc_ops;
-	const struct xfrmdev_ops *xfrmdev_ops;
-	const struct tlsdev_ops *tlsdev_ops;
 	const struct header_ops *header_ops;
 	unsigned int flags;
 	unsigned int priv_flags;
@@ -11095,16 +10947,10 @@ struct net_device {
 	unsigned int promiscuity;
 	unsigned int allmulti;
 	bool uc_promisc;
-	struct vlan_info *vlan_info;
-	struct dsa_port *dsa_ptr;
-	struct tipc_bearer *tipc_ptr;
-	void *atalk_ptr;
 	struct in_device *ip_ptr;
 	struct inet6_dev *ip6_ptr;
-	void *ax25_ptr;
 	struct wireless_dev *ieee80211_ptr;
 	struct wpan_dev *ieee802154_ptr;
-	struct mpls_dev *mpls_ptr;
 	unsigned char *dev_addr;
 	struct netdev_rx_queue *_rx;
 	unsigned int num_rx_queues;
@@ -11120,6 +10966,8 @@ struct net_device {
 	unsigned char broadcast[32];
 	struct cpu_rmap *rx_cpu_rmap;
 	struct hlist_node index_hlist;
+	long: 64;
+	long: 64;
 	struct netdev_queue *_tx;
 	unsigned int num_tx_queues;
 	unsigned int real_num_tx_queues;
@@ -11152,7 +11000,6 @@ struct net_device {
 	} rtnl_link_state: 16;
 	bool needs_free_netdev;
 	void (*priv_destructor)(struct net_device *);
-	struct netpoll_info *npinfo;
 	possible_net_t nd_net;
 	union {
 		void *ml_priv;
@@ -11160,8 +11007,6 @@ struct net_device {
 		struct pcpu_sw_netstats *tstats;
 		struct pcpu_dstats *dstats;
 	};
-	struct garp_port *garp_port;
-	struct mrp_port *mrp_port;
 	struct device dev;
 	const struct attribute_group *sysfs_groups[4];
 	const struct attribute_group *sysfs_rx_queue_group;
@@ -11172,7 +11017,6 @@ struct net_device {
 	s16 num_tc;
 	struct netdev_tc_txq tc_to_txq[16];
 	u8 prio_tc_map[16];
-	unsigned int fcoe_ddp_xid;
 	struct netprio_map *priomap;
 	struct phy_device *phydev;
 	struct sfp_bus *sfp_bus;
@@ -11181,14 +11025,9 @@ struct net_device {
 	bool proto_down;
 	unsigned int wol_enabled: 1;
 	struct list_head net_notifier_list;
-	const struct macsec_ops *macsec_ops;
 	const struct udp_tunnel_nic_info *udp_tunnel_nic_info;
 	struct udp_tunnel_nic *udp_tunnel_nic;
 	struct bpf_xdp_entity xdp_state[3];
-	long: 64;
-	long: 64;
-	long: 64;
-	long: 64;
 	long: 64;
 	long: 64;
 };
@@ -11367,7 +11206,6 @@ struct sk_buff {
 	__u8 csum_level: 2;
 	__u8 csum_not_inet: 1;
 	__u8 dst_pending_confirm: 1;
-	__u8 ndisc_nodetype: 2;
 	__u8 ipvs_property: 1;
 	__u8 inner_protocol_type: 1;
 	__u8 remcsum_offload: 1;
@@ -11375,9 +11213,6 @@ struct sk_buff {
 	__u8 offload_l3_fwd_mark: 1;
 	__u8 tc_skip_classify: 1;
 	__u8 tc_at_ingress: 1;
-	__u8 redirected: 1;
-	__u8 from_ingress: 1;
-	__u8 decrypted: 1;
 	__u16 tc_index;
 	union {
 		__wsum csum;
@@ -11419,14 +11254,6 @@ struct sk_buff {
 	unsigned int truesize;
 	refcount_t users;
 	struct skb_ext *extensions;
-};
-
-struct scatterlist {
-	long unsigned int page_link;
-	unsigned int offset;
-	unsigned int length;
-	dma_addr_t dma_address;
-	unsigned int dma_length;
 };
 
 enum {
@@ -11556,10 +11383,6 @@ struct linux_mib {
 
 struct linux_xfrm_mib {
 	long unsigned int mibs[29];
-};
-
-struct linux_tls_mib {
-	long unsigned int mibs[11];
 };
 
 struct inet_frags;
@@ -11997,9 +11820,8 @@ struct pipe_buf_operations {
 
 struct skb_ext {
 	refcount_t refcnt;
-	u8 offset[4];
+	u8 offset[3];
 	u8 chunks;
-	long: 56;
 	char data[0];
 };
 
@@ -12506,17 +12328,6 @@ struct xps_dev_maps {
 	struct xps_map *attr_map[0];
 };
 
-struct netdev_fcoe_hbainfo {
-	char manufacturer[64];
-	char serial_number[64];
-	char hardware_version[64];
-	char driver_version[64];
-	char optionrom_version[64];
-	char firmware_version[64];
-	char model[256];
-	char model_description[256];
-};
-
 struct netdev_phys_item_id {
 	unsigned char id[32];
 	unsigned char id_len;
@@ -12569,14 +12380,6 @@ struct netdev_bpf {
 	};
 };
 
-struct xfrmdev_ops {
-	int (*xdo_dev_state_add)(struct xfrm_state *);
-	void (*xdo_dev_state_delete)(struct xfrm_state *);
-	void (*xdo_dev_state_free)(struct xfrm_state *);
-	bool (*xdo_dev_offload_ok)(struct sk_buff *, struct xfrm_state *);
-	void (*xdo_dev_state_advance_esn)(struct xfrm_state *);
-};
-
 struct dev_ifalias {
 	struct callback_head rcuhead;
 	char ifalias[0];
@@ -12618,9 +12421,6 @@ struct net_device_ops {
 	struct net_device_stats * (*ndo_get_stats)(struct net_device *);
 	int (*ndo_vlan_rx_add_vid)(struct net_device *, __be16, u16);
 	int (*ndo_vlan_rx_kill_vid)(struct net_device *, __be16, u16);
-	void (*ndo_poll_controller)(struct net_device *);
-	int (*ndo_netpoll_setup)(struct net_device *, struct netpoll_info *);
-	void (*ndo_netpoll_cleanup)(struct net_device *);
 	int (*ndo_set_vf_mac)(struct net_device *, int, u8 *);
 	int (*ndo_set_vf_vlan)(struct net_device *, int, u16, u8, __be16);
 	int (*ndo_set_vf_rate)(struct net_device *, int, int, int);
@@ -12635,13 +12435,6 @@ struct net_device_ops {
 	int (*ndo_set_vf_guid)(struct net_device *, int, u64, int);
 	int (*ndo_set_vf_rss_query_en)(struct net_device *, int, bool);
 	int (*ndo_setup_tc)(struct net_device *, enum tc_setup_type, void *);
-	int (*ndo_fcoe_enable)(struct net_device *);
-	int (*ndo_fcoe_disable)(struct net_device *);
-	int (*ndo_fcoe_ddp_setup)(struct net_device *, u16, struct scatterlist *, unsigned int);
-	int (*ndo_fcoe_ddp_done)(struct net_device *, u16);
-	int (*ndo_fcoe_ddp_target)(struct net_device *, u16, struct scatterlist *, unsigned int);
-	int (*ndo_fcoe_get_hbainfo)(struct net_device *, struct netdev_fcoe_hbainfo *);
-	int (*ndo_fcoe_get_wwn)(struct net_device *, u64 *, int);
 	int (*ndo_rx_flow_steer)(struct net_device *, const struct sk_buff *, u16, u32);
 	int (*ndo_add_slave)(struct net_device *, struct net_device *, struct netlink_ext_ack *);
 	int (*ndo_del_slave)(struct net_device *, struct net_device *);
@@ -12705,26 +12498,6 @@ struct pcpu_sw_netstats {
 	u64 tx_packets;
 	u64 tx_bytes;
 	struct u64_stats_sync syncp;
-};
-
-struct iw_request_info;
-
-union iwreq_data;
-
-typedef int (*iw_handler)(struct net_device *, struct iw_request_info *, union iwreq_data *, char *);
-
-struct iw_priv_args;
-
-struct iw_statistics;
-
-struct iw_handler_def {
-	const iw_handler *standard;
-	__u16 num_standard;
-	__u16 num_private;
-	__u16 num_private_args;
-	const iw_handler *private;
-	const struct iw_priv_args *private_args;
-	struct iw_statistics * (*get_wireless_stats)(struct net_device *);
 };
 
 enum ethtool_phys_id_state {
@@ -12860,21 +12633,6 @@ struct ndisc_ops {
 	int (*opt_addr_space)(const struct net_device *, u8, struct neighbour *, u8 *, u8 **);
 	void (*fill_addr_option)(const struct net_device *, struct sk_buff *, u8, const u8 *);
 	void (*prefix_rcv_add_addr)(struct net *, struct net_device *, const struct prefix_info *, struct inet6_dev *, struct in6_addr *, int, u32, bool, bool, __u32, u32, bool);
-};
-
-enum tls_offload_ctx_dir {
-	TLS_OFFLOAD_CTX_DIR_RX = 0,
-	TLS_OFFLOAD_CTX_DIR_TX = 1,
-};
-
-struct tls_crypto_info;
-
-struct tls_context;
-
-struct tlsdev_ops {
-	int (*tls_dev_add)(struct net_device *, struct sock *, enum tls_offload_ctx_dir, struct tls_crypto_info *, u32);
-	void (*tls_dev_del)(struct net_device *, struct tls_context *, enum tls_offload_ctx_dir);
-	int (*tls_dev_resync)(struct net_device *, struct sock *, u32, u8 *, enum tls_offload_ctx_dir);
 };
 
 struct ipv6_devstat {
@@ -13588,7 +13346,6 @@ struct ndisc_options {
 	struct nd_opt_hdr *nd_opts_ri_end;
 	struct nd_opt_hdr *nd_useropts;
 	struct nd_opt_hdr *nd_useropts_end;
-	struct nd_opt_hdr *nd_802154_opt_array[3];
 };
 
 struct prefix_info {
@@ -14210,12 +13967,6 @@ enum udp_conntrack {
 	UDP_CT_MAX = 2,
 };
 
-enum gre_conntrack {
-	GRE_CT_UNREPLIED = 0,
-	GRE_CT_REPLIED = 1,
-	GRE_CT_MAX = 2,
-};
-
 enum {
 	XFRM_POLICY_IN = 0,
 	XFRM_POLICY_OUT = 1,
@@ -14232,11 +13983,10 @@ enum netns_bpf_attach_type {
 };
 
 enum skb_ext_id {
-	SKB_EXT_BRIDGE_NF = 0,
-	SKB_EXT_SEC_PATH = 1,
-	TC_SKB_EXT = 2,
-	SKB_EXT_MPTCP = 3,
-	SKB_EXT_NUM = 4,
+	SKB_EXT_SEC_PATH = 0,
+	TC_SKB_EXT = 1,
+	SKB_EXT_MPTCP = 2,
+	SKB_EXT_NUM = 3,
 };
 
 enum audit_ntp_type {
@@ -14290,8 +14040,7 @@ typedef struct {
 	unsigned int irq_threshold_count;
 	unsigned int irq_deferred_error_count;
 	unsigned int irq_hv_callback_count;
-	unsigned int irq_hv_reenlightenment_count;
-	unsigned int hyperv_stimer0_count;
+	long: 64;
 	long: 64;
 	long: 64;
 	long: 64;
@@ -14879,6 +14628,7 @@ enum syscall_work_bit {
 	SYSCALL_WORK_BIT_SYSCALL_EMU = 3,
 	SYSCALL_WORK_BIT_SYSCALL_AUDIT = 4,
 	SYSCALL_WORK_BIT_SYSCALL_USER_DISPATCH = 5,
+	SYSCALL_WORK_BIT_SYSCALL_EXIT_TRAP = 6,
 };
 
 struct seccomp_data {
@@ -21070,6 +20820,14 @@ struct vcpu_guest_context {
 	uint64_t gs_base_user;
 };
 
+struct scatterlist {
+	long unsigned int page_link;
+	unsigned int offset;
+	unsigned int length;
+	dma_addr_t dma_address;
+	unsigned int dma_length;
+};
+
 struct sg_table {
 	struct scatterlist *sgl;
 	unsigned int nents;
@@ -21156,210 +20914,6 @@ struct hvm_memmap_table_entry {
 	uint64_t size;
 	uint32_t type;
 	uint32_t reserved;
-};
-
-enum {
-	WORK_STRUCT_PENDING_BIT = 0,
-	WORK_STRUCT_DELAYED_BIT = 1,
-	WORK_STRUCT_PWQ_BIT = 2,
-	WORK_STRUCT_LINKED_BIT = 3,
-	WORK_STRUCT_COLOR_SHIFT = 4,
-	WORK_STRUCT_COLOR_BITS = 4,
-	WORK_STRUCT_PENDING = 1,
-	WORK_STRUCT_DELAYED = 2,
-	WORK_STRUCT_PWQ = 4,
-	WORK_STRUCT_LINKED = 8,
-	WORK_STRUCT_STATIC = 0,
-	WORK_NR_COLORS = 15,
-	WORK_NO_COLOR = 15,
-	WORK_CPU_UNBOUND = 8192,
-	WORK_STRUCT_FLAG_BITS = 8,
-	WORK_OFFQ_FLAG_BASE = 4,
-	__WORK_OFFQ_CANCELING = 4,
-	WORK_OFFQ_CANCELING = 16,
-	WORK_OFFQ_FLAG_BITS = 1,
-	WORK_OFFQ_POOL_SHIFT = 5,
-	WORK_OFFQ_LEFT = 59,
-	WORK_OFFQ_POOL_BITS = 31,
-	WORK_OFFQ_POOL_NONE = 2147483647,
-	WORK_STRUCT_FLAG_MASK = 255,
-	WORK_STRUCT_WQ_DATA_MASK = 4294967040,
-	WORK_STRUCT_NO_POOL = 4294967264,
-	WORK_BUSY_PENDING = 1,
-	WORK_BUSY_RUNNING = 2,
-	WORKER_DESC_LEN = 24,
-};
-
-union hv_x64_msr_hypercall_contents {
-	u64 as_uint64;
-	struct {
-		u64 enable: 1;
-		u64 reserved: 11;
-		u64 guest_physical_address: 52;
-	};
-};
-
-struct hv_reenlightenment_control {
-	__u64 vector: 8;
-	__u64 reserved1: 8;
-	__u64 enabled: 1;
-	__u64 reserved2: 15;
-	__u64 target_vp: 32;
-};
-
-struct hv_tsc_emulation_control {
-	__u64 enabled: 1;
-	__u64 reserved: 63;
-};
-
-struct hv_tsc_emulation_status {
-	__u64 inprogress: 1;
-	__u64 reserved: 63;
-};
-
-struct hv_nested_enlightenments_control {
-	struct {
-		__u32 directhypercall: 1;
-		__u32 reserved: 31;
-	} features;
-	struct {
-		__u32 reserved;
-	} hypercallControls;
-};
-
-struct hv_vp_assist_page {
-	__u32 apic_assist;
-	__u32 reserved1;
-	__u64 vtl_control[3];
-	struct hv_nested_enlightenments_control nested_control;
-	__u8 enlighten_vmentry;
-	__u8 reserved2[7];
-	__u64 current_nested_vmcs;
-};
-
-struct ms_hyperv_info {
-	u32 features;
-	u32 misc_features;
-	u32 hints;
-	u32 nested_features;
-	u32 max_vp_index;
-	u32 max_lp_index;
-};
-
-enum HV_GENERIC_SET_FORMAT {
-	HV_GENERIC_SET_SPARSE_4K = 0,
-	HV_GENERIC_SET_ALL = 1,
-};
-
-struct hv_vpset {
-	u64 format;
-	u64 valid_bank_mask;
-	u64 bank_contents[0];
-};
-
-struct hv_tlb_flush {
-	u64 address_space;
-	u64 flags;
-	u64 processor_mask;
-	u64 gva_list[0];
-};
-
-struct hv_tlb_flush_ex {
-	u64 address_space;
-	u64 flags;
-	struct hv_vpset hv_vp_set;
-	u64 gva_list[0];
-};
-
-struct trace_event_raw_hyperv_mmu_flush_tlb_others {
-	struct trace_entry ent;
-	unsigned int ncpus;
-	struct mm_struct *mm;
-	long unsigned int addr;
-	long unsigned int end;
-	char __data[0];
-};
-
-struct trace_event_raw_hyperv_nested_flush_guest_mapping {
-	struct trace_entry ent;
-	u64 as;
-	int ret;
-	char __data[0];
-};
-
-struct trace_event_raw_hyperv_nested_flush_guest_mapping_range {
-	struct trace_entry ent;
-	u64 as;
-	int ret;
-	char __data[0];
-};
-
-struct trace_event_raw_hyperv_send_ipi_mask {
-	struct trace_entry ent;
-	unsigned int ncpus;
-	int vector;
-	char __data[0];
-};
-
-struct trace_event_raw_hyperv_send_ipi_one {
-	struct trace_entry ent;
-	int cpu;
-	int vector;
-	char __data[0];
-};
-
-struct trace_event_data_offsets_hyperv_mmu_flush_tlb_others {};
-
-struct trace_event_data_offsets_hyperv_nested_flush_guest_mapping {};
-
-struct trace_event_data_offsets_hyperv_nested_flush_guest_mapping_range {};
-
-struct trace_event_data_offsets_hyperv_send_ipi_mask {};
-
-struct trace_event_data_offsets_hyperv_send_ipi_one {};
-
-typedef void (*btf_trace_hyperv_mmu_flush_tlb_others)(void *, const struct cpumask *, const struct flush_tlb_info *);
-
-typedef void (*btf_trace_hyperv_nested_flush_guest_mapping)(void *, u64, int);
-
-typedef void (*btf_trace_hyperv_nested_flush_guest_mapping_range)(void *, u64, int);
-
-typedef void (*btf_trace_hyperv_send_ipi_mask)(void *, const struct cpumask *, int);
-
-typedef void (*btf_trace_hyperv_send_ipi_one)(void *, int, int);
-
-struct hv_guest_mapping_flush {
-	u64 address_space;
-	u64 flags;
-};
-
-union hv_gpa_page_range {
-	u64 address_space;
-	struct {
-		u64 additional_pages: 11;
-		u64 largepage: 1;
-		u64 basepfn: 52;
-	} page;
-};
-
-struct hv_guest_mapping_flush_list {
-	u64 address_space;
-	u64 flags;
-	union hv_gpa_page_range gpa_list[510];
-};
-
-typedef int (*hyperv_fill_flush_list_func)(struct hv_guest_mapping_flush_list *, void *);
-
-struct hv_send_ipi {
-	u32 vector;
-	u32 reserved;
-	u64 cpu_mask;
-};
-
-struct hv_send_ipi_ex {
-	u32 vector;
-	u32 reserved;
-	struct hv_vpset vp_set;
 };
 
 struct real_mode_header {
@@ -22041,13 +21595,6 @@ struct vc_data {
 	struct uni_screen *vc_uni_screen;
 };
 
-struct edd {
-	unsigned int mbr_signature[16];
-	struct edd_info edd_info[6];
-	unsigned char mbr_signature_nr;
-	unsigned char edd_info_nr;
-};
-
 struct setup_data {
 	__u64 next;
 	__u32 type;
@@ -22479,7 +22026,6 @@ struct pci_sysdata {
 	struct acpi_device *companion;
 	void *iommu;
 	void *fwnode;
-	struct pci_dev *vmd_dev;
 };
 
 enum {
@@ -22586,6 +22132,38 @@ typedef long long unsigned int cycles_t;
 struct system_counterval_t {
 	u64 cycles;
 	struct clocksource *cs;
+};
+
+enum {
+	WORK_STRUCT_PENDING_BIT = 0,
+	WORK_STRUCT_DELAYED_BIT = 1,
+	WORK_STRUCT_PWQ_BIT = 2,
+	WORK_STRUCT_LINKED_BIT = 3,
+	WORK_STRUCT_COLOR_SHIFT = 4,
+	WORK_STRUCT_COLOR_BITS = 4,
+	WORK_STRUCT_PENDING = 1,
+	WORK_STRUCT_DELAYED = 2,
+	WORK_STRUCT_PWQ = 4,
+	WORK_STRUCT_LINKED = 8,
+	WORK_STRUCT_STATIC = 0,
+	WORK_NR_COLORS = 15,
+	WORK_NO_COLOR = 15,
+	WORK_CPU_UNBOUND = 8192,
+	WORK_STRUCT_FLAG_BITS = 8,
+	WORK_OFFQ_FLAG_BASE = 4,
+	__WORK_OFFQ_CANCELING = 4,
+	WORK_OFFQ_CANCELING = 16,
+	WORK_OFFQ_FLAG_BITS = 1,
+	WORK_OFFQ_POOL_SHIFT = 5,
+	WORK_OFFQ_LEFT = 59,
+	WORK_OFFQ_POOL_BITS = 31,
+	WORK_OFFQ_POOL_NONE = 2147483647,
+	WORK_STRUCT_FLAG_MASK = 255,
+	WORK_STRUCT_WQ_DATA_MASK = 4294967040,
+	WORK_STRUCT_NO_POOL = 4294967264,
+	WORK_BUSY_PENDING = 1,
+	WORK_BUSY_RUNNING = 2,
+	WORKER_DESC_LEN = 24,
 };
 
 typedef struct {
@@ -24790,6 +24368,15 @@ struct vmware_steal_time {
 		};
 	};
 	uint64_t reserved[7];
+};
+
+struct ms_hyperv_info {
+	u32 features;
+	u32 misc_features;
+	u32 hints;
+	u32 nested_features;
+	u32 max_vp_index;
+	u32 max_lp_index;
 };
 
 struct mpc_intsrc {
@@ -28477,60 +28064,6 @@ struct compress_alg {
 	int (*coa_decompress)(struct crypto_tfm *, const u8 *, unsigned int, u8 *, unsigned int *);
 };
 
-struct crypto_istat_aead {
-	atomic64_t encrypt_cnt;
-	atomic64_t encrypt_tlen;
-	atomic64_t decrypt_cnt;
-	atomic64_t decrypt_tlen;
-	atomic64_t err_cnt;
-};
-
-struct crypto_istat_akcipher {
-	atomic64_t encrypt_cnt;
-	atomic64_t encrypt_tlen;
-	atomic64_t decrypt_cnt;
-	atomic64_t decrypt_tlen;
-	atomic64_t verify_cnt;
-	atomic64_t sign_cnt;
-	atomic64_t err_cnt;
-};
-
-struct crypto_istat_cipher {
-	atomic64_t encrypt_cnt;
-	atomic64_t encrypt_tlen;
-	atomic64_t decrypt_cnt;
-	atomic64_t decrypt_tlen;
-	atomic64_t err_cnt;
-};
-
-struct crypto_istat_compress {
-	atomic64_t compress_cnt;
-	atomic64_t compress_tlen;
-	atomic64_t decompress_cnt;
-	atomic64_t decompress_tlen;
-	atomic64_t err_cnt;
-};
-
-struct crypto_istat_hash {
-	atomic64_t hash_cnt;
-	atomic64_t hash_tlen;
-	atomic64_t err_cnt;
-};
-
-struct crypto_istat_kpp {
-	atomic64_t setsecret_cnt;
-	atomic64_t generate_public_key_cnt;
-	atomic64_t compute_shared_secret_cnt;
-	atomic64_t err_cnt;
-};
-
-struct crypto_istat_rng {
-	atomic64_t generate_cnt;
-	atomic64_t generate_tlen;
-	atomic64_t seed_cnt;
-	atomic64_t err_cnt;
-};
-
 struct crypto_type;
 
 struct crypto_alg {
@@ -28553,15 +28086,6 @@ struct crypto_alg {
 	void (*cra_exit)(struct crypto_tfm *);
 	void (*cra_destroy)(struct crypto_alg *);
 	struct module *cra_module;
-	union {
-		struct crypto_istat_aead aead;
-		struct crypto_istat_akcipher akcipher;
-		struct crypto_istat_cipher cipher;
-		struct crypto_istat_compress compress;
-		struct crypto_istat_hash hash;
-		struct crypto_istat_rng rng;
-		struct crypto_istat_kpp kpp;
-	} stats;
 };
 
 struct crypto_instance;
@@ -39156,7 +38680,8 @@ enum bpf_func_id {
 	BPF_FUNC_ktime_get_coarse_ns = 160,
 	BPF_FUNC_ima_inode_hash = 161,
 	BPF_FUNC_sock_from_file = 162,
-	__BPF_FUNC_MAX_ID = 163,
+	BPF_FUNC_inode_from_sock = 163,
+	__BPF_FUNC_MAX_ID = 164,
 };
 
 enum {
@@ -43981,9 +43506,21 @@ enum {
 
 struct watch_notification;
 
+struct socket_alloc {
+	struct socket socket;
+	struct inode vfs_inode;
+	long: 64;
+	long: 64;
+	long: 64;
+	long: 64;
+	long: 64;
+};
+
 typedef u64 (*btf_bpf_bprm_opts_set)(struct linux_binprm *, u64);
 
 typedef u64 (*btf_bpf_ima_inode_hash)(struct inode *, void *, u32);
+
+typedef u64 (*btf_bpf_inode_from_sock)(struct socket *);
 
 enum perf_event_read_format {
 	PERF_FORMAT_TOTAL_TIME_ENABLED = 1,
@@ -44424,118 +43961,6 @@ struct user_return_notifier {
 	struct hlist_node link;
 };
 
-struct parallel_data;
-
-struct padata_priv {
-	struct list_head list;
-	struct parallel_data *pd;
-	int cb_cpu;
-	unsigned int seq_nr;
-	int info;
-	void (*parallel)(struct padata_priv *);
-	void (*serial)(struct padata_priv *);
-};
-
-struct padata_cpumask {
-	cpumask_var_t pcpu;
-	cpumask_var_t cbcpu;
-};
-
-struct padata_shell;
-
-struct padata_list;
-
-struct padata_serial_queue;
-
-struct parallel_data {
-	struct padata_shell *ps;
-	struct padata_list *reorder_list;
-	struct padata_serial_queue *squeue;
-	atomic_t refcnt;
-	unsigned int seq_nr;
-	unsigned int processed;
-	int cpu;
-	struct padata_cpumask cpumask;
-	struct work_struct reorder_work;
-	long: 64;
-	long: 64;
-	long: 64;
-	long: 64;
-	long: 64;
-	spinlock_t lock;
-	long: 32;
-	long: 64;
-	long: 64;
-	long: 64;
-	long: 64;
-	long: 64;
-	long: 64;
-	long: 64;
-};
-
-struct padata_list {
-	struct list_head list;
-	spinlock_t lock;
-};
-
-struct padata_serial_queue {
-	struct padata_list serial;
-	struct work_struct work;
-	struct parallel_data *pd;
-};
-
-struct padata_instance;
-
-struct padata_shell {
-	struct padata_instance *pinst;
-	struct parallel_data *pd;
-	struct parallel_data *opd;
-	struct list_head list;
-};
-
-struct padata_instance {
-	struct hlist_node cpu_online_node;
-	struct hlist_node cpu_dead_node;
-	struct workqueue_struct *parallel_wq;
-	struct workqueue_struct *serial_wq;
-	struct list_head pslist;
-	struct padata_cpumask cpumask;
-	struct kobject kobj;
-	struct mutex lock;
-	u8 flags;
-};
-
-struct padata_mt_job {
-	void (*thread_fn)(long unsigned int, long unsigned int, void *);
-	void *fn_arg;
-	long unsigned int start;
-	long unsigned int size;
-	long unsigned int align;
-	long unsigned int min_chunk;
-	int max_threads;
-};
-
-struct padata_work {
-	struct work_struct pw_work;
-	struct list_head pw_list;
-	void *pw_data;
-};
-
-struct padata_mt_job_state {
-	spinlock_t lock;
-	struct completion completion;
-	struct padata_mt_job *job;
-	int nworks;
-	int nworks_fini;
-	long unsigned int chunk_size;
-};
-
-struct padata_sysfs_entry {
-	struct attribute attr;
-	ssize_t (*show)(struct padata_instance *, struct attribute *, char *);
-	ssize_t (*store)(struct padata_instance *, struct attribute *, const char *, size_t);
-};
-
 struct static_key_mod {
 	struct static_key_mod *next;
 	struct jump_entry *entries;
@@ -44719,7 +44144,7 @@ enum positive_aop_returns {
 };
 
 struct vm_event_state {
-	long unsigned int event[96];
+	long unsigned int event[93];
 };
 
 enum mapping_flags {
@@ -47394,14 +46819,6 @@ typedef void (*btf_trace_cma_alloc)(void *, long unsigned int, const struct page
 
 typedef void (*btf_trace_cma_release)(void *, long unsigned int, const struct page *, unsigned int);
 
-struct balloon_dev_info {
-	long unsigned int isolated_pages;
-	spinlock_t pages_lock;
-	struct list_head pages;
-	int (*migratepage)(struct balloon_dev_info *, struct page *, struct page *, enum migrate_mode);
-	struct inode *inode;
-};
-
 struct frame_vector {
 	unsigned int nr_allocated;
 	unsigned int nr_frames;
@@ -47417,57 +46834,10 @@ enum {
 	GOOD_STACK = 2,
 };
 
-enum hmm_pfn_flags {
-	HMM_PFN_VALID = 0,
-	HMM_PFN_WRITE = 0,
-	HMM_PFN_ERROR = 0,
-	HMM_PFN_ORDER_SHIFT = 56,
-	HMM_PFN_REQ_FAULT = 0,
-	HMM_PFN_REQ_WRITE = 0,
-	HMM_PFN_FLAGS = 0,
-};
-
-struct hmm_range {
-	struct mmu_interval_notifier *notifier;
-	long unsigned int notifier_seq;
-	long unsigned int start;
-	long unsigned int end;
-	long unsigned int *hmm_pfns;
-	long unsigned int default_flags;
-	long unsigned int pfn_flags_mask;
-	void *dev_private_owner;
-};
-
-struct hmm_vma_walk {
-	struct hmm_range *range;
-	long unsigned int last;
-};
-
-enum {
-	HMM_NEED_FAULT = 1,
-	HMM_NEED_WRITE_FAULT = 2,
-	HMM_NEED_ALL_BITS = 3,
-};
-
 struct hugetlbfs_inode_info {
 	struct shared_policy policy;
 	struct inode vfs_inode;
 	unsigned int seals;
-};
-
-struct wp_walk {
-	struct mmu_notifier_range range;
-	long unsigned int tlbflush_start;
-	long unsigned int tlbflush_end;
-	long unsigned int total;
-};
-
-struct clean_walk {
-	struct wp_walk base;
-	long unsigned int bitmap_pgoff;
-	long unsigned int *bitmap;
-	long unsigned int start;
-	long unsigned int end;
 };
 
 struct page_reporting_dev_info {
@@ -56810,6 +56180,7 @@ enum {
 	BTRFS_FS_CSUM_IMPL_FAST = 15,
 	BTRFS_FS_DISCARD_RUNNING = 16,
 	BTRFS_FS_CLEANUP_SPACE_CACHE_V1 = 17,
+	BTRFS_FS_FREE_SPACE_TREE_UNTRUSTED = 18,
 };
 
 struct btrfs_qgroup_swapped_blocks {
@@ -61334,10 +60705,6 @@ union security_list_options {
 	int (*sctp_assoc_request)(struct sctp_endpoint *, struct sk_buff *);
 	int (*sctp_bind_connect)(struct sock *, int, struct sockaddr *, int);
 	void (*sctp_sk_clone)(struct sctp_endpoint *, struct sock *, struct sock *);
-	int (*ib_pkey_access)(void *, u64, u16);
-	int (*ib_endport_manage_subnet)(void *, const char *, u8);
-	int (*ib_alloc_security)(void **);
-	void (*ib_free_security)(void *);
 	int (*xfrm_policy_alloc_security)(struct xfrm_sec_ctx **, struct xfrm_user_sec_ctx *, gfp_t);
 	int (*xfrm_policy_clone_security)(struct xfrm_sec_ctx *, struct xfrm_sec_ctx **);
 	void (*xfrm_policy_free_security)(struct xfrm_sec_ctx *);
@@ -61560,10 +60927,6 @@ struct security_hook_heads {
 	struct hlist_head sctp_assoc_request;
 	struct hlist_head sctp_bind_connect;
 	struct hlist_head sctp_sk_clone;
-	struct hlist_head ib_pkey_access;
-	struct hlist_head ib_endport_manage_subnet;
-	struct hlist_head ib_alloc_security;
-	struct hlist_head ib_free_security;
 	struct hlist_head xfrm_policy_alloc_security;
 	struct hlist_head xfrm_policy_clone_security;
 	struct hlist_head xfrm_policy_free_security;
@@ -62562,16 +61925,6 @@ enum nf_ip6_hook_priorities {
 	NF_IP6_PRI_SELINUX_LAST = 225,
 	NF_IP6_PRI_CONNTRACK_HELPER = 300,
 	NF_IP6_PRI_LAST = 2147483647,
-};
-
-struct socket_alloc {
-	struct socket socket;
-	struct inode vfs_inode;
-	long: 64;
-	long: 64;
-	long: 64;
-	long: 64;
-	long: 64;
 };
 
 struct ip_options {
@@ -64025,10 +63378,6 @@ struct key_security_struct {
 	u32 sid;
 };
 
-struct ib_security_struct {
-	u32 sid;
-};
-
 struct bpf_security_struct {
 	u32 sid;
 };
@@ -65246,23 +64595,6 @@ struct udp_hslot {
 	spinlock_t lock;
 };
 
-struct pkey_security_struct {
-	u64 subnet_prefix;
-	u16 pkey;
-	u32 sid;
-};
-
-struct sel_ib_pkey_bkt {
-	int size;
-	struct list_head list;
-};
-
-struct sel_ib_pkey {
-	struct pkey_security_struct psec;
-	struct list_head list;
-	struct callback_head rcu;
-};
-
 struct sockaddr_un {
 	__kernel_sa_family_t sun_family;
 	char sun_path[108];
@@ -65290,6 +64622,7 @@ struct unix_sock {
 	atomic_long_t inflight;
 	spinlock_t lock;
 	long unsigned int gc_flags;
+	long: 64;
 	struct socket_wq peer_wq;
 	wait_queue_entry_t peer_wake;
 	struct scm_stat scm_stat;
@@ -70024,1699 +69357,6 @@ struct virtio_shm_region {
 	u64 len;
 };
 
-struct irq_poll;
-
-typedef int irq_poll_fn(struct irq_poll *, int);
-
-struct irq_poll {
-	struct list_head list;
-	long unsigned int state;
-	int weight;
-	irq_poll_fn *poll;
-};
-
-struct dim_sample {
-	ktime_t time;
-	u32 pkt_ctr;
-	u32 byte_ctr;
-	u16 event_ctr;
-	u32 comp_ctr;
-};
-
-struct dim_stats {
-	int ppms;
-	int bpms;
-	int epms;
-	int cpms;
-	int cpe_ratio;
-};
-
-struct dim {
-	u8 state;
-	struct dim_stats prev_stats;
-	struct dim_sample start_sample;
-	struct dim_sample measuring_sample;
-	struct work_struct work;
-	void *priv;
-	u8 profile_ix;
-	u8 mode;
-	u8 tune_state;
-	u8 steps_right;
-	u8 steps_left;
-	u8 tired;
-};
-
-enum rdma_nl_counter_mode {
-	RDMA_COUNTER_MODE_NONE = 0,
-	RDMA_COUNTER_MODE_AUTO = 1,
-	RDMA_COUNTER_MODE_MANUAL = 2,
-	RDMA_COUNTER_MODE_MAX = 3,
-};
-
-enum rdma_nl_counter_mask {
-	RDMA_COUNTER_MASK_QP_TYPE = 1,
-	RDMA_COUNTER_MASK_PID = 2,
-};
-
-enum rdma_restrack_type {
-	RDMA_RESTRACK_PD = 0,
-	RDMA_RESTRACK_CQ = 1,
-	RDMA_RESTRACK_QP = 2,
-	RDMA_RESTRACK_CM_ID = 3,
-	RDMA_RESTRACK_MR = 4,
-	RDMA_RESTRACK_CTX = 5,
-	RDMA_RESTRACK_COUNTER = 6,
-	RDMA_RESTRACK_MAX = 7,
-};
-
-struct rdma_restrack_entry {
-	bool valid;
-	u8 no_track: 1;
-	struct kref kref;
-	struct completion comp;
-	struct task_struct *task;
-	const char *kern_name;
-	enum rdma_restrack_type type;
-	bool user;
-	u32 id;
-};
-
-struct rdma_link_ops {
-	struct list_head list;
-	const char *type;
-	int (*newlink)(const char *, struct net_device *);
-};
-
-struct auto_mode_param {
-	int qp_type;
-};
-
-struct rdma_counter_mode {
-	enum rdma_nl_counter_mode mode;
-	enum rdma_nl_counter_mask mask;
-	struct auto_mode_param param;
-};
-
-struct rdma_hw_stats;
-
-struct rdma_port_counter {
-	struct rdma_counter_mode mode;
-	struct rdma_hw_stats *hstats;
-	unsigned int num_counters;
-	struct mutex lock;
-};
-
-struct rdma_hw_stats {
-	struct mutex lock;
-	long unsigned int timestamp;
-	long unsigned int lifespan;
-	const char * const *names;
-	int num_counters;
-	u64 value[0];
-};
-
-struct ib_device;
-
-struct rdma_counter {
-	struct rdma_restrack_entry res;
-	struct ib_device *device;
-	uint32_t id;
-	struct kref kref;
-	struct rdma_counter_mode mode;
-	struct mutex lock;
-	struct rdma_hw_stats *stats;
-	u8 port;
-};
-
-enum rdma_driver_id {
-	RDMA_DRIVER_UNKNOWN = 0,
-	RDMA_DRIVER_MLX5 = 1,
-	RDMA_DRIVER_MLX4 = 2,
-	RDMA_DRIVER_CXGB3 = 3,
-	RDMA_DRIVER_CXGB4 = 4,
-	RDMA_DRIVER_MTHCA = 5,
-	RDMA_DRIVER_BNXT_RE = 6,
-	RDMA_DRIVER_OCRDMA = 7,
-	RDMA_DRIVER_NES = 8,
-	RDMA_DRIVER_I40IW = 9,
-	RDMA_DRIVER_VMW_PVRDMA = 10,
-	RDMA_DRIVER_QEDR = 11,
-	RDMA_DRIVER_HNS = 12,
-	RDMA_DRIVER_USNIC = 13,
-	RDMA_DRIVER_RXE = 14,
-	RDMA_DRIVER_HFI1 = 15,
-	RDMA_DRIVER_QIB = 16,
-	RDMA_DRIVER_EFA = 17,
-	RDMA_DRIVER_SIW = 18,
-};
-
-enum ib_cq_notify_flags {
-	IB_CQ_SOLICITED = 1,
-	IB_CQ_NEXT_COMP = 2,
-	IB_CQ_SOLICITED_MASK = 3,
-	IB_CQ_REPORT_MISSED_EVENTS = 4,
-};
-
-struct ib_mad;
-
-enum rdma_link_layer {
-	IB_LINK_LAYER_UNSPECIFIED = 0,
-	IB_LINK_LAYER_INFINIBAND = 1,
-	IB_LINK_LAYER_ETHERNET = 2,
-};
-
-enum rdma_netdev_t {
-	RDMA_NETDEV_OPA_VNIC = 0,
-	RDMA_NETDEV_IPOIB = 1,
-};
-
-enum ib_srq_attr_mask {
-	IB_SRQ_MAX_WR = 1,
-	IB_SRQ_LIMIT = 2,
-};
-
-enum ib_mr_type {
-	IB_MR_TYPE_MEM_REG = 0,
-	IB_MR_TYPE_SG_GAPS = 1,
-	IB_MR_TYPE_DM = 2,
-	IB_MR_TYPE_USER = 3,
-	IB_MR_TYPE_DMA = 4,
-	IB_MR_TYPE_INTEGRITY = 5,
-};
-
-enum ib_uverbs_advise_mr_advice {
-	IB_UVERBS_ADVISE_MR_ADVICE_PREFETCH = 0,
-	IB_UVERBS_ADVISE_MR_ADVICE_PREFETCH_WRITE = 1,
-	IB_UVERBS_ADVISE_MR_ADVICE_PREFETCH_NO_FAULT = 2,
-};
-
-struct uverbs_attr_bundle;
-
-struct rdma_cm_id;
-
-struct iw_cm_id;
-
-struct iw_cm_conn_param;
-
-struct ib_qp;
-
-struct ib_send_wr;
-
-struct ib_recv_wr;
-
-struct ib_cq;
-
-struct ib_wc;
-
-struct ib_srq;
-
-struct ib_grh;
-
-struct ib_device_attr;
-
-struct ib_udata;
-
-struct ib_device_modify;
-
-struct ib_port_attr;
-
-struct ib_port_modify;
-
-struct ib_port_immutable;
-
-struct rdma_netdev_alloc_params;
-
-union ib_gid;
-
-struct ib_gid_attr;
-
-struct ib_ucontext;
-
-struct rdma_user_mmap_entry;
-
-struct ib_pd;
-
-struct ib_ah;
-
-struct rdma_ah_init_attr;
-
-struct rdma_ah_attr;
-
-struct ib_srq_init_attr;
-
-struct ib_srq_attr;
-
-struct ib_qp_init_attr;
-
-struct ib_qp_attr;
-
-struct ib_cq_init_attr;
-
-struct ib_mr;
-
-struct ib_sge;
-
-struct ib_mr_status;
-
-struct ib_mw;
-
-struct ib_xrcd;
-
-struct ib_flow;
-
-struct ib_flow_attr;
-
-struct ib_flow_action;
-
-struct ib_flow_action_attrs_esp;
-
-struct ib_wq;
-
-struct ib_wq_init_attr;
-
-struct ib_wq_attr;
-
-struct ib_rwq_ind_table;
-
-struct ib_rwq_ind_table_init_attr;
-
-struct ib_dm;
-
-struct ib_dm_alloc_attr;
-
-struct ib_dm_mr_attr;
-
-struct ib_counters;
-
-struct ib_counters_read_attr;
-
-struct ib_device_ops {
-	struct module *owner;
-	enum rdma_driver_id driver_id;
-	u32 uverbs_abi_ver;
-	unsigned int uverbs_no_driver_id_binding: 1;
-	int (*post_send)(struct ib_qp *, const struct ib_send_wr *, const struct ib_send_wr **);
-	int (*post_recv)(struct ib_qp *, const struct ib_recv_wr *, const struct ib_recv_wr **);
-	void (*drain_rq)(struct ib_qp *);
-	void (*drain_sq)(struct ib_qp *);
-	int (*poll_cq)(struct ib_cq *, int, struct ib_wc *);
-	int (*peek_cq)(struct ib_cq *, int);
-	int (*req_notify_cq)(struct ib_cq *, enum ib_cq_notify_flags);
-	int (*req_ncomp_notif)(struct ib_cq *, int);
-	int (*post_srq_recv)(struct ib_srq *, const struct ib_recv_wr *, const struct ib_recv_wr **);
-	int (*process_mad)(struct ib_device *, int, u8, const struct ib_wc *, const struct ib_grh *, const struct ib_mad *, struct ib_mad *, size_t *, u16 *);
-	int (*query_device)(struct ib_device *, struct ib_device_attr *, struct ib_udata *);
-	int (*modify_device)(struct ib_device *, int, struct ib_device_modify *);
-	void (*get_dev_fw_str)(struct ib_device *, char *);
-	const struct cpumask * (*get_vector_affinity)(struct ib_device *, int);
-	int (*query_port)(struct ib_device *, u8, struct ib_port_attr *);
-	int (*modify_port)(struct ib_device *, u8, int, struct ib_port_modify *);
-	int (*get_port_immutable)(struct ib_device *, u8, struct ib_port_immutable *);
-	enum rdma_link_layer (*get_link_layer)(struct ib_device *, u8);
-	struct net_device * (*get_netdev)(struct ib_device *, u8);
-	struct net_device * (*alloc_rdma_netdev)(struct ib_device *, u8, enum rdma_netdev_t, const char *, unsigned char, void (*)(struct net_device *));
-	int (*rdma_netdev_get_params)(struct ib_device *, u8, enum rdma_netdev_t, struct rdma_netdev_alloc_params *);
-	int (*query_gid)(struct ib_device *, u8, int, union ib_gid *);
-	int (*add_gid)(const struct ib_gid_attr *, void **);
-	int (*del_gid)(const struct ib_gid_attr *, void **);
-	int (*query_pkey)(struct ib_device *, u8, u16, u16 *);
-	int (*alloc_ucontext)(struct ib_ucontext *, struct ib_udata *);
-	void (*dealloc_ucontext)(struct ib_ucontext *);
-	int (*mmap)(struct ib_ucontext *, struct vm_area_struct *);
-	void (*mmap_free)(struct rdma_user_mmap_entry *);
-	void (*disassociate_ucontext)(struct ib_ucontext *);
-	int (*alloc_pd)(struct ib_pd *, struct ib_udata *);
-	int (*dealloc_pd)(struct ib_pd *, struct ib_udata *);
-	int (*create_ah)(struct ib_ah *, struct rdma_ah_init_attr *, struct ib_udata *);
-	int (*create_user_ah)(struct ib_ah *, struct rdma_ah_init_attr *, struct ib_udata *);
-	int (*modify_ah)(struct ib_ah *, struct rdma_ah_attr *);
-	int (*query_ah)(struct ib_ah *, struct rdma_ah_attr *);
-	int (*destroy_ah)(struct ib_ah *, u32);
-	int (*create_srq)(struct ib_srq *, struct ib_srq_init_attr *, struct ib_udata *);
-	int (*modify_srq)(struct ib_srq *, struct ib_srq_attr *, enum ib_srq_attr_mask, struct ib_udata *);
-	int (*query_srq)(struct ib_srq *, struct ib_srq_attr *);
-	int (*destroy_srq)(struct ib_srq *, struct ib_udata *);
-	struct ib_qp * (*create_qp)(struct ib_pd *, struct ib_qp_init_attr *, struct ib_udata *);
-	int (*modify_qp)(struct ib_qp *, struct ib_qp_attr *, int, struct ib_udata *);
-	int (*query_qp)(struct ib_qp *, struct ib_qp_attr *, int, struct ib_qp_init_attr *);
-	int (*destroy_qp)(struct ib_qp *, struct ib_udata *);
-	int (*create_cq)(struct ib_cq *, const struct ib_cq_init_attr *, struct ib_udata *);
-	int (*modify_cq)(struct ib_cq *, u16, u16);
-	int (*destroy_cq)(struct ib_cq *, struct ib_udata *);
-	int (*resize_cq)(struct ib_cq *, int, struct ib_udata *);
-	struct ib_mr * (*get_dma_mr)(struct ib_pd *, int);
-	struct ib_mr * (*reg_user_mr)(struct ib_pd *, u64, u64, u64, int, struct ib_udata *);
-	struct ib_mr * (*rereg_user_mr)(struct ib_mr *, int, u64, u64, u64, int, struct ib_pd *, struct ib_udata *);
-	int (*dereg_mr)(struct ib_mr *, struct ib_udata *);
-	struct ib_mr * (*alloc_mr)(struct ib_pd *, enum ib_mr_type, u32);
-	struct ib_mr * (*alloc_mr_integrity)(struct ib_pd *, u32, u32);
-	int (*advise_mr)(struct ib_pd *, enum ib_uverbs_advise_mr_advice, u32, struct ib_sge *, u32, struct uverbs_attr_bundle *);
-	int (*map_mr_sg)(struct ib_mr *, struct scatterlist *, int, unsigned int *);
-	int (*check_mr_status)(struct ib_mr *, u32, struct ib_mr_status *);
-	int (*alloc_mw)(struct ib_mw *, struct ib_udata *);
-	int (*dealloc_mw)(struct ib_mw *);
-	int (*attach_mcast)(struct ib_qp *, union ib_gid *, u16);
-	int (*detach_mcast)(struct ib_qp *, union ib_gid *, u16);
-	int (*alloc_xrcd)(struct ib_xrcd *, struct ib_udata *);
-	int (*dealloc_xrcd)(struct ib_xrcd *, struct ib_udata *);
-	struct ib_flow * (*create_flow)(struct ib_qp *, struct ib_flow_attr *, struct ib_udata *);
-	int (*destroy_flow)(struct ib_flow *);
-	struct ib_flow_action * (*create_flow_action_esp)(struct ib_device *, const struct ib_flow_action_attrs_esp *, struct uverbs_attr_bundle *);
-	int (*destroy_flow_action)(struct ib_flow_action *);
-	int (*modify_flow_action_esp)(struct ib_flow_action *, const struct ib_flow_action_attrs_esp *, struct uverbs_attr_bundle *);
-	int (*set_vf_link_state)(struct ib_device *, int, u8, int);
-	int (*get_vf_config)(struct ib_device *, int, u8, struct ifla_vf_info *);
-	int (*get_vf_stats)(struct ib_device *, int, u8, struct ifla_vf_stats *);
-	int (*get_vf_guid)(struct ib_device *, int, u8, struct ifla_vf_guid *, struct ifla_vf_guid *);
-	int (*set_vf_guid)(struct ib_device *, int, u8, u64, int);
-	struct ib_wq * (*create_wq)(struct ib_pd *, struct ib_wq_init_attr *, struct ib_udata *);
-	int (*destroy_wq)(struct ib_wq *, struct ib_udata *);
-	int (*modify_wq)(struct ib_wq *, struct ib_wq_attr *, u32, struct ib_udata *);
-	int (*create_rwq_ind_table)(struct ib_rwq_ind_table *, struct ib_rwq_ind_table_init_attr *, struct ib_udata *);
-	int (*destroy_rwq_ind_table)(struct ib_rwq_ind_table *);
-	struct ib_dm * (*alloc_dm)(struct ib_device *, struct ib_ucontext *, struct ib_dm_alloc_attr *, struct uverbs_attr_bundle *);
-	int (*dealloc_dm)(struct ib_dm *, struct uverbs_attr_bundle *);
-	struct ib_mr * (*reg_dm_mr)(struct ib_pd *, struct ib_dm *, struct ib_dm_mr_attr *, struct uverbs_attr_bundle *);
-	int (*create_counters)(struct ib_counters *, struct uverbs_attr_bundle *);
-	int (*destroy_counters)(struct ib_counters *);
-	int (*read_counters)(struct ib_counters *, struct ib_counters_read_attr *, struct uverbs_attr_bundle *);
-	int (*map_mr_sg_pi)(struct ib_mr *, struct scatterlist *, int, unsigned int *, struct scatterlist *, int, unsigned int *);
-	struct rdma_hw_stats * (*alloc_hw_stats)(struct ib_device *, u8);
-	int (*get_hw_stats)(struct ib_device *, struct rdma_hw_stats *, u8, int);
-	int (*init_port)(struct ib_device *, u8, struct kobject *);
-	int (*fill_res_mr_entry)(struct sk_buff *, struct ib_mr *);
-	int (*fill_res_mr_entry_raw)(struct sk_buff *, struct ib_mr *);
-	int (*fill_res_cq_entry)(struct sk_buff *, struct ib_cq *);
-	int (*fill_res_cq_entry_raw)(struct sk_buff *, struct ib_cq *);
-	int (*fill_res_qp_entry)(struct sk_buff *, struct ib_qp *);
-	int (*fill_res_qp_entry_raw)(struct sk_buff *, struct ib_qp *);
-	int (*fill_res_cm_id_entry)(struct sk_buff *, struct rdma_cm_id *);
-	int (*enable_driver)(struct ib_device *);
-	void (*dealloc_driver)(struct ib_device *);
-	void (*iw_add_ref)(struct ib_qp *);
-	void (*iw_rem_ref)(struct ib_qp *);
-	struct ib_qp * (*iw_get_qp)(struct ib_device *, int);
-	int (*iw_connect)(struct iw_cm_id *, struct iw_cm_conn_param *);
-	int (*iw_accept)(struct iw_cm_id *, struct iw_cm_conn_param *);
-	int (*iw_reject)(struct iw_cm_id *, const void *, u8);
-	int (*iw_create_listen)(struct iw_cm_id *, int);
-	int (*iw_destroy_listen)(struct iw_cm_id *);
-	int (*counter_bind_qp)(struct rdma_counter *, struct ib_qp *);
-	int (*counter_unbind_qp)(struct ib_qp *);
-	int (*counter_dealloc)(struct rdma_counter *);
-	struct rdma_hw_stats * (*counter_alloc_stats)(struct rdma_counter *);
-	int (*counter_update_stats)(struct rdma_counter *);
-	int (*fill_stat_mr_entry)(struct sk_buff *, struct ib_mr *);
-	int (*query_ucontext)(struct ib_ucontext *, struct uverbs_attr_bundle *);
-	size_t size_ib_ah;
-	size_t size_ib_counters;
-	size_t size_ib_cq;
-	size_t size_ib_mw;
-	size_t size_ib_pd;
-	size_t size_ib_rwq_ind_table;
-	size_t size_ib_srq;
-	size_t size_ib_ucontext;
-	size_t size_ib_xrcd;
-};
-
-struct ib_core_device {
-	struct device dev;
-	possible_net_t rdma_net;
-	struct kobject *ports_kobj;
-	struct list_head port_list;
-	struct ib_device *owner;
-};
-
-enum ib_atomic_cap {
-	IB_ATOMIC_NONE = 0,
-	IB_ATOMIC_HCA = 1,
-	IB_ATOMIC_GLOB = 2,
-};
-
-struct ib_odp_caps {
-	uint64_t general_caps;
-	struct {
-		uint32_t rc_odp_caps;
-		uint32_t uc_odp_caps;
-		uint32_t ud_odp_caps;
-		uint32_t xrc_odp_caps;
-	} per_transport_caps;
-};
-
-struct ib_rss_caps {
-	u32 supported_qpts;
-	u32 max_rwq_indirection_tables;
-	u32 max_rwq_indirection_table_size;
-};
-
-struct ib_tm_caps {
-	u32 max_rndv_hdr_size;
-	u32 max_num_tags;
-	u32 flags;
-	u32 max_ops;
-	u32 max_sge;
-};
-
-struct ib_cq_caps {
-	u16 max_cq_moderation_count;
-	u16 max_cq_moderation_period;
-};
-
-struct ib_device_attr {
-	u64 fw_ver;
-	__be64 sys_image_guid;
-	u64 max_mr_size;
-	u64 page_size_cap;
-	u32 vendor_id;
-	u32 vendor_part_id;
-	u32 hw_ver;
-	int max_qp;
-	int max_qp_wr;
-	u64 device_cap_flags;
-	int max_send_sge;
-	int max_recv_sge;
-	int max_sge_rd;
-	int max_cq;
-	int max_cqe;
-	int max_mr;
-	int max_pd;
-	int max_qp_rd_atom;
-	int max_ee_rd_atom;
-	int max_res_rd_atom;
-	int max_qp_init_rd_atom;
-	int max_ee_init_rd_atom;
-	enum ib_atomic_cap atomic_cap;
-	enum ib_atomic_cap masked_atomic_cap;
-	int max_ee;
-	int max_rdd;
-	int max_mw;
-	int max_raw_ipv6_qp;
-	int max_raw_ethy_qp;
-	int max_mcast_grp;
-	int max_mcast_qp_attach;
-	int max_total_mcast_qp_attach;
-	int max_ah;
-	int max_srq;
-	int max_srq_wr;
-	int max_srq_sge;
-	unsigned int max_fast_reg_page_list_len;
-	unsigned int max_pi_fast_reg_page_list_len;
-	u16 max_pkeys;
-	u8 local_ca_ack_delay;
-	int sig_prot_cap;
-	int sig_guard_cap;
-	struct ib_odp_caps odp_caps;
-	uint64_t timestamp_mask;
-	uint64_t hca_core_clock;
-	struct ib_rss_caps rss_caps;
-	u32 max_wq_type_rq;
-	u32 raw_packet_caps;
-	struct ib_tm_caps tm_caps;
-	struct ib_cq_caps cq_caps;
-	u64 max_dm_size;
-	u32 max_sgl_rd;
-};
-
-struct rdma_restrack_root;
-
-struct uapi_definition;
-
-struct ib_port_data;
-
-struct ib_device {
-	struct device *dma_device;
-	struct ib_device_ops ops;
-	char name[64];
-	struct callback_head callback_head;
-	struct list_head event_handler_list;
-	struct rw_semaphore event_handler_rwsem;
-	spinlock_t qp_open_list_lock;
-	struct rw_semaphore client_data_rwsem;
-	struct xarray client_data;
-	struct mutex unregistration_lock;
-	rwlock_t cache_lock;
-	struct ib_port_data *port_data;
-	int num_comp_vectors;
-	union {
-		struct device dev;
-		struct ib_core_device coredev;
-	};
-	const struct attribute_group *groups[3];
-	u64 uverbs_cmd_mask;
-	char node_desc[64];
-	__be64 node_guid;
-	u32 local_dma_lkey;
-	u16 is_switch: 1;
-	u16 kverbs_provider: 1;
-	u16 use_cq_dim: 1;
-	u8 node_type;
-	u8 phys_port_cnt;
-	struct ib_device_attr attrs;
-	struct attribute_group *hw_stats_ag;
-	struct rdma_hw_stats *hw_stats;
-	u32 index;
-	spinlock_t cq_pools_lock;
-	struct list_head cq_pools[3];
-	struct rdma_restrack_root *res;
-	const struct uapi_definition *driver_def;
-	refcount_t refcount;
-	struct completion unreg_completion;
-	struct work_struct unregistration_work;
-	const struct rdma_link_ops *link_ops;
-	struct mutex compat_devs_mutex;
-	struct xarray compat_devs;
-	char iw_ifname[16];
-	u32 iw_driver_flags;
-	u32 lag_flags;
-};
-
-enum ib_signature_type {
-	IB_SIG_TYPE_NONE = 0,
-	IB_SIG_TYPE_T10_DIF = 1,
-};
-
-enum ib_t10_dif_bg_type {
-	IB_T10DIF_CRC = 0,
-	IB_T10DIF_CSUM = 1,
-};
-
-struct ib_t10_dif_domain {
-	enum ib_t10_dif_bg_type bg_type;
-	u16 pi_interval;
-	u16 bg;
-	u16 app_tag;
-	u32 ref_tag;
-	bool ref_remap;
-	bool app_escape;
-	bool ref_escape;
-	u16 apptag_check_mask;
-};
-
-struct ib_sig_domain {
-	enum ib_signature_type sig_type;
-	union {
-		struct ib_t10_dif_domain dif;
-	} sig;
-};
-
-struct ib_sig_attrs {
-	u8 check_mask;
-	struct ib_sig_domain mem;
-	struct ib_sig_domain wire;
-	int meta_length;
-};
-
-enum ib_sig_err_type {
-	IB_SIG_BAD_GUARD = 0,
-	IB_SIG_BAD_REFTAG = 1,
-	IB_SIG_BAD_APPTAG = 2,
-};
-
-struct ib_sig_err {
-	enum ib_sig_err_type err_type;
-	u32 expected;
-	u32 actual;
-	u64 sig_err_offset;
-	u32 key;
-};
-
-enum ib_uverbs_flow_action_esp_keymat {
-	IB_UVERBS_FLOW_ACTION_ESP_KEYMAT_AES_GCM = 0,
-};
-
-struct ib_uverbs_flow_action_esp_keymat_aes_gcm {
-	__u64 iv;
-	__u32 iv_algo;
-	__u32 salt;
-	__u32 icv_len;
-	__u32 key_len;
-	__u32 aes_key[8];
-};
-
-enum ib_uverbs_flow_action_esp_replay {
-	IB_UVERBS_FLOW_ACTION_ESP_REPLAY_NONE = 0,
-	IB_UVERBS_FLOW_ACTION_ESP_REPLAY_BMP = 1,
-};
-
-struct ib_uverbs_flow_action_esp_replay_bmp {
-	__u32 size;
-};
-
-union ib_gid {
-	u8 raw[16];
-	struct {
-		__be64 subnet_prefix;
-		__be64 interface_id;
-	} global;
-};
-
-enum ib_gid_type {
-	IB_GID_TYPE_IB = 0,
-	IB_GID_TYPE_ROCE = 1,
-	IB_GID_TYPE_ROCE_UDP_ENCAP = 2,
-	IB_GID_TYPE_SIZE = 3,
-};
-
-struct ib_gid_attr {
-	struct net_device *ndev;
-	struct ib_device *device;
-	union ib_gid gid;
-	enum ib_gid_type gid_type;
-	u16 index;
-	u8 port_num;
-};
-
-struct ib_cq_init_attr {
-	unsigned int cqe;
-	u32 comp_vector;
-	u32 flags;
-};
-
-struct ib_dm_mr_attr {
-	u64 length;
-	u64 offset;
-	u32 access_flags;
-};
-
-struct ib_dm_alloc_attr {
-	u64 length;
-	u32 alignment;
-	u32 flags;
-};
-
-enum ib_mtu {
-	IB_MTU_256 = 1,
-	IB_MTU_512 = 2,
-	IB_MTU_1024 = 3,
-	IB_MTU_2048 = 4,
-	IB_MTU_4096 = 5,
-};
-
-enum ib_port_state {
-	IB_PORT_NOP = 0,
-	IB_PORT_DOWN = 1,
-	IB_PORT_INIT = 2,
-	IB_PORT_ARMED = 3,
-	IB_PORT_ACTIVE = 4,
-	IB_PORT_ACTIVE_DEFER = 5,
-};
-
-struct ib_port_attr {
-	u64 subnet_prefix;
-	enum ib_port_state state;
-	enum ib_mtu max_mtu;
-	enum ib_mtu active_mtu;
-	u32 phys_mtu;
-	int gid_tbl_len;
-	unsigned int ip_gids: 1;
-	u32 port_cap_flags;
-	u32 max_msg_sz;
-	u32 bad_pkey_cntr;
-	u32 qkey_viol_cntr;
-	u16 pkey_tbl_len;
-	u32 sm_lid;
-	u32 lid;
-	u8 lmc;
-	u8 max_vl_num;
-	u8 sm_sl;
-	u8 subnet_timeout;
-	u8 init_type_reply;
-	u8 active_width;
-	u16 active_speed;
-	u8 phys_state;
-	u16 port_cap_flags2;
-};
-
-struct ib_device_modify {
-	u64 sys_image_guid;
-	char node_desc[64];
-};
-
-struct ib_port_modify {
-	u32 set_port_cap_mask;
-	u32 clr_port_cap_mask;
-	u8 init_type;
-};
-
-enum ib_event_type {
-	IB_EVENT_CQ_ERR = 0,
-	IB_EVENT_QP_FATAL = 1,
-	IB_EVENT_QP_REQ_ERR = 2,
-	IB_EVENT_QP_ACCESS_ERR = 3,
-	IB_EVENT_COMM_EST = 4,
-	IB_EVENT_SQ_DRAINED = 5,
-	IB_EVENT_PATH_MIG = 6,
-	IB_EVENT_PATH_MIG_ERR = 7,
-	IB_EVENT_DEVICE_FATAL = 8,
-	IB_EVENT_PORT_ACTIVE = 9,
-	IB_EVENT_PORT_ERR = 10,
-	IB_EVENT_LID_CHANGE = 11,
-	IB_EVENT_PKEY_CHANGE = 12,
-	IB_EVENT_SM_CHANGE = 13,
-	IB_EVENT_SRQ_ERR = 14,
-	IB_EVENT_SRQ_LIMIT_REACHED = 15,
-	IB_EVENT_QP_LAST_WQE_REACHED = 16,
-	IB_EVENT_CLIENT_REREGISTER = 17,
-	IB_EVENT_GID_CHANGE = 18,
-	IB_EVENT_WQ_FATAL = 19,
-};
-
-struct ib_ucq_object;
-
-typedef void (*ib_comp_handler)(struct ib_cq *, void *);
-
-struct ib_event;
-
-struct ib_cq {
-	struct ib_device *device;
-	struct ib_ucq_object *uobject;
-	ib_comp_handler comp_handler;
-	void (*event_handler)(struct ib_event *, void *);
-	void *cq_context;
-	int cqe;
-	unsigned int cqe_used;
-	atomic_t usecnt;
-	enum ib_poll_context poll_ctx;
-	struct ib_wc *wc;
-	struct list_head pool_entry;
-	union {
-		struct irq_poll iop;
-		struct work_struct work;
-	};
-	struct workqueue_struct *comp_wq;
-	struct dim *dim;
-	ktime_t timestamp;
-	u8 interrupt: 1;
-	u8 shared: 1;
-	unsigned int comp_vector;
-	struct rdma_restrack_entry res;
-};
-
-struct ib_uqp_object;
-
-enum ib_qp_type {
-	IB_QPT_SMI = 0,
-	IB_QPT_GSI = 1,
-	IB_QPT_RC = 2,
-	IB_QPT_UC = 3,
-	IB_QPT_UD = 4,
-	IB_QPT_RAW_IPV6 = 5,
-	IB_QPT_RAW_ETHERTYPE = 6,
-	IB_QPT_RAW_PACKET = 8,
-	IB_QPT_XRC_INI = 9,
-	IB_QPT_XRC_TGT = 10,
-	IB_QPT_MAX = 11,
-	IB_QPT_DRIVER = 255,
-	IB_QPT_RESERVED1 = 4096,
-	IB_QPT_RESERVED2 = 4097,
-	IB_QPT_RESERVED3 = 4098,
-	IB_QPT_RESERVED4 = 4099,
-	IB_QPT_RESERVED5 = 4100,
-	IB_QPT_RESERVED6 = 4101,
-	IB_QPT_RESERVED7 = 4102,
-	IB_QPT_RESERVED8 = 4103,
-	IB_QPT_RESERVED9 = 4104,
-	IB_QPT_RESERVED10 = 4105,
-};
-
-struct ib_qp_security;
-
-struct ib_qp {
-	struct ib_device *device;
-	struct ib_pd *pd;
-	struct ib_cq *send_cq;
-	struct ib_cq *recv_cq;
-	spinlock_t mr_lock;
-	int mrs_used;
-	struct list_head rdma_mrs;
-	struct list_head sig_mrs;
-	struct ib_srq *srq;
-	struct ib_xrcd *xrcd;
-	struct list_head xrcd_list;
-	atomic_t usecnt;
-	struct list_head open_list;
-	struct ib_qp *real_qp;
-	struct ib_uqp_object *uobject;
-	void (*event_handler)(struct ib_event *, void *);
-	void *qp_context;
-	const struct ib_gid_attr *av_sgid_attr;
-	const struct ib_gid_attr *alt_path_sgid_attr;
-	u32 qp_num;
-	u32 max_write_sge;
-	u32 max_read_sge;
-	enum ib_qp_type qp_type;
-	struct ib_rwq_ind_table *rwq_ind_tbl;
-	struct ib_qp_security *qp_sec;
-	u8 port;
-	bool integrity_en;
-	struct rdma_restrack_entry res;
-	struct rdma_counter *counter;
-};
-
-struct ib_usrq_object;
-
-enum ib_srq_type {
-	IB_SRQT_BASIC = 0,
-	IB_SRQT_XRC = 1,
-	IB_SRQT_TM = 2,
-};
-
-struct ib_srq {
-	struct ib_device *device;
-	struct ib_pd *pd;
-	struct ib_usrq_object *uobject;
-	void (*event_handler)(struct ib_event *, void *);
-	void *srq_context;
-	enum ib_srq_type srq_type;
-	atomic_t usecnt;
-	struct {
-		struct ib_cq *cq;
-		union {
-			struct {
-				struct ib_xrcd *xrcd;
-				u32 srq_num;
-			} xrc;
-		};
-	} ext;
-};
-
-struct ib_uwq_object;
-
-enum ib_wq_state {
-	IB_WQS_RESET = 0,
-	IB_WQS_RDY = 1,
-	IB_WQS_ERR = 2,
-};
-
-enum ib_wq_type {
-	IB_WQT_RQ = 0,
-};
-
-struct ib_wq {
-	struct ib_device *device;
-	struct ib_uwq_object *uobject;
-	void *wq_context;
-	void (*event_handler)(struct ib_event *, void *);
-	struct ib_pd *pd;
-	struct ib_cq *cq;
-	u32 wq_num;
-	enum ib_wq_state state;
-	enum ib_wq_type wq_type;
-	atomic_t usecnt;
-};
-
-struct ib_event {
-	struct ib_device *device;
-	union {
-		struct ib_cq *cq;
-		struct ib_qp *qp;
-		struct ib_srq *srq;
-		struct ib_wq *wq;
-		u8 port_num;
-	} element;
-	enum ib_event_type event;
-};
-
-struct ib_global_route {
-	const struct ib_gid_attr *sgid_attr;
-	union ib_gid dgid;
-	u32 flow_label;
-	u8 sgid_index;
-	u8 hop_limit;
-	u8 traffic_class;
-};
-
-struct ib_grh {
-	__be32 version_tclass_flow;
-	__be16 paylen;
-	u8 next_hdr;
-	u8 hop_limit;
-	union ib_gid sgid;
-	union ib_gid dgid;
-};
-
-struct ib_mr_status {
-	u32 fail_status;
-	struct ib_sig_err sig_err;
-};
-
-struct rdma_ah_init_attr {
-	struct rdma_ah_attr *ah_attr;
-	u32 flags;
-	struct net_device *xmit_slave;
-};
-
-enum rdma_ah_attr_type {
-	RDMA_AH_ATTR_TYPE_UNDEFINED = 0,
-	RDMA_AH_ATTR_TYPE_IB = 1,
-	RDMA_AH_ATTR_TYPE_ROCE = 2,
-	RDMA_AH_ATTR_TYPE_OPA = 3,
-};
-
-struct ib_ah_attr {
-	u16 dlid;
-	u8 src_path_bits;
-};
-
-struct roce_ah_attr {
-	u8 dmac[6];
-};
-
-struct opa_ah_attr {
-	u32 dlid;
-	u8 src_path_bits;
-	bool make_grd;
-};
-
-struct rdma_ah_attr {
-	struct ib_global_route grh;
-	u8 sl;
-	u8 static_rate;
-	u8 port_num;
-	u8 ah_flags;
-	enum rdma_ah_attr_type type;
-	union {
-		struct ib_ah_attr ib;
-		struct roce_ah_attr roce;
-		struct opa_ah_attr opa;
-	};
-};
-
-enum ib_wc_status {
-	IB_WC_SUCCESS = 0,
-	IB_WC_LOC_LEN_ERR = 1,
-	IB_WC_LOC_QP_OP_ERR = 2,
-	IB_WC_LOC_EEC_OP_ERR = 3,
-	IB_WC_LOC_PROT_ERR = 4,
-	IB_WC_WR_FLUSH_ERR = 5,
-	IB_WC_MW_BIND_ERR = 6,
-	IB_WC_BAD_RESP_ERR = 7,
-	IB_WC_LOC_ACCESS_ERR = 8,
-	IB_WC_REM_INV_REQ_ERR = 9,
-	IB_WC_REM_ACCESS_ERR = 10,
-	IB_WC_REM_OP_ERR = 11,
-	IB_WC_RETRY_EXC_ERR = 12,
-	IB_WC_RNR_RETRY_EXC_ERR = 13,
-	IB_WC_LOC_RDD_VIOL_ERR = 14,
-	IB_WC_REM_INV_RD_REQ_ERR = 15,
-	IB_WC_REM_ABORT_ERR = 16,
-	IB_WC_INV_EECN_ERR = 17,
-	IB_WC_INV_EEC_STATE_ERR = 18,
-	IB_WC_FATAL_ERR = 19,
-	IB_WC_RESP_TIMEOUT_ERR = 20,
-	IB_WC_GENERAL_ERR = 21,
-};
-
-enum ib_wc_opcode {
-	IB_WC_SEND = 0,
-	IB_WC_RDMA_WRITE = 1,
-	IB_WC_RDMA_READ = 2,
-	IB_WC_COMP_SWAP = 3,
-	IB_WC_FETCH_ADD = 4,
-	IB_WC_BIND_MW = 5,
-	IB_WC_LOCAL_INV = 6,
-	IB_WC_LSO = 7,
-	IB_WC_REG_MR = 8,
-	IB_WC_MASKED_COMP_SWAP = 9,
-	IB_WC_MASKED_FETCH_ADD = 10,
-	IB_WC_RECV = 128,
-	IB_WC_RECV_RDMA_WITH_IMM = 129,
-};
-
-struct ib_cqe {
-	void (*done)(struct ib_cq *, struct ib_wc *);
-};
-
-struct ib_wc {
-	union {
-		u64 wr_id;
-		struct ib_cqe *wr_cqe;
-	};
-	enum ib_wc_status status;
-	enum ib_wc_opcode opcode;
-	u32 vendor_err;
-	u32 byte_len;
-	struct ib_qp *qp;
-	union {
-		__be32 imm_data;
-		u32 invalidate_rkey;
-	} ex;
-	u32 src_qp;
-	u32 slid;
-	int wc_flags;
-	u16 pkey_index;
-	u8 sl;
-	u8 dlid_path_bits;
-	u8 port_num;
-	u8 smac[6];
-	u16 vlan_id;
-	u8 network_hdr_type;
-};
-
-struct ib_srq_attr {
-	u32 max_wr;
-	u32 max_sge;
-	u32 srq_limit;
-};
-
-struct ib_xrcd {
-	struct ib_device *device;
-	atomic_t usecnt;
-	struct inode *inode;
-	struct rw_semaphore tgt_qps_rwsem;
-	struct xarray tgt_qps;
-};
-
-struct ib_srq_init_attr {
-	void (*event_handler)(struct ib_event *, void *);
-	void *srq_context;
-	struct ib_srq_attr attr;
-	enum ib_srq_type srq_type;
-	struct {
-		struct ib_cq *cq;
-		union {
-			struct {
-				struct ib_xrcd *xrcd;
-			} xrc;
-			struct {
-				u32 max_num_tags;
-			} tag_matching;
-		};
-	} ext;
-};
-
-struct ib_qp_cap {
-	u32 max_send_wr;
-	u32 max_recv_wr;
-	u32 max_send_sge;
-	u32 max_recv_sge;
-	u32 max_inline_data;
-	u32 max_rdma_ctxs;
-};
-
-enum ib_sig_type {
-	IB_SIGNAL_ALL_WR = 0,
-	IB_SIGNAL_REQ_WR = 1,
-};
-
-struct ib_qp_init_attr {
-	void (*event_handler)(struct ib_event *, void *);
-	void *qp_context;
-	struct ib_cq *send_cq;
-	struct ib_cq *recv_cq;
-	struct ib_srq *srq;
-	struct ib_xrcd *xrcd;
-	struct ib_qp_cap cap;
-	enum ib_sig_type sq_sig_type;
-	enum ib_qp_type qp_type;
-	u32 create_flags;
-	u8 port_num;
-	struct ib_rwq_ind_table *rwq_ind_tbl;
-	u32 source_qpn;
-};
-
-struct ib_uobject;
-
-struct ib_rwq_ind_table {
-	struct ib_device *device;
-	struct ib_uobject *uobject;
-	atomic_t usecnt;
-	u32 ind_tbl_num;
-	u32 log_ind_tbl_size;
-	struct ib_wq **ind_tbl;
-};
-
-enum ib_qp_state {
-	IB_QPS_RESET = 0,
-	IB_QPS_INIT = 1,
-	IB_QPS_RTR = 2,
-	IB_QPS_RTS = 3,
-	IB_QPS_SQD = 4,
-	IB_QPS_SQE = 5,
-	IB_QPS_ERR = 6,
-};
-
-enum ib_mig_state {
-	IB_MIG_MIGRATED = 0,
-	IB_MIG_REARM = 1,
-	IB_MIG_ARMED = 2,
-};
-
-enum ib_mw_type {
-	IB_MW_TYPE_1 = 1,
-	IB_MW_TYPE_2 = 2,
-};
-
-struct ib_qp_attr {
-	enum ib_qp_state qp_state;
-	enum ib_qp_state cur_qp_state;
-	enum ib_mtu path_mtu;
-	enum ib_mig_state path_mig_state;
-	u32 qkey;
-	u32 rq_psn;
-	u32 sq_psn;
-	u32 dest_qp_num;
-	int qp_access_flags;
-	struct ib_qp_cap cap;
-	struct rdma_ah_attr ah_attr;
-	struct rdma_ah_attr alt_ah_attr;
-	u16 pkey_index;
-	u16 alt_pkey_index;
-	u8 en_sqd_async_notify;
-	u8 sq_draining;
-	u8 max_rd_atomic;
-	u8 max_dest_rd_atomic;
-	u8 min_rnr_timer;
-	u8 port_num;
-	u8 timeout;
-	u8 retry_cnt;
-	u8 rnr_retry;
-	u8 alt_port_num;
-	u8 alt_timeout;
-	u32 rate_limit;
-	struct net_device *xmit_slave;
-};
-
-enum ib_wr_opcode {
-	IB_WR_RDMA_WRITE = 0,
-	IB_WR_RDMA_WRITE_WITH_IMM = 1,
-	IB_WR_SEND = 2,
-	IB_WR_SEND_WITH_IMM = 3,
-	IB_WR_RDMA_READ = 4,
-	IB_WR_ATOMIC_CMP_AND_SWP = 5,
-	IB_WR_ATOMIC_FETCH_AND_ADD = 6,
-	IB_WR_BIND_MW = 8,
-	IB_WR_LSO = 10,
-	IB_WR_SEND_WITH_INV = 9,
-	IB_WR_RDMA_READ_WITH_INV = 11,
-	IB_WR_LOCAL_INV = 7,
-	IB_WR_MASKED_ATOMIC_CMP_AND_SWP = 12,
-	IB_WR_MASKED_ATOMIC_FETCH_AND_ADD = 13,
-	IB_WR_REG_MR = 32,
-	IB_WR_REG_MR_INTEGRITY = 33,
-	IB_WR_RESERVED1 = 240,
-	IB_WR_RESERVED2 = 241,
-	IB_WR_RESERVED3 = 242,
-	IB_WR_RESERVED4 = 243,
-	IB_WR_RESERVED5 = 244,
-	IB_WR_RESERVED6 = 245,
-	IB_WR_RESERVED7 = 246,
-	IB_WR_RESERVED8 = 247,
-	IB_WR_RESERVED9 = 248,
-	IB_WR_RESERVED10 = 249,
-};
-
-struct ib_sge {
-	u64 addr;
-	u32 length;
-	u32 lkey;
-};
-
-struct ib_send_wr {
-	struct ib_send_wr *next;
-	union {
-		u64 wr_id;
-		struct ib_cqe *wr_cqe;
-	};
-	struct ib_sge *sg_list;
-	int num_sge;
-	enum ib_wr_opcode opcode;
-	int send_flags;
-	union {
-		__be32 imm_data;
-		u32 invalidate_rkey;
-	} ex;
-};
-
-struct ib_ah {
-	struct ib_device *device;
-	struct ib_pd *pd;
-	struct ib_uobject *uobject;
-	const struct ib_gid_attr *sgid_attr;
-	enum rdma_ah_attr_type type;
-};
-
-struct ib_mr {
-	struct ib_device *device;
-	struct ib_pd *pd;
-	u32 lkey;
-	u32 rkey;
-	u64 iova;
-	u64 length;
-	unsigned int page_size;
-	enum ib_mr_type type;
-	bool need_inval;
-	union {
-		struct ib_uobject *uobject;
-		struct list_head qp_entry;
-	};
-	struct ib_dm *dm;
-	struct ib_sig_attrs *sig_attrs;
-	struct rdma_restrack_entry res;
-};
-
-struct ib_recv_wr {
-	struct ib_recv_wr *next;
-	union {
-		u64 wr_id;
-		struct ib_cqe *wr_cqe;
-	};
-	struct ib_sge *sg_list;
-	int num_sge;
-};
-
-struct ib_rdmacg_object {};
-
-struct ib_uverbs_file;
-
-struct ib_ucontext {
-	struct ib_device *device;
-	struct ib_uverbs_file *ufile;
-	struct ib_rdmacg_object cg_obj;
-	struct rdma_restrack_entry res;
-	struct xarray mmap_xa;
-};
-
-struct uverbs_api_object;
-
-struct ib_uobject {
-	u64 user_handle;
-	struct ib_uverbs_file *ufile;
-	struct ib_ucontext *context;
-	void *object;
-	struct list_head list;
-	struct ib_rdmacg_object cg_obj;
-	int id;
-	struct kref ref;
-	atomic_t usecnt;
-	struct callback_head rcu;
-	const struct uverbs_api_object *uapi_object;
-};
-
-struct ib_udata {
-	const void *inbuf;
-	void *outbuf;
-	size_t inlen;
-	size_t outlen;
-};
-
-struct ib_pd {
-	u32 local_dma_lkey;
-	u32 flags;
-	struct ib_device *device;
-	struct ib_uobject *uobject;
-	atomic_t usecnt;
-	u32 unsafe_global_rkey;
-	struct ib_mr *__internal_mr;
-	struct rdma_restrack_entry res;
-};
-
-struct ib_wq_init_attr {
-	void *wq_context;
-	enum ib_wq_type wq_type;
-	u32 max_wr;
-	u32 max_sge;
-	struct ib_cq *cq;
-	void (*event_handler)(struct ib_event *, void *);
-	u32 create_flags;
-};
-
-struct ib_wq_attr {
-	enum ib_wq_state wq_state;
-	enum ib_wq_state curr_wq_state;
-	u32 flags;
-	u32 flags_mask;
-};
-
-struct ib_rwq_ind_table_init_attr {
-	u32 log_ind_tbl_size;
-	struct ib_wq **ind_tbl;
-};
-
-enum port_pkey_state {
-	IB_PORT_PKEY_NOT_VALID = 0,
-	IB_PORT_PKEY_VALID = 1,
-	IB_PORT_PKEY_LISTED = 2,
-};
-
-struct ib_port_pkey {
-	enum port_pkey_state state;
-	u16 pkey_index;
-	u8 port_num;
-	struct list_head qp_list;
-	struct list_head to_error_list;
-	struct ib_qp_security *sec;
-};
-
-struct ib_ports_pkeys;
-
-struct ib_qp_security {
-	struct ib_qp *qp;
-	struct ib_device *dev;
-	struct mutex mutex;
-	struct ib_ports_pkeys *ports_pkeys;
-	struct list_head shared_qp_list;
-	void *security;
-	bool destroying;
-	atomic_t error_list_count;
-	struct completion error_complete;
-	int error_comps_pending;
-};
-
-struct ib_ports_pkeys {
-	struct ib_port_pkey main;
-	struct ib_port_pkey alt;
-};
-
-struct ib_dm {
-	struct ib_device *device;
-	u32 length;
-	u32 flags;
-	struct ib_uobject *uobject;
-	atomic_t usecnt;
-};
-
-struct ib_mw {
-	struct ib_device *device;
-	struct ib_pd *pd;
-	struct ib_uobject *uobject;
-	u32 rkey;
-	enum ib_mw_type type;
-};
-
-enum ib_flow_attr_type {
-	IB_FLOW_ATTR_NORMAL = 0,
-	IB_FLOW_ATTR_ALL_DEFAULT = 1,
-	IB_FLOW_ATTR_MC_DEFAULT = 2,
-	IB_FLOW_ATTR_SNIFFER = 3,
-};
-
-enum ib_flow_spec_type {
-	IB_FLOW_SPEC_ETH = 32,
-	IB_FLOW_SPEC_IB = 34,
-	IB_FLOW_SPEC_IPV4 = 48,
-	IB_FLOW_SPEC_IPV6 = 49,
-	IB_FLOW_SPEC_ESP = 52,
-	IB_FLOW_SPEC_TCP = 64,
-	IB_FLOW_SPEC_UDP = 65,
-	IB_FLOW_SPEC_VXLAN_TUNNEL = 80,
-	IB_FLOW_SPEC_GRE = 81,
-	IB_FLOW_SPEC_MPLS = 96,
-	IB_FLOW_SPEC_INNER = 256,
-	IB_FLOW_SPEC_ACTION_TAG = 4096,
-	IB_FLOW_SPEC_ACTION_DROP = 4097,
-	IB_FLOW_SPEC_ACTION_HANDLE = 4098,
-	IB_FLOW_SPEC_ACTION_COUNT = 4099,
-};
-
-struct ib_flow_eth_filter {
-	u8 dst_mac[6];
-	u8 src_mac[6];
-	__be16 ether_type;
-	__be16 vlan_tag;
-	u8 real_sz[0];
-};
-
-struct ib_flow_spec_eth {
-	u32 type;
-	u16 size;
-	struct ib_flow_eth_filter val;
-	struct ib_flow_eth_filter mask;
-};
-
-struct ib_flow_ib_filter {
-	__be16 dlid;
-	__u8 sl;
-	u8 real_sz[0];
-};
-
-struct ib_flow_spec_ib {
-	u32 type;
-	u16 size;
-	struct ib_flow_ib_filter val;
-	struct ib_flow_ib_filter mask;
-};
-
-struct ib_flow_ipv4_filter {
-	__be32 src_ip;
-	__be32 dst_ip;
-	u8 proto;
-	u8 tos;
-	u8 ttl;
-	u8 flags;
-	u8 real_sz[0];
-};
-
-struct ib_flow_spec_ipv4 {
-	u32 type;
-	u16 size;
-	struct ib_flow_ipv4_filter val;
-	struct ib_flow_ipv4_filter mask;
-};
-
-struct ib_flow_ipv6_filter {
-	u8 src_ip[16];
-	u8 dst_ip[16];
-	__be32 flow_label;
-	u8 next_hdr;
-	u8 traffic_class;
-	u8 hop_limit;
-	u8 real_sz[0];
-};
-
-struct ib_flow_spec_ipv6 {
-	u32 type;
-	u16 size;
-	struct ib_flow_ipv6_filter val;
-	struct ib_flow_ipv6_filter mask;
-};
-
-struct ib_flow_tcp_udp_filter {
-	__be16 dst_port;
-	__be16 src_port;
-	u8 real_sz[0];
-};
-
-struct ib_flow_spec_tcp_udp {
-	u32 type;
-	u16 size;
-	struct ib_flow_tcp_udp_filter val;
-	struct ib_flow_tcp_udp_filter mask;
-};
-
-struct ib_flow_tunnel_filter {
-	__be32 tunnel_id;
-	u8 real_sz[0];
-};
-
-struct ib_flow_spec_tunnel {
-	u32 type;
-	u16 size;
-	struct ib_flow_tunnel_filter val;
-	struct ib_flow_tunnel_filter mask;
-};
-
-struct ib_flow_esp_filter {
-	__be32 spi;
-	__be32 seq;
-	u8 real_sz[0];
-};
-
-struct ib_flow_spec_esp {
-	u32 type;
-	u16 size;
-	struct ib_flow_esp_filter val;
-	struct ib_flow_esp_filter mask;
-};
-
-struct ib_flow_gre_filter {
-	__be16 c_ks_res0_ver;
-	__be16 protocol;
-	__be32 key;
-	u8 real_sz[0];
-};
-
-struct ib_flow_spec_gre {
-	u32 type;
-	u16 size;
-	struct ib_flow_gre_filter val;
-	struct ib_flow_gre_filter mask;
-};
-
-struct ib_flow_mpls_filter {
-	__be32 tag;
-	u8 real_sz[0];
-};
-
-struct ib_flow_spec_mpls {
-	u32 type;
-	u16 size;
-	struct ib_flow_mpls_filter val;
-	struct ib_flow_mpls_filter mask;
-};
-
-struct ib_flow_spec_action_tag {
-	enum ib_flow_spec_type type;
-	u16 size;
-	u32 tag_id;
-};
-
-struct ib_flow_spec_action_drop {
-	enum ib_flow_spec_type type;
-	u16 size;
-};
-
-struct ib_flow_spec_action_handle {
-	enum ib_flow_spec_type type;
-	u16 size;
-	struct ib_flow_action *act;
-};
-
-enum ib_flow_action_type {
-	IB_FLOW_ACTION_UNSPECIFIED = 0,
-	IB_FLOW_ACTION_ESP = 1,
-};
-
-struct ib_flow_action {
-	struct ib_device *device;
-	struct ib_uobject *uobject;
-	enum ib_flow_action_type type;
-	atomic_t usecnt;
-};
-
-struct ib_flow_spec_action_count {
-	enum ib_flow_spec_type type;
-	u16 size;
-	struct ib_counters *counters;
-};
-
-struct ib_counters {
-	struct ib_device *device;
-	struct ib_uobject *uobject;
-	atomic_t usecnt;
-};
-
-union ib_flow_spec {
-	struct {
-		u32 type;
-		u16 size;
-	};
-	struct ib_flow_spec_eth eth;
-	struct ib_flow_spec_ib ib;
-	struct ib_flow_spec_ipv4 ipv4;
-	struct ib_flow_spec_tcp_udp tcp_udp;
-	struct ib_flow_spec_ipv6 ipv6;
-	struct ib_flow_spec_tunnel tunnel;
-	struct ib_flow_spec_esp esp;
-	struct ib_flow_spec_gre gre;
-	struct ib_flow_spec_mpls mpls;
-	struct ib_flow_spec_action_tag flow_tag;
-	struct ib_flow_spec_action_drop drop;
-	struct ib_flow_spec_action_handle action;
-	struct ib_flow_spec_action_count flow_count;
-};
-
-struct ib_flow_attr {
-	enum ib_flow_attr_type type;
-	u16 size;
-	u16 priority;
-	u32 flags;
-	u8 num_of_specs;
-	u8 port;
-	union ib_flow_spec flows[0];
-};
-
-struct ib_flow {
-	struct ib_qp *qp;
-	struct ib_device *device;
-	struct ib_uobject *uobject;
-};
-
-struct ib_flow_action_attrs_esp_keymats {
-	enum ib_uverbs_flow_action_esp_keymat protocol;
-	union {
-		struct ib_uverbs_flow_action_esp_keymat_aes_gcm aes_gcm;
-	} keymat;
-};
-
-struct ib_flow_action_attrs_esp_replays {
-	enum ib_uverbs_flow_action_esp_replay protocol;
-	union {
-		struct ib_uverbs_flow_action_esp_replay_bmp bmp;
-	} replay;
-};
-
-struct ib_flow_spec_list {
-	struct ib_flow_spec_list *next;
-	union ib_flow_spec spec;
-};
-
-struct ib_flow_action_attrs_esp {
-	struct ib_flow_action_attrs_esp_keymats *keymat;
-	struct ib_flow_action_attrs_esp_replays *replay;
-	struct ib_flow_spec_list *encap;
-	u32 esn;
-	u32 spi;
-	u32 seq;
-	u32 tfc_pad;
-	u64 flags;
-	u64 hard_limit_pkts;
-};
-
-struct ib_pkey_cache;
-
-struct ib_gid_table;
-
-struct ib_port_cache {
-	u64 subnet_prefix;
-	struct ib_pkey_cache *pkey;
-	struct ib_gid_table *gid;
-	u8 lmc;
-	enum ib_port_state port_state;
-};
-
-struct ib_port_immutable {
-	int pkey_tbl_len;
-	int gid_tbl_len;
-	u32 core_cap_flags;
-	u32 max_mad_size;
-};
-
-struct ib_port_data {
-	struct ib_device *ib_dev;
-	struct ib_port_immutable immutable;
-	spinlock_t pkey_list_lock;
-	struct list_head pkey_list;
-	struct ib_port_cache cache;
-	spinlock_t netdev_lock;
-	struct net_device *netdev;
-	struct hlist_node ndev_hash_link;
-	struct rdma_port_counter port_counter;
-	struct rdma_hw_stats *hw_stats;
-};
-
-struct rdma_netdev_alloc_params {
-	size_t sizeof_priv;
-	unsigned int txqs;
-	unsigned int rxqs;
-	void *param;
-	int (*initialize_rdma_netdev)(struct ib_device *, u8, struct net_device *, void *);
-};
-
-struct ib_counters_read_attr {
-	u64 *counters_buff;
-	u32 ncounters;
-	u32 flags;
-};
-
-struct rdma_user_mmap_entry {
-	struct kref ref;
-	struct ib_ucontext *ucontext;
-	long unsigned int start_pgoff;
-	size_t npages;
-	bool driver_removed;
-};
-
 enum blk_zone_report_flags {
 	BLK_ZONE_REP_CAPACITY = 1,
 };
@@ -72326,6 +69966,11 @@ struct sg_mapping_iter {
 
 typedef int (*cmp_func)(void *, const struct list_head *, const struct list_head *);
 
+struct csum_state {
+	__wsum csum;
+	size_t off;
+};
+
 struct rhltable {
 	struct rhashtable ht;
 };
@@ -72448,26 +70093,6 @@ enum devm_ioremap_type {
 struct pcim_iomap_devres {
 	void *table[6];
 };
-
-struct btree_head {
-	long unsigned int *node;
-	mempool_t *mempool;
-	int height;
-};
-
-struct btree_geo {
-	int keylen;
-	int no_pairs;
-	int no_longs;
-};
-
-typedef void (*visitor128_t)(void *, long unsigned int, u64, u64, size_t);
-
-typedef void (*visitorl_t)(void *, long unsigned int, long unsigned int, size_t);
-
-typedef void (*visitor32_t)(void *, long unsigned int, u32, size_t);
-
-typedef void (*visitor64_t)(void *, long unsigned int, u64, size_t);
 
 enum assoc_array_walk_status {
 	assoc_array_walk_tree_empty = 0,
@@ -72809,18 +70434,16 @@ typedef struct config_s config;
 typedef struct tree_desc_s tree_desc;
 
 typedef struct {
-	uint32_t hashTable[4096];
-	uint32_t currentOffset;
-	uint32_t initCheck;
-	const uint8_t *dictionary;
-	uint8_t *bufferStart;
-	uint32_t dictSize;
-} LZ4_stream_t_internal;
+	const uint8_t *externalDict;
+	size_t extDictSize;
+	const uint8_t *prefixEnd;
+	size_t prefixSize;
+} LZ4_streamDecode_t_internal;
 
 typedef union {
-	long long unsigned int table[2052];
-	LZ4_stream_t_internal internal_donotuse;
-} LZ4_stream_t;
+	long long unsigned int table[4];
+	LZ4_streamDecode_t_internal internal_donotuse;
+} LZ4_streamDecode_t;
 
 typedef uint8_t BYTE;
 
@@ -72833,38 +70456,10 @@ typedef uint64_t U64;
 typedef uintptr_t uptrval;
 
 typedef enum {
-	noLimit = 0,
-	limitedOutput = 1,
-} limitedOutput_directive;
-
-typedef enum {
-	byPtr = 0,
-	byU32 = 1,
-	byU16 = 2,
-} tableType_t;
-
-typedef enum {
 	noDict = 0,
 	withPrefix64k = 1,
 	usingExtDict = 2,
 } dict_directive;
-
-typedef enum {
-	noDictIssue = 0,
-	dictSmall = 1,
-} dictIssue_directive;
-
-typedef struct {
-	const uint8_t *externalDict;
-	size_t extDictSize;
-	const uint8_t *prefixEnd;
-	size_t prefixSize;
-} LZ4_streamDecode_t_internal;
-
-typedef union {
-	long long unsigned int table[4];
-	LZ4_streamDecode_t_internal internal_donotuse;
-} LZ4_streamDecode_t;
 
 typedef enum {
 	endOnOutputSize = 0,
@@ -73572,36 +71167,6 @@ struct raid6_avx512_constants {
 	u64 x1d[8];
 };
 
-struct ts_state {
-	unsigned int offset;
-	char cb[40];
-};
-
-struct ts_config;
-
-struct ts_ops {
-	const char *name;
-	struct ts_config * (*init)(const void *, unsigned int, gfp_t, int);
-	unsigned int (*find)(struct ts_config *, struct ts_state *);
-	void (*destroy)(struct ts_config *);
-	void * (*get_pattern)(struct ts_config *);
-	unsigned int (*get_pattern_len)(struct ts_config *);
-	struct module *owner;
-	struct list_head list;
-};
-
-struct ts_config {
-	struct ts_ops *ops;
-	int flags;
-	unsigned int (*get_next_block)(unsigned int, const u8 **, struct ts_config *, struct ts_state *);
-	void (*finish)(struct ts_config *, struct ts_state *);
-};
-
-struct ts_linear_state {
-	unsigned int len;
-	const void *data;
-};
-
 struct ei_entry {
 	struct list_head list;
 	long unsigned int start_addr;
@@ -73797,44 +71362,6 @@ struct karatsuba_ctx {
 
 typedef long int mpi_limb_signed_t;
 
-enum dim_tune_state {
-	DIM_PARKING_ON_TOP = 0,
-	DIM_PARKING_TIRED = 1,
-	DIM_GOING_RIGHT = 2,
-	DIM_GOING_LEFT = 3,
-};
-
-struct dim_cq_moder {
-	u16 usec;
-	u16 pkts;
-	u16 comps;
-	u8 cq_period_mode;
-};
-
-enum dim_cq_period_mode {
-	DIM_CQ_PERIOD_MODE_START_FROM_EQE = 0,
-	DIM_CQ_PERIOD_MODE_START_FROM_CQE = 1,
-	DIM_CQ_PERIOD_NUM_MODES = 2,
-};
-
-enum dim_state {
-	DIM_START_MEASURE = 0,
-	DIM_MEASURE_IN_PROGRESS = 1,
-	DIM_APPLY_NEW_PROFILE = 2,
-};
-
-enum dim_stats_state {
-	DIM_STATS_WORSE = 0,
-	DIM_STATS_SAME = 1,
-	DIM_STATS_BETTER = 2,
-};
-
-enum dim_step_result {
-	DIM_STEPPED = 0,
-	DIM_TOO_TIRED = 1,
-	DIM_ON_EDGE = 2,
-};
-
 enum pubkey_algo {
 	PUBKEY_ALGO_RSA = 0,
 	PUBKEY_ALGO_MAX = 1,
@@ -73865,6 +71392,17 @@ struct sg_pool {
 	mempool_t *pool;
 };
 
+struct irq_poll;
+
+typedef int irq_poll_fn(struct irq_poll *, int);
+
+struct irq_poll {
+	struct list_head list;
+	long unsigned int state;
+	int weight;
+	irq_poll_fn *poll;
+};
+
 enum {
 	IRQ_POLL_F_SCHED = 0,
 	IRQ_POLL_F_DISABLE = 1,
@@ -73883,135 +71421,6 @@ struct font_desc {
 struct font_data {
 	unsigned int extra[4];
 	const unsigned char data[0];
-};
-
-struct pldmfw_record {
-	struct list_head entry;
-	struct list_head descs;
-	const u8 *version_string;
-	u8 version_type;
-	u8 version_len;
-	u16 package_data_len;
-	u32 device_update_flags;
-	const u8 *package_data;
-	long unsigned int *component_bitmap;
-	u16 component_bitmap_len;
-};
-
-struct pldmfw_desc_tlv {
-	struct list_head entry;
-	const u8 *data;
-	u16 type;
-	u16 size;
-};
-
-struct pldmfw_component {
-	struct list_head entry;
-	u16 classification;
-	u16 identifier;
-	u16 options;
-	u16 activation_method;
-	u32 comparison_stamp;
-	u32 component_size;
-	const u8 *component_data;
-	const u8 *version_string;
-	u8 version_type;
-	u8 version_len;
-	u8 index;
-};
-
-struct pldmfw_ops;
-
-struct pldmfw {
-	const struct pldmfw_ops *ops;
-	struct device *dev;
-};
-
-struct pldmfw_ops {
-	bool (*match_record)(struct pldmfw *, struct pldmfw_record *);
-	int (*send_package_data)(struct pldmfw *, const u8 *, u16);
-	int (*send_component_table)(struct pldmfw *, struct pldmfw_component *, u8);
-	int (*flash_component)(struct pldmfw *, struct pldmfw_component *);
-	int (*finalize_update)(struct pldmfw *);
-};
-
-struct __pldm_timestamp {
-	u8 b[13];
-};
-
-struct __pldm_header {
-	uuid_t id;
-	u8 revision;
-	__le16 size;
-	struct __pldm_timestamp release_date;
-	__le16 component_bitmap_len;
-	u8 version_type;
-	u8 version_len;
-	u8 version_string[0];
-} __attribute__((packed));
-
-struct __pldmfw_record_info {
-	__le16 record_len;
-	u8 descriptor_count;
-	__le32 device_update_flags;
-	u8 version_type;
-	u8 version_len;
-	__le16 package_data_len;
-	u8 variable_record_data[0];
-} __attribute__((packed));
-
-struct __pldmfw_desc_tlv {
-	__le16 type;
-	__le16 size;
-	u8 data[0];
-};
-
-struct __pldmfw_record_area {
-	u8 record_count;
-	u8 records[0];
-};
-
-struct __pldmfw_component_info {
-	__le16 classification;
-	__le16 identifier;
-	__le32 comparison_stamp;
-	__le16 options;
-	__le16 activation_method;
-	__le32 location_offset;
-	__le32 size;
-	u8 version_type;
-	u8 version_len;
-	u8 version_string[0];
-} __attribute__((packed));
-
-struct __pldmfw_component_area {
-	__le16 component_image_count;
-	u8 components[0];
-};
-
-struct pldmfw_priv {
-	struct pldmfw *context;
-	const struct firmware *fw;
-	size_t offset;
-	struct list_head records;
-	struct list_head components;
-	const struct __pldm_header *header;
-	u16 total_header_size;
-	u16 component_bitmap_len;
-	u16 bitmap_size;
-	u16 component_count;
-	const u8 *component_start;
-	const u8 *record_start;
-	u8 record_count;
-	u32 header_crc;
-	struct pldmfw_record *matching_record;
-};
-
-struct pldm_pci_record_id {
-	int vendor;
-	int device;
-	int subsystem_vendor;
-	int subsystem_device;
 };
 
 struct msr {
@@ -74528,19 +71937,6 @@ struct gpio_chip {
 	u16 ngpio;
 	const char * const *names;
 	bool can_sleep;
-	long unsigned int (*read_reg)(void *);
-	void (*write_reg)(void *, long unsigned int);
-	bool be_bits;
-	void *reg_dat;
-	void *reg_set;
-	void *reg_clr;
-	void *reg_dir_out;
-	void *reg_dir_in;
-	bool bgpio_dir_unreadable;
-	int bgpio_bits;
-	spinlock_t bgpio_lock;
-	long unsigned int bgpio_data;
-	long unsigned int bgpio_dir;
 	struct gpio_irq_chip irq;
 	long unsigned int *valid_mask;
 };
@@ -78156,63 +75552,6 @@ struct acpi_processor {
 	struct freq_qos_request thermal_req;
 };
 
-enum ipmi_addr_src {
-	SI_INVALID = 0,
-	SI_HOTMOD = 1,
-	SI_HARDCODED = 2,
-	SI_SPMI = 3,
-	SI_ACPI = 4,
-	SI_SMBIOS = 5,
-	SI_PCI = 6,
-	SI_DEVICETREE = 7,
-	SI_PLATFORM = 8,
-	SI_LAST = 9,
-};
-
-struct dmi_header {
-	u8 type;
-	u8 length;
-	u16 handle;
-};
-
-enum si_type {
-	SI_TYPE_INVALID = 0,
-	SI_KCS = 1,
-	SI_SMIC = 2,
-	SI_BT = 3,
-};
-
-enum ipmi_addr_space {
-	IPMI_IO_ADDR_SPACE = 0,
-	IPMI_MEM_ADDR_SPACE = 1,
-};
-
-enum ipmi_plat_interface_type {
-	IPMI_PLAT_IF_SI = 0,
-	IPMI_PLAT_IF_SSIF = 1,
-};
-
-struct ipmi_plat_data {
-	enum ipmi_plat_interface_type iftype;
-	unsigned int type;
-	unsigned int space;
-	long unsigned int addr;
-	unsigned int regspacing;
-	unsigned int regsize;
-	unsigned int regshift;
-	unsigned int irq;
-	unsigned int slave_addr;
-	enum ipmi_addr_src addr_source;
-};
-
-struct ipmi_dmi_info {
-	enum si_type si_type;
-	unsigned int space;
-	long unsigned int addr;
-	u8 slave_addr;
-	struct ipmi_dmi_info *next;
-};
-
 typedef u16 acpi_owner_id;
 
 union acpi_name_union {
@@ -79246,11 +76585,6 @@ struct acpi_data_node_attr {
 	ssize_t (*store)(struct acpi_data_node *, const char *, size_t);
 };
 
-struct pm_domain_data {
-	struct list_head list_node;
-	struct device *dev;
-};
-
 struct acpi_device_physical_node {
 	unsigned int node_id;
 	struct list_head node;
@@ -79790,31 +77124,6 @@ struct lpit_residency_info {
 	u64 frequency;
 	void *iomem_addr;
 };
-
-struct acpi_table_wdat {
-	struct acpi_table_header header;
-	u32 header_length;
-	u16 pci_segment;
-	u8 pci_bus;
-	u8 pci_device;
-	u8 pci_function;
-	u8 reserved[3];
-	u32 timer_period;
-	u32 max_count;
-	u32 min_count;
-	u8 flags;
-	u8 reserved2[3];
-	u32 entries;
-};
-
-struct acpi_wdat_entry {
-	u8 action;
-	u8 instruction;
-	u16 reserved;
-	struct acpi_generic_address register_region;
-	u32 value;
-	u32 mask;
-} __attribute__((packed));
 
 struct acpi_name_info {
 	char name[4];
@@ -81364,6 +78673,8 @@ struct acpi_thermal {
 	struct thermal_zone_device *thermal_zone;
 	int kelvin_offset;
 	struct work_struct thermal_check_work;
+	struct mutex thermal_check_lock;
+	refcount_t thermal_check_count;
 };
 
 struct acpi_table_slit {
@@ -81585,6 +78896,12 @@ enum dmi_entry_type {
 	DMI_ENTRY_MGMT_CONTROLLER_HOST = 41,
 	DMI_ENTRY_INACTIVE = 126,
 	DMI_ENTRY_END_OF_TABLE = 127,
+};
+
+struct dmi_header {
+	u8 type;
+	u8 length;
+	u16 handle;
 };
 
 enum {
@@ -83130,7 +80447,7 @@ struct dmaengine_result {
 typedef void (*dma_async_tx_callback_result)(void *, const struct dmaengine_result *);
 
 struct dmaengine_unmap_data {
-	u16 map_cnt;
+	u8 map_cnt;
 	u8 to_cnt;
 	u8 from_cnt;
 	u8 bidi_cnt;
@@ -89679,7 +86996,6 @@ struct phy_device {
 	u8 mdix_ctrl;
 	void (*phy_link_change)(struct phy_device *, bool);
 	void (*adjust_link)(struct net_device *);
-	const struct macsec_ops *macsec_ops;
 };
 
 struct phy_tdr_config {
@@ -89823,28 +87139,6 @@ struct swnode {
 	unsigned int allocated: 1;
 };
 
-struct auxiliary_device_id {
-	char name[32];
-	kernel_ulong_t driver_data;
-};
-
-struct auxiliary_device {
-	struct device dev;
-	const char *name;
-	u32 id;
-};
-
-struct auxiliary_driver {
-	int (*probe)(struct auxiliary_device *, const struct auxiliary_device_id *);
-	void (*remove)(struct auxiliary_device *);
-	void (*shutdown)(struct auxiliary_device *);
-	int (*suspend)(struct auxiliary_device *, pm_message_t);
-	int (*resume)(struct auxiliary_device *);
-	const char *name;
-	struct device_driver driver;
-	const struct auxiliary_device_id *id_table;
-};
-
 struct req {
 	struct req *next;
 	struct completion done;
@@ -89857,128 +87151,6 @@ struct req {
 };
 
 typedef int (*pm_callback_t)(struct device *);
-
-enum gpd_status {
-	GENPD_STATE_ON = 0,
-	GENPD_STATE_OFF = 1,
-};
-
-enum genpd_notication {
-	GENPD_NOTIFY_PRE_OFF = 0,
-	GENPD_NOTIFY_OFF = 1,
-	GENPD_NOTIFY_PRE_ON = 2,
-	GENPD_NOTIFY_ON = 3,
-};
-
-struct dev_power_governor {
-	bool (*power_down_ok)(struct dev_pm_domain *);
-	bool (*suspend_ok)(struct device *);
-};
-
-struct gpd_dev_ops {
-	int (*start)(struct device *);
-	int (*stop)(struct device *);
-};
-
-struct genpd_power_state {
-	s64 power_off_latency_ns;
-	s64 power_on_latency_ns;
-	s64 residency_ns;
-	u64 usage;
-	u64 rejected;
-	struct fwnode_handle *fwnode;
-	ktime_t idle_time;
-	void *data;
-};
-
-struct opp_table;
-
-struct dev_pm_opp;
-
-struct genpd_lock_ops;
-
-struct generic_pm_domain {
-	struct device dev;
-	struct dev_pm_domain domain;
-	struct list_head gpd_list_node;
-	struct list_head parent_links;
-	struct list_head child_links;
-	struct list_head dev_list;
-	struct dev_power_governor *gov;
-	struct work_struct power_off_work;
-	struct fwnode_handle *provider;
-	bool has_provider;
-	const char *name;
-	atomic_t sd_count;
-	enum gpd_status status;
-	unsigned int device_count;
-	unsigned int suspended_count;
-	unsigned int prepared_count;
-	unsigned int performance_state;
-	cpumask_var_t cpus;
-	int (*power_off)(struct generic_pm_domain *);
-	int (*power_on)(struct generic_pm_domain *);
-	struct raw_notifier_head power_notifiers;
-	struct opp_table *opp_table;
-	unsigned int (*opp_to_performance_state)(struct generic_pm_domain *, struct dev_pm_opp *);
-	int (*set_performance_state)(struct generic_pm_domain *, unsigned int);
-	struct gpd_dev_ops dev_ops;
-	s64 max_off_time_ns;
-	bool max_off_time_changed;
-	bool cached_power_down_ok;
-	bool cached_power_down_state_idx;
-	int (*attach_dev)(struct generic_pm_domain *, struct device *);
-	void (*detach_dev)(struct generic_pm_domain *, struct device *);
-	unsigned int flags;
-	struct genpd_power_state *states;
-	void (*free_states)(struct genpd_power_state *, unsigned int);
-	unsigned int state_count;
-	unsigned int state_idx;
-	ktime_t on_time;
-	ktime_t accounting_time;
-	const struct genpd_lock_ops *lock_ops;
-	union {
-		struct mutex mlock;
-		struct {
-			spinlock_t slock;
-			long unsigned int lock_flags;
-		};
-	};
-};
-
-struct genpd_lock_ops {
-	void (*lock)(struct generic_pm_domain *);
-	void (*lock_nested)(struct generic_pm_domain *, int);
-	int (*lock_interruptible)(struct generic_pm_domain *);
-	void (*unlock)(struct generic_pm_domain *);
-};
-
-struct gpd_link {
-	struct generic_pm_domain *parent;
-	struct list_head parent_node;
-	struct generic_pm_domain *child;
-	struct list_head child_node;
-	unsigned int performance_state;
-	unsigned int prev_performance_state;
-};
-
-struct gpd_timing_data {
-	s64 suspend_latency_ns;
-	s64 resume_latency_ns;
-	s64 effective_constraint_ns;
-	bool constraint_changed;
-	bool cached_suspend_ok;
-};
-
-struct generic_pm_domain_data {
-	struct pm_domain_data base;
-	struct gpd_timing_data td;
-	struct notifier_block nb;
-	struct notifier_block *power_nb;
-	int cpu;
-	unsigned int performance_state;
-	void *data;
-};
 
 struct pm_clk_notifier_block {
 	struct notifier_block nb;
@@ -91052,10 +88224,6 @@ enum id_action {
 	ID_ADD = 1,
 };
 
-struct memregion_info {
-	int target_node;
-};
-
 struct seqcount_ww_mutex {
 	seqcount_t seqcount;
 };
@@ -92039,14 +89207,6 @@ struct scsi_dev_info_list_table {
 struct double_list {
 	struct list_head *top;
 	struct list_head *bottom;
-};
-
-struct scsi_nl_hdr {
-	__u8 version;
-	__u8 transport;
-	__u16 magic;
-	__u16 msgtype;
-	__u16 msglen;
 };
 
 enum {
@@ -94831,92 +91991,6 @@ struct mii_timestamping_desc {
 	struct device *device;
 };
 
-struct sfp;
-
-struct sfp_socket_ops;
-
-struct sfp_quirk;
-
-struct sfp_bus {
-	struct kref kref;
-	struct list_head node;
-	struct fwnode_handle *fwnode;
-	const struct sfp_socket_ops *socket_ops;
-	struct device *sfp_dev;
-	struct sfp *sfp;
-	const struct sfp_quirk *sfp_quirk;
-	const struct sfp_upstream_ops *upstream_ops;
-	void *upstream;
-	struct phy_device *phydev;
-	bool registered;
-	bool started;
-};
-
-enum {
-	SFF8024_ID_UNK = 0,
-	SFF8024_ID_SFF_8472 = 2,
-	SFF8024_ID_SFP = 3,
-	SFF8024_ID_DWDM_SFP = 11,
-	SFF8024_ID_QSFP_8438 = 12,
-	SFF8024_ID_QSFP_8436_8636 = 13,
-	SFF8024_ID_QSFP28_8636 = 17,
-	SFF8024_ENCODING_UNSPEC = 0,
-	SFF8024_ENCODING_8B10B = 1,
-	SFF8024_ENCODING_4B5B = 2,
-	SFF8024_ENCODING_NRZ = 3,
-	SFF8024_ENCODING_8472_MANCHESTER = 4,
-	SFF8024_ENCODING_8472_SONET = 5,
-	SFF8024_ENCODING_8472_64B66B = 6,
-	SFF8024_ENCODING_8436_MANCHESTER = 6,
-	SFF8024_ENCODING_8436_SONET = 4,
-	SFF8024_ENCODING_8436_64B66B = 5,
-	SFF8024_ENCODING_256B257B = 7,
-	SFF8024_ENCODING_PAM4 = 8,
-	SFF8024_CONNECTOR_UNSPEC = 0,
-	SFF8024_CONNECTOR_SC = 1,
-	SFF8024_CONNECTOR_FIBERJACK = 6,
-	SFF8024_CONNECTOR_LC = 7,
-	SFF8024_CONNECTOR_MT_RJ = 8,
-	SFF8024_CONNECTOR_MU = 9,
-	SFF8024_CONNECTOR_SG = 10,
-	SFF8024_CONNECTOR_OPTICAL_PIGTAIL = 11,
-	SFF8024_CONNECTOR_MPO_1X12 = 12,
-	SFF8024_CONNECTOR_MPO_2X16 = 13,
-	SFF8024_CONNECTOR_HSSDC_II = 32,
-	SFF8024_CONNECTOR_COPPER_PIGTAIL = 33,
-	SFF8024_CONNECTOR_RJ45 = 34,
-	SFF8024_CONNECTOR_NOSEPARATE = 35,
-	SFF8024_CONNECTOR_MXC_2X16 = 36,
-	SFF8024_ECC_UNSPEC = 0,
-	SFF8024_ECC_100G_25GAUI_C2M_AOC = 1,
-	SFF8024_ECC_100GBASE_SR4_25GBASE_SR = 2,
-	SFF8024_ECC_100GBASE_LR4_25GBASE_LR = 3,
-	SFF8024_ECC_100GBASE_ER4_25GBASE_ER = 4,
-	SFF8024_ECC_100GBASE_SR10 = 5,
-	SFF8024_ECC_100GBASE_CR4 = 11,
-	SFF8024_ECC_25GBASE_CR_S = 12,
-	SFF8024_ECC_25GBASE_CR_N = 13,
-	SFF8024_ECC_10GBASE_T_SFI = 22,
-	SFF8024_ECC_10GBASE_T_SR = 28,
-	SFF8024_ECC_5GBASE_T = 29,
-	SFF8024_ECC_2_5GBASE_T = 30,
-};
-
-struct sfp_socket_ops {
-	void (*attach)(struct sfp *);
-	void (*detach)(struct sfp *);
-	void (*start)(struct sfp *);
-	void (*stop)(struct sfp *);
-	int (*module_info)(struct sfp *, struct ethtool_modinfo *);
-	int (*module_eeprom)(struct sfp *, struct ethtool_eeprom *, u8 *);
-};
-
-struct sfp_quirk {
-	const char *vendor;
-	const char *part;
-	void (*modes)(const struct sfp_eeprom_id *, long unsigned int *);
-};
-
 struct fixed_mdio_bus {
 	struct mii_bus *mii_bus;
 	struct list_head phys;
@@ -94935,819 +92009,6 @@ struct fixed_phy {
 struct mdio_device_id {
 	__u32 phy_id;
 	__u32 phy_id_mask;
-};
-
-struct flow_dissector {
-	unsigned int used_keys;
-	short unsigned int offset[28];
-};
-
-struct flow_match {
-	struct flow_dissector *dissector;
-	void *mask;
-	void *key;
-};
-
-enum flow_action_id {
-	FLOW_ACTION_ACCEPT = 0,
-	FLOW_ACTION_DROP = 1,
-	FLOW_ACTION_TRAP = 2,
-	FLOW_ACTION_GOTO = 3,
-	FLOW_ACTION_REDIRECT = 4,
-	FLOW_ACTION_MIRRED = 5,
-	FLOW_ACTION_REDIRECT_INGRESS = 6,
-	FLOW_ACTION_MIRRED_INGRESS = 7,
-	FLOW_ACTION_VLAN_PUSH = 8,
-	FLOW_ACTION_VLAN_POP = 9,
-	FLOW_ACTION_VLAN_MANGLE = 10,
-	FLOW_ACTION_TUNNEL_ENCAP = 11,
-	FLOW_ACTION_TUNNEL_DECAP = 12,
-	FLOW_ACTION_MANGLE = 13,
-	FLOW_ACTION_ADD = 14,
-	FLOW_ACTION_CSUM = 15,
-	FLOW_ACTION_MARK = 16,
-	FLOW_ACTION_PTYPE = 17,
-	FLOW_ACTION_PRIORITY = 18,
-	FLOW_ACTION_WAKE = 19,
-	FLOW_ACTION_QUEUE = 20,
-	FLOW_ACTION_SAMPLE = 21,
-	FLOW_ACTION_POLICE = 22,
-	FLOW_ACTION_CT = 23,
-	FLOW_ACTION_CT_METADATA = 24,
-	FLOW_ACTION_MPLS_PUSH = 25,
-	FLOW_ACTION_MPLS_POP = 26,
-	FLOW_ACTION_MPLS_MANGLE = 27,
-	FLOW_ACTION_GATE = 28,
-	NUM_FLOW_ACTIONS = 29,
-};
-
-enum flow_action_hw_stats {
-	FLOW_ACTION_HW_STATS_IMMEDIATE = 1,
-	FLOW_ACTION_HW_STATS_DELAYED = 2,
-	FLOW_ACTION_HW_STATS_ANY = 3,
-	FLOW_ACTION_HW_STATS_DISABLED = 4,
-	FLOW_ACTION_HW_STATS_DONT_CARE = 7,
-};
-
-typedef void (*action_destr)(void *);
-
-enum flow_action_mangle_base {
-	FLOW_ACT_MANGLE_UNSPEC = 0,
-	FLOW_ACT_MANGLE_HDR_TYPE_ETH = 1,
-	FLOW_ACT_MANGLE_HDR_TYPE_IP4 = 2,
-	FLOW_ACT_MANGLE_HDR_TYPE_IP6 = 3,
-	FLOW_ACT_MANGLE_HDR_TYPE_TCP = 4,
-	FLOW_ACT_MANGLE_HDR_TYPE_UDP = 5,
-};
-
-struct nf_flowtable;
-
-struct ip_tunnel_info;
-
-struct psample_group;
-
-struct action_gate_entry;
-
-struct flow_action_cookie;
-
-struct flow_action_entry {
-	enum flow_action_id id;
-	enum flow_action_hw_stats hw_stats;
-	action_destr destructor;
-	void *destructor_priv;
-	union {
-		u32 chain_index;
-		struct net_device *dev;
-		struct {
-			u16 vid;
-			__be16 proto;
-			u8 prio;
-		} vlan;
-		struct {
-			enum flow_action_mangle_base htype;
-			u32 offset;
-			u32 mask;
-			u32 val;
-		} mangle;
-		struct ip_tunnel_info *tunnel;
-		u32 csum_flags;
-		u32 mark;
-		u16 ptype;
-		u32 priority;
-		struct {
-			u32 ctx;
-			u32 index;
-			u8 vf;
-		} queue;
-		struct {
-			struct psample_group *psample_group;
-			u32 rate;
-			u32 trunc_size;
-			bool truncate;
-		} sample;
-		struct {
-			u32 index;
-			u32 burst;
-			u64 rate_bytes_ps;
-			u32 mtu;
-		} police;
-		struct {
-			int action;
-			u16 zone;
-			struct nf_flowtable *flow_table;
-		} ct;
-		struct {
-			long unsigned int cookie;
-			u32 mark;
-			u32 labels[4];
-		} ct_metadata;
-		struct {
-			u32 label;
-			__be16 proto;
-			u8 tc;
-			u8 bos;
-			u8 ttl;
-		} mpls_push;
-		struct {
-			__be16 proto;
-		} mpls_pop;
-		struct {
-			u32 label;
-			u8 tc;
-			u8 bos;
-			u8 ttl;
-		} mpls_mangle;
-		struct {
-			u32 index;
-			s32 prio;
-			u64 basetime;
-			u64 cycletime;
-			u64 cycletimeext;
-			u32 num_entries;
-			struct action_gate_entry *entries;
-		} gate;
-	};
-	struct flow_action_cookie *cookie;
-};
-
-struct flow_action {
-	unsigned int num_entries;
-	struct flow_action_entry entries[0];
-};
-
-struct flow_rule {
-	struct flow_match match;
-	struct flow_action action;
-};
-
-struct dsa_chip_data {
-	struct device *host_dev;
-	int sw_addr;
-	struct device *netdev[12];
-	int eeprom_len;
-	struct device_node *of_node;
-	char *port_names[12];
-	struct device_node *port_dn[12];
-	s8 rtable[4];
-};
-
-struct dsa_platform_data {
-	struct device *netdev;
-	struct net_device *of_netdev;
-	int nr_chips;
-	struct dsa_chip_data *chip;
-};
-
-struct phylink_link_state {
-	long unsigned int advertising[2];
-	long unsigned int lp_advertising[2];
-	phy_interface_t interface;
-	int speed;
-	int duplex;
-	int pause;
-	unsigned int link: 1;
-	unsigned int an_enabled: 1;
-	unsigned int an_complete: 1;
-};
-
-enum phylink_op_type {
-	PHYLINK_NETDEV = 0,
-	PHYLINK_DEV = 1,
-};
-
-struct phylink_config {
-	struct device *dev;
-	enum phylink_op_type type;
-	bool pcs_poll;
-	bool poll_fixed_state;
-	void (*get_fixed_state)(struct phylink_config *, struct phylink_link_state *);
-};
-
-enum devlink_port_type {
-	DEVLINK_PORT_TYPE_NOTSET = 0,
-	DEVLINK_PORT_TYPE_AUTO = 1,
-	DEVLINK_PORT_TYPE_ETH = 2,
-	DEVLINK_PORT_TYPE_IB = 3,
-};
-
-enum devlink_port_flavour {
-	DEVLINK_PORT_FLAVOUR_PHYSICAL = 0,
-	DEVLINK_PORT_FLAVOUR_CPU = 1,
-	DEVLINK_PORT_FLAVOUR_DSA = 2,
-	DEVLINK_PORT_FLAVOUR_PCI_PF = 3,
-	DEVLINK_PORT_FLAVOUR_PCI_VF = 4,
-	DEVLINK_PORT_FLAVOUR_VIRTUAL = 5,
-	DEVLINK_PORT_FLAVOUR_UNUSED = 6,
-};
-
-struct devlink_port_phys_attrs {
-	u32 port_number;
-	u32 split_subport_number;
-};
-
-struct devlink_port_pci_pf_attrs {
-	u32 controller;
-	u16 pf;
-	u8 external: 1;
-};
-
-struct devlink_port_pci_vf_attrs {
-	u32 controller;
-	u16 pf;
-	u16 vf;
-	u8 external: 1;
-};
-
-struct devlink_port_attrs {
-	u8 split: 1;
-	u8 splittable: 1;
-	u32 lanes;
-	enum devlink_port_flavour flavour;
-	struct netdev_phys_item_id switch_id;
-	union {
-		struct devlink_port_phys_attrs phys;
-		struct devlink_port_pci_pf_attrs pci_pf;
-		struct devlink_port_pci_vf_attrs pci_vf;
-	};
-};
-
-struct devlink;
-
-struct devlink_port {
-	struct list_head list;
-	struct list_head param_list;
-	struct list_head region_list;
-	struct devlink *devlink;
-	unsigned int index;
-	bool registered;
-	spinlock_t type_lock;
-	enum devlink_port_type type;
-	enum devlink_port_type desired_type;
-	void *type_dev;
-	struct devlink_port_attrs attrs;
-	u8 attrs_set: 1;
-	u8 switch_port: 1;
-	struct delayed_work type_warn_dw;
-	struct list_head reporter_list;
-	struct mutex reporters_lock;
-};
-
-struct dsa_device_ops;
-
-struct dsa_switch_tree;
-
-struct packet_type;
-
-struct dsa_switch;
-
-struct dsa_netdevice_ops;
-
-struct dsa_port {
-	union {
-		struct net_device *master;
-		struct net_device *slave;
-	};
-	const struct dsa_device_ops *tag_ops;
-	struct dsa_switch_tree *dst;
-	struct sk_buff * (*rcv)(struct sk_buff *, struct net_device *, struct packet_type *);
-	bool (*filter)(const struct sk_buff *, struct net_device *);
-	enum {
-		DSA_PORT_TYPE_UNUSED = 0,
-		DSA_PORT_TYPE_CPU = 1,
-		DSA_PORT_TYPE_DSA = 2,
-		DSA_PORT_TYPE_USER = 3,
-	} type;
-	struct dsa_switch *ds;
-	unsigned int index;
-	const char *name;
-	struct dsa_port *cpu_dp;
-	const char *mac;
-	struct device_node *dn;
-	unsigned int ageing_time;
-	bool vlan_filtering;
-	u8 stp_state;
-	struct net_device *bridge_dev;
-	struct devlink_port devlink_port;
-	bool devlink_port_setup;
-	struct phylink *pl;
-	struct phylink_config pl_config;
-	struct list_head list;
-	void *priv;
-	const struct ethtool_ops *orig_ethtool_ops;
-	const struct dsa_netdevice_ops *netdev_ops;
-	bool setup;
-};
-
-struct packet_type {
-	__be16 type;
-	bool ignore_outgoing;
-	struct net_device *dev;
-	int (*func)(struct sk_buff *, struct net_device *, struct packet_type *, struct net_device *);
-	void (*list_func)(struct list_head *, struct packet_type *, struct net_device *);
-	bool (*id_match)(struct packet_type *, struct sock *);
-	void *af_packet_priv;
-	struct list_head list;
-};
-
-struct netdev_notifier_changeupper_info {
-	struct netdev_notifier_info info;
-	struct net_device *upper_dev;
-	bool master;
-	bool linking;
-	void *upper_info;
-};
-
-struct flow_action_cookie {
-	u32 cookie_len;
-	u8 cookie[0];
-};
-
-struct flow_stats {
-	u64 pkts;
-	u64 bytes;
-	u64 drops;
-	u64 lastused;
-	enum flow_action_hw_stats used_hw_stats;
-	bool used_hw_stats_valid;
-};
-
-enum flow_cls_command {
-	FLOW_CLS_REPLACE = 0,
-	FLOW_CLS_DESTROY = 1,
-	FLOW_CLS_STATS = 2,
-	FLOW_CLS_TMPLT_CREATE = 3,
-	FLOW_CLS_TMPLT_DESTROY = 4,
-};
-
-struct flow_cls_common_offload {
-	u32 chain_index;
-	__be16 protocol;
-	u32 prio;
-	struct netlink_ext_ack *extack;
-};
-
-struct flow_cls_offload {
-	struct flow_cls_common_offload common;
-	enum flow_cls_command command;
-	long unsigned int cookie;
-	struct flow_rule *rule;
-	struct flow_stats stats;
-	u32 classid;
-};
-
-enum devlink_sb_pool_type {
-	DEVLINK_SB_POOL_TYPE_INGRESS = 0,
-	DEVLINK_SB_POOL_TYPE_EGRESS = 1,
-};
-
-enum devlink_sb_threshold_type {
-	DEVLINK_SB_THRESHOLD_TYPE_STATIC = 0,
-	DEVLINK_SB_THRESHOLD_TYPE_DYNAMIC = 1,
-};
-
-enum devlink_eswitch_encap_mode {
-	DEVLINK_ESWITCH_ENCAP_MODE_NONE = 0,
-	DEVLINK_ESWITCH_ENCAP_MODE_BASIC = 1,
-};
-
-enum devlink_param_cmode {
-	DEVLINK_PARAM_CMODE_RUNTIME = 0,
-	DEVLINK_PARAM_CMODE_DRIVERINIT = 1,
-	DEVLINK_PARAM_CMODE_PERMANENT = 2,
-	__DEVLINK_PARAM_CMODE_MAX = 3,
-	DEVLINK_PARAM_CMODE_MAX = 2,
-};
-
-enum devlink_trap_action {
-	DEVLINK_TRAP_ACTION_DROP = 0,
-	DEVLINK_TRAP_ACTION_TRAP = 1,
-	DEVLINK_TRAP_ACTION_MIRROR = 2,
-};
-
-enum devlink_trap_type {
-	DEVLINK_TRAP_TYPE_DROP = 0,
-	DEVLINK_TRAP_TYPE_EXCEPTION = 1,
-	DEVLINK_TRAP_TYPE_CONTROL = 2,
-};
-
-enum devlink_reload_action {
-	DEVLINK_RELOAD_ACTION_UNSPEC = 0,
-	DEVLINK_RELOAD_ACTION_DRIVER_REINIT = 1,
-	DEVLINK_RELOAD_ACTION_FW_ACTIVATE = 2,
-	__DEVLINK_RELOAD_ACTION_MAX = 3,
-	DEVLINK_RELOAD_ACTION_MAX = 2,
-};
-
-enum devlink_reload_limit {
-	DEVLINK_RELOAD_LIMIT_UNSPEC = 0,
-	DEVLINK_RELOAD_LIMIT_NO_RESET = 1,
-	__DEVLINK_RELOAD_LIMIT_MAX = 2,
-	DEVLINK_RELOAD_LIMIT_MAX = 1,
-};
-
-enum devlink_dpipe_field_mapping_type {
-	DEVLINK_DPIPE_FIELD_MAPPING_TYPE_NONE = 0,
-	DEVLINK_DPIPE_FIELD_MAPPING_TYPE_IFINDEX = 1,
-};
-
-struct devlink_dev_stats {
-	u32 reload_stats[6];
-	u32 remote_reload_stats[6];
-};
-
-struct devlink_dpipe_headers;
-
-struct devlink_ops;
-
-struct devlink {
-	struct list_head list;
-	struct list_head port_list;
-	struct list_head sb_list;
-	struct list_head dpipe_table_list;
-	struct list_head resource_list;
-	struct list_head param_list;
-	struct list_head region_list;
-	struct list_head reporter_list;
-	struct mutex reporters_lock;
-	struct devlink_dpipe_headers *dpipe_headers;
-	struct list_head trap_list;
-	struct list_head trap_group_list;
-	struct list_head trap_policer_list;
-	const struct devlink_ops *ops;
-	struct xarray snapshot_ids;
-	struct devlink_dev_stats stats;
-	struct device *dev;
-	possible_net_t _net;
-	struct mutex lock;
-	u8 reload_failed: 1;
-	u8 reload_enabled: 1;
-	u8 registered: 1;
-	long: 61;
-	long: 64;
-	char priv[0];
-};
-
-struct devlink_dpipe_header;
-
-struct devlink_dpipe_headers {
-	struct devlink_dpipe_header **headers;
-	unsigned int headers_count;
-};
-
-struct devlink_sb_pool_info;
-
-struct devlink_info_req;
-
-struct devlink_flash_update_params;
-
-struct devlink_trap;
-
-struct devlink_trap_group;
-
-struct devlink_trap_policer;
-
-struct devlink_ops {
-	u32 supported_flash_update_params;
-	long unsigned int reload_actions;
-	long unsigned int reload_limits;
-	int (*reload_down)(struct devlink *, bool, enum devlink_reload_action, enum devlink_reload_limit, struct netlink_ext_ack *);
-	int (*reload_up)(struct devlink *, enum devlink_reload_action, enum devlink_reload_limit, u32 *, struct netlink_ext_ack *);
-	int (*port_type_set)(struct devlink_port *, enum devlink_port_type);
-	int (*port_split)(struct devlink *, unsigned int, unsigned int, struct netlink_ext_ack *);
-	int (*port_unsplit)(struct devlink *, unsigned int, struct netlink_ext_ack *);
-	int (*sb_pool_get)(struct devlink *, unsigned int, u16, struct devlink_sb_pool_info *);
-	int (*sb_pool_set)(struct devlink *, unsigned int, u16, u32, enum devlink_sb_threshold_type, struct netlink_ext_ack *);
-	int (*sb_port_pool_get)(struct devlink_port *, unsigned int, u16, u32 *);
-	int (*sb_port_pool_set)(struct devlink_port *, unsigned int, u16, u32, struct netlink_ext_ack *);
-	int (*sb_tc_pool_bind_get)(struct devlink_port *, unsigned int, u16, enum devlink_sb_pool_type, u16 *, u32 *);
-	int (*sb_tc_pool_bind_set)(struct devlink_port *, unsigned int, u16, enum devlink_sb_pool_type, u16, u32, struct netlink_ext_ack *);
-	int (*sb_occ_snapshot)(struct devlink *, unsigned int);
-	int (*sb_occ_max_clear)(struct devlink *, unsigned int);
-	int (*sb_occ_port_pool_get)(struct devlink_port *, unsigned int, u16, u32 *, u32 *);
-	int (*sb_occ_tc_port_bind_get)(struct devlink_port *, unsigned int, u16, enum devlink_sb_pool_type, u32 *, u32 *);
-	int (*eswitch_mode_get)(struct devlink *, u16 *);
-	int (*eswitch_mode_set)(struct devlink *, u16, struct netlink_ext_ack *);
-	int (*eswitch_inline_mode_get)(struct devlink *, u8 *);
-	int (*eswitch_inline_mode_set)(struct devlink *, u8, struct netlink_ext_ack *);
-	int (*eswitch_encap_mode_get)(struct devlink *, enum devlink_eswitch_encap_mode *);
-	int (*eswitch_encap_mode_set)(struct devlink *, enum devlink_eswitch_encap_mode, struct netlink_ext_ack *);
-	int (*info_get)(struct devlink *, struct devlink_info_req *, struct netlink_ext_ack *);
-	int (*flash_update)(struct devlink *, struct devlink_flash_update_params *, struct netlink_ext_ack *);
-	int (*trap_init)(struct devlink *, const struct devlink_trap *, void *);
-	void (*trap_fini)(struct devlink *, const struct devlink_trap *, void *);
-	int (*trap_action_set)(struct devlink *, const struct devlink_trap *, enum devlink_trap_action, struct netlink_ext_ack *);
-	int (*trap_group_init)(struct devlink *, const struct devlink_trap_group *);
-	int (*trap_group_set)(struct devlink *, const struct devlink_trap_group *, const struct devlink_trap_policer *, struct netlink_ext_ack *);
-	int (*trap_group_action_set)(struct devlink *, const struct devlink_trap_group *, enum devlink_trap_action, struct netlink_ext_ack *);
-	int (*trap_policer_init)(struct devlink *, const struct devlink_trap_policer *);
-	void (*trap_policer_fini)(struct devlink *, const struct devlink_trap_policer *);
-	int (*trap_policer_set)(struct devlink *, const struct devlink_trap_policer *, u64, u64, struct netlink_ext_ack *);
-	int (*trap_policer_counter_get)(struct devlink *, const struct devlink_trap_policer *, u64 *);
-	int (*port_function_hw_addr_get)(struct devlink *, struct devlink_port *, u8 *, int *, struct netlink_ext_ack *);
-	int (*port_function_hw_addr_set)(struct devlink *, struct devlink_port *, const u8 *, int, struct netlink_ext_ack *);
-};
-
-struct devlink_sb_pool_info {
-	enum devlink_sb_pool_type pool_type;
-	u32 size;
-	enum devlink_sb_threshold_type threshold_type;
-	u32 cell_size;
-};
-
-struct devlink_dpipe_field {
-	const char *name;
-	unsigned int id;
-	unsigned int bitwidth;
-	enum devlink_dpipe_field_mapping_type mapping_type;
-};
-
-struct devlink_dpipe_header {
-	const char *name;
-	unsigned int id;
-	struct devlink_dpipe_field *fields;
-	unsigned int fields_count;
-	bool global;
-};
-
-union devlink_param_value {
-	u8 vu8;
-	u16 vu16;
-	u32 vu32;
-	char vstr[32];
-	bool vbool;
-};
-
-struct devlink_param_gset_ctx {
-	union devlink_param_value val;
-	enum devlink_param_cmode cmode;
-};
-
-struct devlink_flash_update_params {
-	const struct firmware *fw;
-	const char *component;
-	u32 overwrite_mask;
-};
-
-struct devlink_trap_policer {
-	u32 id;
-	u64 init_rate;
-	u64 init_burst;
-	u64 max_rate;
-	u64 min_rate;
-	u64 max_burst;
-	u64 min_burst;
-};
-
-struct devlink_trap_group {
-	const char *name;
-	u16 id;
-	bool generic;
-	u32 init_policer_id;
-};
-
-struct devlink_trap {
-	enum devlink_trap_type type;
-	enum devlink_trap_action init_action;
-	bool generic;
-	u16 id;
-	const char *name;
-	u16 init_group_id;
-	u32 metadata_cap;
-};
-
-struct switchdev_trans {
-	bool ph_prepare;
-};
-
-enum switchdev_obj_id {
-	SWITCHDEV_OBJ_ID_UNDEFINED = 0,
-	SWITCHDEV_OBJ_ID_PORT_VLAN = 1,
-	SWITCHDEV_OBJ_ID_PORT_MDB = 2,
-	SWITCHDEV_OBJ_ID_HOST_MDB = 3,
-	SWITCHDEV_OBJ_ID_MRP = 4,
-	SWITCHDEV_OBJ_ID_RING_TEST_MRP = 5,
-	SWITCHDEV_OBJ_ID_RING_ROLE_MRP = 6,
-	SWITCHDEV_OBJ_ID_RING_STATE_MRP = 7,
-	SWITCHDEV_OBJ_ID_IN_TEST_MRP = 8,
-	SWITCHDEV_OBJ_ID_IN_ROLE_MRP = 9,
-	SWITCHDEV_OBJ_ID_IN_STATE_MRP = 10,
-};
-
-struct switchdev_obj {
-	struct net_device *orig_dev;
-	enum switchdev_obj_id id;
-	u32 flags;
-	void *complete_priv;
-	void (*complete)(struct net_device *, int, void *);
-};
-
-struct switchdev_obj_port_vlan {
-	struct switchdev_obj obj;
-	u16 flags;
-	u16 vid_begin;
-	u16 vid_end;
-};
-
-struct switchdev_obj_port_mdb {
-	struct switchdev_obj obj;
-	unsigned char addr[6];
-	u16 vid;
-};
-
-enum dsa_tag_protocol {
-	DSA_TAG_PROTO_NONE = 0,
-	DSA_TAG_PROTO_BRCM = 1,
-	DSA_TAG_PROTO_BRCM_PREPEND = 2,
-	DSA_TAG_PROTO_DSA = 3,
-	DSA_TAG_PROTO_EDSA = 4,
-	DSA_TAG_PROTO_GSWIP = 5,
-	DSA_TAG_PROTO_KSZ9477 = 6,
-	DSA_TAG_PROTO_KSZ9893 = 7,
-	DSA_TAG_PROTO_LAN9303 = 8,
-	DSA_TAG_PROTO_MTK = 9,
-	DSA_TAG_PROTO_QCA = 10,
-	DSA_TAG_PROTO_TRAILER = 11,
-	DSA_TAG_PROTO_8021Q = 12,
-	DSA_TAG_PROTO_SJA1105 = 13,
-	DSA_TAG_PROTO_KSZ8795 = 14,
-	DSA_TAG_PROTO_OCELOT = 15,
-	DSA_TAG_PROTO_AR9331 = 16,
-	DSA_TAG_PROTO_RTL4_A = 17,
-	DSA_TAG_PROTO_HELLCREEK = 18,
-};
-
-struct dsa_device_ops {
-	struct sk_buff * (*xmit)(struct sk_buff *, struct net_device *);
-	struct sk_buff * (*rcv)(struct sk_buff *, struct net_device *, struct packet_type *);
-	void (*flow_dissect)(const struct sk_buff *, __be16 *, int *);
-	bool (*filter)(const struct sk_buff *, struct net_device *);
-	unsigned int overhead;
-	const char *name;
-	enum dsa_tag_protocol proto;
-	bool promisc_on_master;
-	bool tail_tag;
-};
-
-struct dsa_netdevice_ops {
-	int (*ndo_do_ioctl)(struct net_device *, struct ifreq *, int);
-};
-
-struct dsa_switch_tree {
-	struct list_head list;
-	struct raw_notifier_head nh;
-	unsigned int index;
-	struct kref refcount;
-	bool setup;
-	struct dsa_platform_data *pd;
-	struct list_head ports;
-	struct list_head rtable;
-};
-
-struct dsa_mall_mirror_tc_entry {
-	u8 to_local_port;
-	bool ingress;
-};
-
-struct dsa_mall_policer_tc_entry {
-	u32 burst;
-	u64 rate_bytes_per_sec;
-};
-
-struct dsa_switch_ops;
-
-struct dsa_switch {
-	bool setup;
-	struct device *dev;
-	struct dsa_switch_tree *dst;
-	unsigned int index;
-	struct notifier_block nb;
-	void *priv;
-	struct dsa_chip_data *cd;
-	const struct dsa_switch_ops *ops;
-	u32 phys_mii_mask;
-	struct mii_bus *slave_mii_bus;
-	unsigned int ageing_time_min;
-	unsigned int ageing_time_max;
-	struct devlink *devlink;
-	unsigned int num_tx_queues;
-	bool vlan_filtering_is_global;
-	bool configure_vlan_while_not_filtering;
-	bool untag_bridge_pvid;
-	bool vlan_filtering;
-	bool pcs_poll;
-	bool mtu_enforcement_ingress;
-	size_t num_ports;
-};
-
-struct fixed_phy_status___2;
-
-typedef int dsa_fdb_dump_cb_t(const unsigned char *, u16, bool, void *);
-
-struct dsa_switch_ops {
-	enum dsa_tag_protocol (*get_tag_protocol)(struct dsa_switch *, int, enum dsa_tag_protocol);
-	int (*setup)(struct dsa_switch *);
-	void (*teardown)(struct dsa_switch *);
-	u32 (*get_phy_flags)(struct dsa_switch *, int);
-	int (*phy_read)(struct dsa_switch *, int, int);
-	int (*phy_write)(struct dsa_switch *, int, int, u16);
-	void (*adjust_link)(struct dsa_switch *, int, struct phy_device *);
-	void (*fixed_link_update)(struct dsa_switch *, int, struct fixed_phy_status___2 *);
-	void (*phylink_validate)(struct dsa_switch *, int, long unsigned int *, struct phylink_link_state *);
-	int (*phylink_mac_link_state)(struct dsa_switch *, int, struct phylink_link_state *);
-	void (*phylink_mac_config)(struct dsa_switch *, int, unsigned int, const struct phylink_link_state *);
-	void (*phylink_mac_an_restart)(struct dsa_switch *, int);
-	void (*phylink_mac_link_down)(struct dsa_switch *, int, unsigned int, phy_interface_t);
-	void (*phylink_mac_link_up)(struct dsa_switch *, int, unsigned int, phy_interface_t, struct phy_device *, int, int, bool, bool);
-	void (*phylink_fixed_state)(struct dsa_switch *, int, struct phylink_link_state *);
-	void (*get_strings)(struct dsa_switch *, int, u32, uint8_t *);
-	void (*get_ethtool_stats)(struct dsa_switch *, int, uint64_t *);
-	int (*get_sset_count)(struct dsa_switch *, int, int);
-	void (*get_ethtool_phy_stats)(struct dsa_switch *, int, uint64_t *);
-	void (*get_wol)(struct dsa_switch *, int, struct ethtool_wolinfo *);
-	int (*set_wol)(struct dsa_switch *, int, struct ethtool_wolinfo *);
-	int (*get_ts_info)(struct dsa_switch *, int, struct ethtool_ts_info *);
-	int (*suspend)(struct dsa_switch *);
-	int (*resume)(struct dsa_switch *);
-	int (*port_enable)(struct dsa_switch *, int, struct phy_device *);
-	void (*port_disable)(struct dsa_switch *, int);
-	int (*set_mac_eee)(struct dsa_switch *, int, struct ethtool_eee *);
-	int (*get_mac_eee)(struct dsa_switch *, int, struct ethtool_eee *);
-	int (*get_eeprom_len)(struct dsa_switch *);
-	int (*get_eeprom)(struct dsa_switch *, struct ethtool_eeprom *, u8 *);
-	int (*set_eeprom)(struct dsa_switch *, struct ethtool_eeprom *, u8 *);
-	int (*get_regs_len)(struct dsa_switch *, int);
-	void (*get_regs)(struct dsa_switch *, int, struct ethtool_regs *, void *);
-	int (*port_prechangeupper)(struct dsa_switch *, int, struct netdev_notifier_changeupper_info *);
-	int (*set_ageing_time)(struct dsa_switch *, unsigned int);
-	int (*port_bridge_join)(struct dsa_switch *, int, struct net_device *);
-	void (*port_bridge_leave)(struct dsa_switch *, int, struct net_device *);
-	void (*port_stp_state_set)(struct dsa_switch *, int, u8);
-	void (*port_fast_age)(struct dsa_switch *, int);
-	int (*port_egress_floods)(struct dsa_switch *, int, bool, bool);
-	int (*port_vlan_filtering)(struct dsa_switch *, int, bool, struct switchdev_trans *);
-	int (*port_vlan_prepare)(struct dsa_switch *, int, const struct switchdev_obj_port_vlan *);
-	void (*port_vlan_add)(struct dsa_switch *, int, const struct switchdev_obj_port_vlan *);
-	int (*port_vlan_del)(struct dsa_switch *, int, const struct switchdev_obj_port_vlan *);
-	int (*port_fdb_add)(struct dsa_switch *, int, const unsigned char *, u16);
-	int (*port_fdb_del)(struct dsa_switch *, int, const unsigned char *, u16);
-	int (*port_fdb_dump)(struct dsa_switch *, int, dsa_fdb_dump_cb_t *, void *);
-	int (*port_mdb_prepare)(struct dsa_switch *, int, const struct switchdev_obj_port_mdb *);
-	void (*port_mdb_add)(struct dsa_switch *, int, const struct switchdev_obj_port_mdb *);
-	int (*port_mdb_del)(struct dsa_switch *, int, const struct switchdev_obj_port_mdb *);
-	int (*get_rxnfc)(struct dsa_switch *, int, struct ethtool_rxnfc *, u32 *);
-	int (*set_rxnfc)(struct dsa_switch *, int, struct ethtool_rxnfc *);
-	int (*cls_flower_add)(struct dsa_switch *, int, struct flow_cls_offload *, bool);
-	int (*cls_flower_del)(struct dsa_switch *, int, struct flow_cls_offload *, bool);
-	int (*cls_flower_stats)(struct dsa_switch *, int, struct flow_cls_offload *, bool);
-	int (*port_mirror_add)(struct dsa_switch *, int, struct dsa_mall_mirror_tc_entry *, bool);
-	void (*port_mirror_del)(struct dsa_switch *, int, struct dsa_mall_mirror_tc_entry *);
-	int (*port_policer_add)(struct dsa_switch *, int, struct dsa_mall_policer_tc_entry *);
-	void (*port_policer_del)(struct dsa_switch *, int);
-	int (*port_setup_tc)(struct dsa_switch *, int, enum tc_setup_type, void *);
-	int (*crosschip_bridge_join)(struct dsa_switch *, int, int, int, struct net_device *);
-	void (*crosschip_bridge_leave)(struct dsa_switch *, int, int, int, struct net_device *);
-	int (*port_hwtstamp_get)(struct dsa_switch *, int, struct ifreq *);
-	int (*port_hwtstamp_set)(struct dsa_switch *, int, struct ifreq *);
-	bool (*port_txtstamp)(struct dsa_switch *, int, struct sk_buff *, unsigned int);
-	bool (*port_rxtstamp)(struct dsa_switch *, int, struct sk_buff *, unsigned int);
-	int (*devlink_param_get)(struct dsa_switch *, u32, struct devlink_param_gset_ctx *);
-	int (*devlink_param_set)(struct dsa_switch *, u32, struct devlink_param_gset_ctx *);
-	int (*devlink_info_get)(struct dsa_switch *, struct devlink_info_req *, struct netlink_ext_ack *);
-	int (*port_change_mtu)(struct dsa_switch *, int, int);
-	int (*port_max_mtu)(struct dsa_switch *, int);
-};
-
-struct dsa_loop_pdata {
-	struct dsa_chip_data cd;
-	const char *name;
-	unsigned int enabled_ports;
-	const char *netdev;
-};
-
-struct wl1251_platform_data {
-	int power_gpio;
-	int irq;
-	bool use_eeprom;
 };
 
 struct ohci {
@@ -96609,24 +92870,6 @@ struct pcmcia_loop_get {
 	cisdata_t **buf;
 };
 
-struct resource_map {
-	u_long base;
-	u_long num;
-	struct resource_map *next;
-};
-
-struct socket_data {
-	struct resource_map mem_db;
-	struct resource_map mem_db_valid;
-	struct resource_map io_db;
-};
-
-struct pcmcia_align_data {
-	long unsigned int mask;
-	long unsigned int offset;
-	struct resource_map *map;
-};
-
 enum usb_otg_state {
 	OTG_STATE_UNDEFINED = 0,
 	OTG_STATE_B_IDLE = 1,
@@ -97400,11 +93643,6 @@ struct usb_phy_roothub___2 {
 };
 
 typedef void (*companion_fn)(struct pci_dev *, struct usb_hcd *, struct pci_dev *, struct usb_hcd *);
-
-struct phy_devm {
-	struct usb_phy *phy;
-	struct notifier_block *nb;
-};
 
 struct mon_bus {
 	struct list_head bus_link;
@@ -98667,6 +94905,8 @@ struct xhci_driver_overrides {
 	size_t extra_priv_size;
 	int (*reset)(struct usb_hcd *);
 	int (*start)(struct usb_hcd *);
+	int (*check_bandwidth)(struct usb_hcd *, struct usb_device *);
+	void (*reset_bandwidth)(struct usb_hcd *, struct usb_device *);
 };
 
 typedef void (*xhci_get_quirks_t)(struct device *, struct xhci_hcd *);
@@ -100852,88 +97092,6 @@ struct ir_raw_event {
 	unsigned int carrier_report: 1;
 };
 
-struct nec_dec {
-	int state;
-	unsigned int count;
-	u32 bits;
-	bool is_nec_x;
-	bool necx_repeat;
-};
-
-struct rc5_dec {
-	int state;
-	u32 bits;
-	unsigned int count;
-	bool is_rc5x;
-};
-
-struct rc6_dec {
-	int state;
-	u8 header;
-	u32 body;
-	bool toggle;
-	unsigned int count;
-	unsigned int wanted_bits;
-};
-
-struct sony_dec {
-	int state;
-	u32 bits;
-	unsigned int count;
-};
-
-struct jvc_dec {
-	int state;
-	u16 bits;
-	u16 old_bits;
-	unsigned int count;
-	bool first;
-	bool toggle;
-};
-
-struct sanyo_dec {
-	int state;
-	unsigned int count;
-	u64 bits;
-};
-
-struct sharp_dec {
-	int state;
-	unsigned int count;
-	u32 bits;
-	unsigned int pulse_len;
-};
-
-struct mce_kbd_dec {
-	spinlock_t keylock;
-	struct timer_list rx_timeout;
-	int state;
-	u8 header;
-	u32 body;
-	unsigned int count;
-	unsigned int wanted_bits;
-};
-
-struct xmp_dec {
-	int state;
-	unsigned int count;
-	u32 durations[16];
-};
-
-struct imon_dec {
-	int state;
-	int count;
-	int last_chk;
-	unsigned int bits;
-	bool stick_keyboard;
-};
-
-struct rcmm_dec {
-	int state;
-	unsigned int count;
-	u32 bits;
-};
-
 struct ir_raw_event_ctrl {
 	struct list_head list;
 	struct task_struct *thread;
@@ -100956,17 +97114,6 @@ struct ir_raw_event_ctrl {
 	struct ir_raw_event this_ev;
 	u32 bpf_sample;
 	struct bpf_prog_array *progs;
-	struct nec_dec nec;
-	struct rc5_dec rc5;
-	struct rc6_dec rc6;
-	struct sony_dec sony;
-	struct jvc_dec jvc;
-	struct sanyo_dec sanyo;
-	struct sharp_dec sharp;
-	struct mce_kbd_dec mce_kbd;
-	struct xmp_dec xmp;
-	struct imon_dec imon;
-	struct rcmm_dec rcmm;
 };
 
 struct rc_filter_attribute {
@@ -103890,11 +100037,11 @@ enum opp_table_access {
 
 struct icc_path;
 
-struct dev_pm_opp___2;
+struct dev_pm_opp;
 
 struct dev_pm_set_opp_data;
 
-struct opp_table___2 {
+struct opp_table {
 	struct list_head node;
 	struct blocking_notifier_head head;
 	struct list_head dev_list;
@@ -103906,10 +100053,10 @@ struct opp_table___2 {
 	unsigned int voltage_tolerance_v1;
 	unsigned int parsed_static_opps;
 	enum opp_table_access shared_opp;
-	struct dev_pm_opp___2 *suspend_opp;
+	struct dev_pm_opp *suspend_opp;
 	struct mutex genpd_virt_dev_lock;
 	struct device **genpd_virt_devs;
-	struct opp_table___2 **required_opp_tables;
+	struct opp_table **required_opp_tables;
 	unsigned int required_opp_count;
 	unsigned int *supported_hw;
 	unsigned int supported_hw_count;
@@ -103932,7 +100079,7 @@ struct dev_pm_opp_supply;
 
 struct dev_pm_opp_icc_bw;
 
-struct dev_pm_opp___2 {
+struct dev_pm_opp {
 	struct list_head node;
 	struct kref kref;
 	bool available;
@@ -103945,8 +100092,8 @@ struct dev_pm_opp___2 {
 	struct dev_pm_opp_supply *supplies;
 	struct dev_pm_opp_icc_bw *bandwidth;
 	long unsigned int clock_latency_ns;
-	struct dev_pm_opp___2 **required_opps;
-	struct opp_table___2 *opp_table;
+	struct dev_pm_opp **required_opps;
+	struct opp_table *opp_table;
 	struct device_node *np;
 	struct dentry *dentry;
 };
@@ -104267,17 +100414,6 @@ struct menu_device {
 	int interval_ptr;
 };
 
-struct pci_dev___2;
-
-struct sdhci_pci_data {
-	struct pci_dev___2 *pdev;
-	int slotno;
-	int rst_n_gpio;
-	int cd_gpio;
-	int (*setup)(struct sdhci_pci_data *);
-	void (*cleanup)(struct sdhci_pci_data *);
-};
-
 struct led_properties {
 	u32 color;
 	bool color_present;
@@ -104368,11 +100504,6 @@ struct dmi_device_attribute {
 struct mafield {
 	const char *prefix;
 	int field;
-};
-
-struct acpi_table_ibft {
-	struct acpi_table_header header;
-	u8 reserved[12];
 };
 
 struct firmware_map_entry {
@@ -104585,20 +100716,6 @@ struct properties_header {
 	u32 version;
 	u32 dev_count;
 	struct dev_header dev_header[0];
-};
-
-struct efi_embedded_fw {
-	struct list_head list;
-	const char *name;
-	const u8 *data;
-	size_t length;
-};
-
-struct efi_embedded_fw_desc {
-	const char *name;
-	u8 prefix[8];
-	u32 length;
-	u8 sha256[32];
 };
 
 struct efi_mokvar_sysfs_attr {
@@ -105169,12 +101286,6 @@ struct pidff_device {
 	int status_id[2];
 	int operation_id[2];
 	int pid_id[64];
-};
-
-struct ts_dmi_data {
-	struct efi_embedded_fw_desc embedded_fw;
-	const char *acpi_name;
-	const struct property_entry *properties;
 };
 
 enum ppfear_regs {
@@ -105952,8 +102063,6 @@ struct sdw_stream_runtime {
 
 struct snd_shutdown_f_ops;
 
-struct snd_mixer_oss;
-
 struct snd_info_entry;
 
 struct snd_card {
@@ -105994,8 +102103,6 @@ struct snd_card {
 	struct mutex memory_mutex;
 	unsigned int power_state;
 	wait_queue_head_t power_sleep;
-	struct snd_mixer_oss *mixer_oss;
-	int mixer_oss_change_count;
 };
 
 struct snd_info_buffer;
@@ -106191,47 +102298,45 @@ struct snd_dma_buffer {
 	void *private_data;
 };
 
-struct snd_pcm_oss_setup {
-	char *task_name;
-	unsigned int disable: 1;
-	unsigned int direct: 1;
-	unsigned int block: 1;
-	unsigned int nonblock: 1;
-	unsigned int partialfrag: 1;
-	unsigned int nosilence: 1;
-	unsigned int buggyptr: 1;
-	unsigned int periods;
-	unsigned int period_size;
-	struct snd_pcm_oss_setup *next;
+struct snd_pcm_hardware {
+	unsigned int info;
+	u64 formats;
+	unsigned int rates;
+	unsigned int rate_min;
+	unsigned int rate_max;
+	unsigned int channels_min;
+	unsigned int channels_max;
+	size_t buffer_bytes_max;
+	size_t period_bytes_min;
+	size_t period_bytes_max;
+	unsigned int periods_min;
+	unsigned int periods_max;
+	size_t fifo_size;
 };
 
-struct snd_pcm_plugin;
+struct snd_pcm_substream;
 
-struct snd_pcm_oss_runtime {
-	unsigned int params: 1;
-	unsigned int prepare: 1;
-	unsigned int trigger: 1;
-	unsigned int sync_trigger: 1;
-	int rate;
-	int format;
-	unsigned int channels;
-	unsigned int fragshift;
-	unsigned int maxfrags;
-	unsigned int subdivision;
-	size_t period_bytes;
-	size_t period_frames;
-	size_t period_ptr;
-	unsigned int periods;
-	size_t buffer_bytes;
-	size_t bytes;
-	size_t mmap_bytes;
-	char *buffer;
-	size_t buffer_used;
-	struct mutex params_lock;
-	atomic_t rw_ref;
-	struct snd_pcm_plugin *plugin_first;
-	struct snd_pcm_plugin *plugin_last;
-	unsigned int prev_hw_ptr_period;
+struct snd_pcm_audio_tstamp_config;
+
+struct snd_pcm_audio_tstamp_report;
+
+struct snd_pcm_ops {
+	int (*open)(struct snd_pcm_substream *);
+	int (*close)(struct snd_pcm_substream *);
+	int (*ioctl)(struct snd_pcm_substream *, unsigned int, void *);
+	int (*hw_params)(struct snd_pcm_substream *, struct snd_pcm_hw_params *);
+	int (*hw_free)(struct snd_pcm_substream *);
+	int (*prepare)(struct snd_pcm_substream *);
+	int (*trigger)(struct snd_pcm_substream *, int);
+	int (*sync_stop)(struct snd_pcm_substream *);
+	snd_pcm_uframes_t (*pointer)(struct snd_pcm_substream *);
+	int (*get_time_info)(struct snd_pcm_substream *, struct timespec64 *, struct timespec64 *, struct snd_pcm_audio_tstamp_config *, struct snd_pcm_audio_tstamp_report *);
+	int (*fill_silence)(struct snd_pcm_substream *, int, long unsigned int, long unsigned int);
+	int (*copy_user)(struct snd_pcm_substream *, int, long unsigned int, void *, long unsigned int);
+	int (*copy_kernel)(struct snd_pcm_substream *, int, long unsigned int, void *, long unsigned int);
+	struct page * (*page)(struct snd_pcm_substream *, long unsigned int);
+	int (*mmap)(struct snd_pcm_substream *, struct vm_area_struct *);
+	int (*ack)(struct snd_pcm_substream *);
 };
 
 struct snd_timer;
@@ -106243,16 +102348,9 @@ struct snd_pcm_group {
 	refcount_t refs;
 };
 
-struct snd_pcm_oss_substream {
-	unsigned int oss: 1;
-	struct snd_pcm_oss_setup setup;
-};
-
 struct snd_pcm;
 
 struct snd_pcm_str;
-
-struct snd_pcm_ops;
 
 struct snd_pcm_runtime;
 
@@ -106281,60 +102379,9 @@ struct snd_pcm_substream {
 	unsigned int f_flags;
 	void (*pcm_release)(struct snd_pcm_substream *);
 	struct pid *pid;
-	struct snd_pcm_oss_substream oss;
 	struct snd_info_entry *proc_root;
 	unsigned int hw_opened: 1;
 	unsigned int managed_buffer_alloc: 1;
-};
-
-struct snd_pcm_oss_stream {
-	struct snd_pcm_oss_setup *setup_list;
-	struct mutex setup_mutex;
-	struct snd_info_entry *proc_entry;
-};
-
-struct snd_pcm_oss {
-	int reg;
-	unsigned int reg_mask;
-};
-
-struct snd_pcm_hardware {
-	unsigned int info;
-	u64 formats;
-	unsigned int rates;
-	unsigned int rate_min;
-	unsigned int rate_max;
-	unsigned int channels_min;
-	unsigned int channels_max;
-	size_t buffer_bytes_max;
-	size_t period_bytes_min;
-	size_t period_bytes_max;
-	unsigned int periods_min;
-	unsigned int periods_max;
-	size_t fifo_size;
-};
-
-struct snd_pcm_audio_tstamp_config;
-
-struct snd_pcm_audio_tstamp_report;
-
-struct snd_pcm_ops {
-	int (*open)(struct snd_pcm_substream *);
-	int (*close)(struct snd_pcm_substream *);
-	int (*ioctl)(struct snd_pcm_substream *, unsigned int, void *);
-	int (*hw_params)(struct snd_pcm_substream *, struct snd_pcm_hw_params *);
-	int (*hw_free)(struct snd_pcm_substream *);
-	int (*prepare)(struct snd_pcm_substream *);
-	int (*trigger)(struct snd_pcm_substream *, int);
-	int (*sync_stop)(struct snd_pcm_substream *);
-	snd_pcm_uframes_t (*pointer)(struct snd_pcm_substream *);
-	int (*get_time_info)(struct snd_pcm_substream *, struct timespec64 *, struct timespec64 *, struct snd_pcm_audio_tstamp_config *, struct snd_pcm_audio_tstamp_report *);
-	int (*fill_silence)(struct snd_pcm_substream *, int, long unsigned int, long unsigned int);
-	int (*copy_user)(struct snd_pcm_substream *, int, long unsigned int, void *, long unsigned int);
-	int (*copy_kernel)(struct snd_pcm_substream *, int, long unsigned int, void *, long unsigned int);
-	struct page * (*page)(struct snd_pcm_substream *, long unsigned int);
-	int (*mmap)(struct snd_pcm_substream *, struct vm_area_struct *);
-	int (*ack)(struct snd_pcm_substream *);
 };
 
 struct snd_pcm_audio_tstamp_config {
@@ -106356,7 +102403,7 @@ typedef int (*snd_pcm_hw_rule_func_t)(struct snd_pcm_hw_params *, struct snd_pcm
 struct snd_pcm_hw_rule {
 	unsigned int cond;
 	int var;
-	int deps[4];
+	int deps[5];
 	snd_pcm_hw_rule_func_t func;
 	void *private;
 };
@@ -106428,7 +102475,6 @@ struct snd_pcm_runtime {
 	struct snd_pcm_audio_tstamp_config audio_tstamp_config;
 	struct snd_pcm_audio_tstamp_report audio_tstamp_report;
 	struct timespec64 driver_tstamp;
-	struct snd_pcm_oss_runtime oss;
 };
 
 struct snd_kcontrol;
@@ -106439,7 +102485,6 @@ struct snd_pcm_str {
 	unsigned int substream_count;
 	unsigned int substream_opened;
 	struct snd_pcm_substream *substream;
-	struct snd_pcm_oss_stream oss;
 	struct snd_info_entry *proc_root;
 	struct snd_kcontrol *chmap_kctl;
 	struct device dev;
@@ -106462,7 +102507,6 @@ struct snd_pcm {
 	bool internal;
 	bool nonatomic;
 	bool no_device_suspend;
-	struct snd_pcm_oss oss;
 };
 
 typedef int snd_kcontrol_info_t(struct snd_kcontrol *, struct snd_ctl_elem_info *);
@@ -107765,6 +103809,8 @@ struct devfreq_notifier_devres {
 	unsigned int list;
 };
 
+struct dev_pm_opp___2;
+
 union extcon_property_value {
 	int intval;
 };
@@ -108258,106 +104304,9 @@ struct compat_ethtool_rxnfc {
 	u32 rule_locs[0];
 } __attribute__((packed));
 
-struct libipw_device;
-
-struct iw_spy_data;
-
-struct iw_public_data {
-	struct iw_spy_data *spy_data;
-	struct libipw_device *libipw;
-};
-
-struct iw_param {
-	__s32 value;
-	__u8 fixed;
-	__u8 disabled;
-	__u16 flags;
-};
-
-struct iw_point {
-	void *pointer;
-	__u16 length;
-	__u16 flags;
-};
-
-struct iw_freq {
-	__s32 m;
-	__s16 e;
-	__u8 i;
-	__u8 flags;
-};
-
-struct iw_quality {
-	__u8 qual;
-	__u8 level;
-	__u8 noise;
-	__u8 updated;
-};
-
-struct iw_discarded {
-	__u32 nwid;
-	__u32 code;
-	__u32 fragment;
-	__u32 retries;
-	__u32 misc;
-};
-
-struct iw_missed {
-	__u32 beacon;
-};
-
-struct iw_statistics {
-	__u16 status;
-	struct iw_quality qual;
-	struct iw_discarded discard;
-	struct iw_missed miss;
-};
-
-union iwreq_data {
-	char name[16];
-	struct iw_point essid;
-	struct iw_param nwid;
-	struct iw_freq freq;
-	struct iw_param sens;
-	struct iw_param bitrate;
-	struct iw_param txpower;
-	struct iw_param rts;
-	struct iw_param frag;
-	__u32 mode;
-	struct iw_param retry;
-	struct iw_point encoding;
-	struct iw_param power;
-	struct iw_quality qual;
-	struct sockaddr ap_addr;
-	struct sockaddr addr;
-	struct iw_param param;
-	struct iw_point data;
-};
-
-struct iw_priv_args {
-	__u32 cmd;
-	__u16 set_args;
-	__u16 get_args;
-	char name[16];
-};
-
 struct compat_mmsghdr {
 	struct compat_msghdr msg_hdr;
 	compat_uint_t msg_len;
-};
-
-struct iw_request_info {
-	__u16 cmd;
-	__u16 flags;
-};
-
-struct iw_spy_data {
-	int spy_number;
-	u_char spy_address[48];
-	struct iw_quality spy_stat[8];
-	struct iw_quality spy_thr_low;
-	struct iw_quality spy_thr_high;
-	u_char spy_thr_under[8];
 };
 
 enum {
@@ -108498,7 +104447,6 @@ struct napi_struct {
 	int defer_hard_irqs_count;
 	long unsigned int gro_bitmask;
 	int (*poll)(struct napi_struct *, int);
-	int poll_owner;
 	struct net_device *dev;
 	struct gro_list gro_hash[8];
 	struct sk_buff *skb;
@@ -108529,12 +104477,14 @@ struct softnet_data {
 	struct Qdisc *output_queue;
 	struct Qdisc **output_queue_tailp;
 	struct sk_buff *completion_queue;
-	struct sk_buff_head xfrm_backlog;
 	struct {
 		u16 recursion;
 		u8 more;
 	} xmit;
-	int: 32;
+	long: 32;
+	long: 64;
+	long: 64;
+	long: 64;
 	unsigned int input_queue_head;
 	long: 32;
 	long: 64;
@@ -108551,6 +104501,7 @@ struct softnet_data {
 	unsigned int dropped;
 	struct sk_buff_head input_pkt_queue;
 	struct napi_struct backlog;
+	long: 64;
 	long: 64;
 	long: 64;
 	long: 64;
@@ -108894,7 +104845,6 @@ struct tcp_sock {
 	} mtu_probe;
 	u32 mtu_info;
 	bool is_mptcp;
-	bool syn_smc;
 	const struct tcp_sock_af_ops *af_specific;
 	struct tcp_md5sig_info *md5sig_info;
 	struct tcp_fastopen_request *fastopen_req;
@@ -109034,6 +104984,31 @@ struct tcp_request_sock_ops {
 
 struct nf_conntrack {
 	atomic_t use;
+};
+
+struct ts_state {
+	unsigned int offset;
+	char cb[40];
+};
+
+struct ts_config;
+
+struct ts_ops {
+	const char *name;
+	struct ts_config * (*init)(const void *, unsigned int, gfp_t, int);
+	unsigned int (*find)(struct ts_config *, struct ts_state *);
+	void (*destroy)(struct ts_config *);
+	void * (*get_pattern)(struct ts_config *);
+	unsigned int (*get_pattern_len)(struct ts_config *);
+	struct module *owner;
+	struct list_head list;
+};
+
+struct ts_config {
+	struct ts_ops *ops;
+	int flags;
+	unsigned int (*get_next_block)(unsigned int, const u8 **, struct ts_config *, struct ts_state *);
+	void (*finish)(struct ts_config *, struct ts_state *);
 };
 
 enum {
@@ -109472,6 +105447,11 @@ struct flow_dissector_key {
 	size_t offset;
 };
 
+struct flow_dissector {
+	unsigned int used_keys;
+	short unsigned int offset[28];
+};
+
 struct flow_keys_basic {
 	struct flow_dissector_key_control control;
 	struct flow_dissector_key_basic basic;
@@ -109611,6 +105591,75 @@ enum {
 	BPF_FLOW_DISSECTOR_F_STOP_AT_ENCAP = 4,
 };
 
+enum devlink_port_type {
+	DEVLINK_PORT_TYPE_NOTSET = 0,
+	DEVLINK_PORT_TYPE_AUTO = 1,
+	DEVLINK_PORT_TYPE_ETH = 2,
+	DEVLINK_PORT_TYPE_IB = 3,
+};
+
+enum devlink_port_flavour {
+	DEVLINK_PORT_FLAVOUR_PHYSICAL = 0,
+	DEVLINK_PORT_FLAVOUR_CPU = 1,
+	DEVLINK_PORT_FLAVOUR_DSA = 2,
+	DEVLINK_PORT_FLAVOUR_PCI_PF = 3,
+	DEVLINK_PORT_FLAVOUR_PCI_VF = 4,
+	DEVLINK_PORT_FLAVOUR_VIRTUAL = 5,
+	DEVLINK_PORT_FLAVOUR_UNUSED = 6,
+};
+
+struct devlink_port_phys_attrs {
+	u32 port_number;
+	u32 split_subport_number;
+};
+
+struct devlink_port_pci_pf_attrs {
+	u32 controller;
+	u16 pf;
+	u8 external: 1;
+};
+
+struct devlink_port_pci_vf_attrs {
+	u32 controller;
+	u16 pf;
+	u16 vf;
+	u8 external: 1;
+};
+
+struct devlink_port_attrs {
+	u8 split: 1;
+	u8 splittable: 1;
+	u32 lanes;
+	enum devlink_port_flavour flavour;
+	struct netdev_phys_item_id switch_id;
+	union {
+		struct devlink_port_phys_attrs phys;
+		struct devlink_port_pci_pf_attrs pci_pf;
+		struct devlink_port_pci_vf_attrs pci_vf;
+	};
+};
+
+struct devlink;
+
+struct devlink_port {
+	struct list_head list;
+	struct list_head param_list;
+	struct list_head region_list;
+	struct devlink *devlink;
+	unsigned int index;
+	bool registered;
+	spinlock_t type_lock;
+	enum devlink_port_type type;
+	enum devlink_port_type desired_type;
+	void *type_dev;
+	struct devlink_port_attrs attrs;
+	u8 attrs_set: 1;
+	u8 switch_port: 1;
+	struct delayed_work type_warn_dw;
+	struct list_head reporter_list;
+	struct mutex reporters_lock;
+};
+
 struct ip_tunnel_parm {
 	char name[16];
 	int link;
@@ -109671,6 +105720,205 @@ union tcp_word_hdr {
 	__be32 words[5];
 };
 
+enum devlink_sb_pool_type {
+	DEVLINK_SB_POOL_TYPE_INGRESS = 0,
+	DEVLINK_SB_POOL_TYPE_EGRESS = 1,
+};
+
+enum devlink_sb_threshold_type {
+	DEVLINK_SB_THRESHOLD_TYPE_STATIC = 0,
+	DEVLINK_SB_THRESHOLD_TYPE_DYNAMIC = 1,
+};
+
+enum devlink_eswitch_encap_mode {
+	DEVLINK_ESWITCH_ENCAP_MODE_NONE = 0,
+	DEVLINK_ESWITCH_ENCAP_MODE_BASIC = 1,
+};
+
+enum devlink_trap_action {
+	DEVLINK_TRAP_ACTION_DROP = 0,
+	DEVLINK_TRAP_ACTION_TRAP = 1,
+	DEVLINK_TRAP_ACTION_MIRROR = 2,
+};
+
+enum devlink_trap_type {
+	DEVLINK_TRAP_TYPE_DROP = 0,
+	DEVLINK_TRAP_TYPE_EXCEPTION = 1,
+	DEVLINK_TRAP_TYPE_CONTROL = 2,
+};
+
+enum devlink_reload_action {
+	DEVLINK_RELOAD_ACTION_UNSPEC = 0,
+	DEVLINK_RELOAD_ACTION_DRIVER_REINIT = 1,
+	DEVLINK_RELOAD_ACTION_FW_ACTIVATE = 2,
+	__DEVLINK_RELOAD_ACTION_MAX = 3,
+	DEVLINK_RELOAD_ACTION_MAX = 2,
+};
+
+enum devlink_reload_limit {
+	DEVLINK_RELOAD_LIMIT_UNSPEC = 0,
+	DEVLINK_RELOAD_LIMIT_NO_RESET = 1,
+	__DEVLINK_RELOAD_LIMIT_MAX = 2,
+	DEVLINK_RELOAD_LIMIT_MAX = 1,
+};
+
+enum devlink_dpipe_field_mapping_type {
+	DEVLINK_DPIPE_FIELD_MAPPING_TYPE_NONE = 0,
+	DEVLINK_DPIPE_FIELD_MAPPING_TYPE_IFINDEX = 1,
+};
+
+struct devlink_dev_stats {
+	u32 reload_stats[6];
+	u32 remote_reload_stats[6];
+};
+
+struct devlink_dpipe_headers;
+
+struct devlink_ops;
+
+struct devlink {
+	struct list_head list;
+	struct list_head port_list;
+	struct list_head sb_list;
+	struct list_head dpipe_table_list;
+	struct list_head resource_list;
+	struct list_head param_list;
+	struct list_head region_list;
+	struct list_head reporter_list;
+	struct mutex reporters_lock;
+	struct devlink_dpipe_headers *dpipe_headers;
+	struct list_head trap_list;
+	struct list_head trap_group_list;
+	struct list_head trap_policer_list;
+	const struct devlink_ops *ops;
+	struct xarray snapshot_ids;
+	struct devlink_dev_stats stats;
+	struct device *dev;
+	possible_net_t _net;
+	struct mutex lock;
+	u8 reload_failed: 1;
+	u8 reload_enabled: 1;
+	u8 registered: 1;
+	long: 61;
+	long: 64;
+	char priv[0];
+};
+
+struct devlink_dpipe_header;
+
+struct devlink_dpipe_headers {
+	struct devlink_dpipe_header **headers;
+	unsigned int headers_count;
+};
+
+struct devlink_info_req;
+
+struct devlink_sb_pool_info;
+
+struct devlink_flash_update_params;
+
+struct devlink_trap;
+
+struct devlink_trap_group;
+
+struct devlink_trap_policer;
+
+struct devlink_ops {
+	u32 supported_flash_update_params;
+	long unsigned int reload_actions;
+	long unsigned int reload_limits;
+	int (*reload_down)(struct devlink *, bool, enum devlink_reload_action, enum devlink_reload_limit, struct netlink_ext_ack *);
+	int (*reload_up)(struct devlink *, enum devlink_reload_action, enum devlink_reload_limit, u32 *, struct netlink_ext_ack *);
+	int (*port_type_set)(struct devlink_port *, enum devlink_port_type);
+	int (*port_split)(struct devlink *, unsigned int, unsigned int, struct netlink_ext_ack *);
+	int (*port_unsplit)(struct devlink *, unsigned int, struct netlink_ext_ack *);
+	int (*sb_pool_get)(struct devlink *, unsigned int, u16, struct devlink_sb_pool_info *);
+	int (*sb_pool_set)(struct devlink *, unsigned int, u16, u32, enum devlink_sb_threshold_type, struct netlink_ext_ack *);
+	int (*sb_port_pool_get)(struct devlink_port *, unsigned int, u16, u32 *);
+	int (*sb_port_pool_set)(struct devlink_port *, unsigned int, u16, u32, struct netlink_ext_ack *);
+	int (*sb_tc_pool_bind_get)(struct devlink_port *, unsigned int, u16, enum devlink_sb_pool_type, u16 *, u32 *);
+	int (*sb_tc_pool_bind_set)(struct devlink_port *, unsigned int, u16, enum devlink_sb_pool_type, u16, u32, struct netlink_ext_ack *);
+	int (*sb_occ_snapshot)(struct devlink *, unsigned int);
+	int (*sb_occ_max_clear)(struct devlink *, unsigned int);
+	int (*sb_occ_port_pool_get)(struct devlink_port *, unsigned int, u16, u32 *, u32 *);
+	int (*sb_occ_tc_port_bind_get)(struct devlink_port *, unsigned int, u16, enum devlink_sb_pool_type, u32 *, u32 *);
+	int (*eswitch_mode_get)(struct devlink *, u16 *);
+	int (*eswitch_mode_set)(struct devlink *, u16, struct netlink_ext_ack *);
+	int (*eswitch_inline_mode_get)(struct devlink *, u8 *);
+	int (*eswitch_inline_mode_set)(struct devlink *, u8, struct netlink_ext_ack *);
+	int (*eswitch_encap_mode_get)(struct devlink *, enum devlink_eswitch_encap_mode *);
+	int (*eswitch_encap_mode_set)(struct devlink *, enum devlink_eswitch_encap_mode, struct netlink_ext_ack *);
+	int (*info_get)(struct devlink *, struct devlink_info_req *, struct netlink_ext_ack *);
+	int (*flash_update)(struct devlink *, struct devlink_flash_update_params *, struct netlink_ext_ack *);
+	int (*trap_init)(struct devlink *, const struct devlink_trap *, void *);
+	void (*trap_fini)(struct devlink *, const struct devlink_trap *, void *);
+	int (*trap_action_set)(struct devlink *, const struct devlink_trap *, enum devlink_trap_action, struct netlink_ext_ack *);
+	int (*trap_group_init)(struct devlink *, const struct devlink_trap_group *);
+	int (*trap_group_set)(struct devlink *, const struct devlink_trap_group *, const struct devlink_trap_policer *, struct netlink_ext_ack *);
+	int (*trap_group_action_set)(struct devlink *, const struct devlink_trap_group *, enum devlink_trap_action, struct netlink_ext_ack *);
+	int (*trap_policer_init)(struct devlink *, const struct devlink_trap_policer *);
+	void (*trap_policer_fini)(struct devlink *, const struct devlink_trap_policer *);
+	int (*trap_policer_set)(struct devlink *, const struct devlink_trap_policer *, u64, u64, struct netlink_ext_ack *);
+	int (*trap_policer_counter_get)(struct devlink *, const struct devlink_trap_policer *, u64 *);
+	int (*port_function_hw_addr_get)(struct devlink *, struct devlink_port *, u8 *, int *, struct netlink_ext_ack *);
+	int (*port_function_hw_addr_set)(struct devlink *, struct devlink_port *, const u8 *, int, struct netlink_ext_ack *);
+};
+
+struct devlink_sb_pool_info {
+	enum devlink_sb_pool_type pool_type;
+	u32 size;
+	enum devlink_sb_threshold_type threshold_type;
+	u32 cell_size;
+};
+
+struct devlink_dpipe_field {
+	const char *name;
+	unsigned int id;
+	unsigned int bitwidth;
+	enum devlink_dpipe_field_mapping_type mapping_type;
+};
+
+struct devlink_dpipe_header {
+	const char *name;
+	unsigned int id;
+	struct devlink_dpipe_field *fields;
+	unsigned int fields_count;
+	bool global;
+};
+
+struct devlink_flash_update_params {
+	const struct firmware *fw;
+	const char *component;
+	u32 overwrite_mask;
+};
+
+struct devlink_trap_policer {
+	u32 id;
+	u64 init_rate;
+	u64 init_burst;
+	u64 max_rate;
+	u64 min_rate;
+	u64 max_burst;
+	u64 min_burst;
+};
+
+struct devlink_trap_group {
+	const char *name;
+	u16 id;
+	bool generic;
+	u32 init_policer_id;
+};
+
+struct devlink_trap {
+	enum devlink_trap_type type;
+	enum devlink_trap_action init_action;
+	bool generic;
+	u16 id;
+	const char *name;
+	u16 init_group_id;
+	u32 metadata_cap;
+};
+
 struct arphdr {
 	__be16 ar_hrd;
 	__be16 ar_pro;
@@ -109685,7 +105933,6 @@ struct fib_nh {
 	struct fib_nh_common nh_common;
 	struct hlist_node nh_hash;
 	struct fib_info *nh_parent;
-	__u32 nh_tclassid;
 	__be32 nh_saddr;
 	int nh_saddr_genid;
 };
@@ -109981,7 +106228,7 @@ struct nf_conntrack_tuple_mask {
 };
 
 struct nf_ct_ext {
-	u8 offset[8];
+	u8 offset[7];
 	u8 len;
 	char data[0];
 };
@@ -110014,8 +106261,7 @@ enum nf_ct_ext_id {
 	NF_CT_EXT_ECACHE = 4,
 	NF_CT_EXT_TSTAMP = 5,
 	NF_CT_EXT_LABELS = 6,
-	NF_CT_EXT_SYNPROXY = 7,
-	NF_CT_EXT_NUM = 8,
+	NF_CT_EXT_NUM = 7,
 };
 
 struct nf_ct_event {
@@ -110139,17 +106385,6 @@ struct netdev_net_notifier {
 	struct notifier_block *nb;
 };
 
-struct netpoll;
-
-struct netpoll_info {
-	refcount_t refcnt;
-	struct semaphore dev_lock;
-	struct sk_buff_head txq;
-	struct delayed_work tx_work;
-	struct netpoll *netpoll;
-	struct callback_head rcu;
-};
-
 struct udp_tunnel_info {
 	short unsigned int type;
 	sa_family_t sa_family;
@@ -110186,6 +106421,17 @@ struct in_device {
 	struct callback_head callback_head;
 };
 
+struct packet_type {
+	__be16 type;
+	bool ignore_outgoing;
+	struct net_device *dev;
+	int (*func)(struct sk_buff *, struct net_device *, struct packet_type *, struct net_device *);
+	void (*list_func)(struct list_head *, struct packet_type *, struct net_device *);
+	bool (*id_match)(struct packet_type *, struct sock *);
+	void *af_packet_priv;
+	struct list_head list;
+};
+
 struct offload_callbacks {
 	struct sk_buff * (*gso_segment)(struct sk_buff *, netdev_features_t);
 	struct sk_buff * (*gro_receive)(struct list_head *, struct sk_buff *);
@@ -110209,6 +106455,14 @@ struct netdev_notifier_info_ext {
 struct netdev_notifier_change_info {
 	struct netdev_notifier_info info;
 	unsigned int flags_changed;
+};
+
+struct netdev_notifier_changeupper_info {
+	struct netdev_notifier_info info;
+	struct net_device *upper_dev;
+	bool master;
+	bool linking;
+	void *upper_info;
 };
 
 struct netdev_notifier_changelowerstate_info {
@@ -110241,26 +106495,6 @@ struct netdev_bonding_info {
 struct netdev_notifier_bonding_info {
 	struct netdev_notifier_info info;
 	struct netdev_bonding_info bonding_info;
-};
-
-union inet_addr {
-	__u32 all[4];
-	__be32 ip;
-	__be32 ip6[4];
-	struct in_addr in;
-	struct in6_addr in6;
-};
-
-struct netpoll {
-	struct net_device *dev;
-	char dev_name[16];
-	const char *name;
-	union inet_addr local_ip;
-	union inet_addr remote_ip;
-	bool ipv6;
-	u16 local_port;
-	u16 remote_port;
-	u8 remote_mac[6];
 };
 
 enum qdisc_state_t {
@@ -111267,13 +107501,6 @@ struct udp_sock {
 	void (*encap_destroy)(struct sock *);
 	struct sk_buff * (*gro_receive)(struct sock *, struct list_head *, struct sk_buff *);
 	int (*gro_complete)(struct sock *, struct sk_buff *, int);
-	long: 64;
-	long: 64;
-	long: 64;
-	long: 64;
-	long: 64;
-	long: 64;
-	long: 64;
 	struct sk_buff_head reader_queue;
 	int forward_deficit;
 	long: 32;
@@ -111504,6 +107731,7 @@ struct xsk_queue;
 
 struct xdp_sock {
 	struct sock sk;
+	long: 64;
 	long: 64;
 	struct xsk_queue *rx;
 	struct net_device *dev;
@@ -112113,6 +108341,12 @@ struct xdp_buff_xsk {
 	struct list_head free_list_node;
 };
 
+struct flow_match {
+	struct flow_dissector *dissector;
+	void *mask;
+	void *key;
+};
+
 struct flow_match_meta {
 	struct flow_dissector_key_meta *key;
 	struct flow_dissector_key_meta *mask;
@@ -112186,6 +108420,159 @@ struct flow_match_enc_opts {
 struct flow_match_ct {
 	struct flow_dissector_key_ct *key;
 	struct flow_dissector_key_ct *mask;
+};
+
+enum flow_action_id {
+	FLOW_ACTION_ACCEPT = 0,
+	FLOW_ACTION_DROP = 1,
+	FLOW_ACTION_TRAP = 2,
+	FLOW_ACTION_GOTO = 3,
+	FLOW_ACTION_REDIRECT = 4,
+	FLOW_ACTION_MIRRED = 5,
+	FLOW_ACTION_REDIRECT_INGRESS = 6,
+	FLOW_ACTION_MIRRED_INGRESS = 7,
+	FLOW_ACTION_VLAN_PUSH = 8,
+	FLOW_ACTION_VLAN_POP = 9,
+	FLOW_ACTION_VLAN_MANGLE = 10,
+	FLOW_ACTION_TUNNEL_ENCAP = 11,
+	FLOW_ACTION_TUNNEL_DECAP = 12,
+	FLOW_ACTION_MANGLE = 13,
+	FLOW_ACTION_ADD = 14,
+	FLOW_ACTION_CSUM = 15,
+	FLOW_ACTION_MARK = 16,
+	FLOW_ACTION_PTYPE = 17,
+	FLOW_ACTION_PRIORITY = 18,
+	FLOW_ACTION_WAKE = 19,
+	FLOW_ACTION_QUEUE = 20,
+	FLOW_ACTION_SAMPLE = 21,
+	FLOW_ACTION_POLICE = 22,
+	FLOW_ACTION_CT = 23,
+	FLOW_ACTION_CT_METADATA = 24,
+	FLOW_ACTION_MPLS_PUSH = 25,
+	FLOW_ACTION_MPLS_POP = 26,
+	FLOW_ACTION_MPLS_MANGLE = 27,
+	FLOW_ACTION_GATE = 28,
+	NUM_FLOW_ACTIONS = 29,
+};
+
+enum flow_action_mangle_base {
+	FLOW_ACT_MANGLE_UNSPEC = 0,
+	FLOW_ACT_MANGLE_HDR_TYPE_ETH = 1,
+	FLOW_ACT_MANGLE_HDR_TYPE_IP4 = 2,
+	FLOW_ACT_MANGLE_HDR_TYPE_IP6 = 3,
+	FLOW_ACT_MANGLE_HDR_TYPE_TCP = 4,
+	FLOW_ACT_MANGLE_HDR_TYPE_UDP = 5,
+};
+
+enum flow_action_hw_stats {
+	FLOW_ACTION_HW_STATS_IMMEDIATE = 1,
+	FLOW_ACTION_HW_STATS_DELAYED = 2,
+	FLOW_ACTION_HW_STATS_ANY = 3,
+	FLOW_ACTION_HW_STATS_DISABLED = 4,
+	FLOW_ACTION_HW_STATS_DONT_CARE = 7,
+};
+
+typedef void (*action_destr)(void *);
+
+struct flow_action_cookie {
+	u32 cookie_len;
+	u8 cookie[0];
+};
+
+struct nf_flowtable;
+
+struct psample_group;
+
+struct action_gate_entry;
+
+struct flow_action_entry {
+	enum flow_action_id id;
+	enum flow_action_hw_stats hw_stats;
+	action_destr destructor;
+	void *destructor_priv;
+	union {
+		u32 chain_index;
+		struct net_device *dev;
+		struct {
+			u16 vid;
+			__be16 proto;
+			u8 prio;
+		} vlan;
+		struct {
+			enum flow_action_mangle_base htype;
+			u32 offset;
+			u32 mask;
+			u32 val;
+		} mangle;
+		struct ip_tunnel_info *tunnel;
+		u32 csum_flags;
+		u32 mark;
+		u16 ptype;
+		u32 priority;
+		struct {
+			u32 ctx;
+			u32 index;
+			u8 vf;
+		} queue;
+		struct {
+			struct psample_group *psample_group;
+			u32 rate;
+			u32 trunc_size;
+			bool truncate;
+		} sample;
+		struct {
+			u32 index;
+			u32 burst;
+			u64 rate_bytes_ps;
+			u32 mtu;
+		} police;
+		struct {
+			int action;
+			u16 zone;
+			struct nf_flowtable *flow_table;
+		} ct;
+		struct {
+			long unsigned int cookie;
+			u32 mark;
+			u32 labels[4];
+		} ct_metadata;
+		struct {
+			u32 label;
+			__be16 proto;
+			u8 tc;
+			u8 bos;
+			u8 ttl;
+		} mpls_push;
+		struct {
+			__be16 proto;
+		} mpls_pop;
+		struct {
+			u32 label;
+			u8 tc;
+			u8 bos;
+			u8 ttl;
+		} mpls_mangle;
+		struct {
+			u32 index;
+			s32 prio;
+			u64 basetime;
+			u64 cycletime;
+			u64 cycletimeext;
+			u32 num_entries;
+			struct action_gate_entry *entries;
+		} gate;
+	};
+	struct flow_action_cookie *cookie;
+};
+
+struct flow_action {
+	unsigned int num_entries;
+	struct flow_action_entry entries[0];
+};
+
+struct flow_rule {
+	struct flow_match match;
+	struct flow_action action;
 };
 
 enum flow_block_command {
@@ -112319,35 +108706,6 @@ struct sk_psock {
 		struct callback_head rcu;
 		struct work_struct gc;
 	};
-};
-
-struct inet6_ifaddr {
-	struct in6_addr addr;
-	__u32 prefix_len;
-	__u32 rt_priority;
-	__u32 valid_lft;
-	__u32 prefered_lft;
-	refcount_t refcnt;
-	spinlock_t lock;
-	int state;
-	__u32 flags;
-	__u8 dad_probes;
-	__u8 stable_privacy_retry;
-	__u16 scope;
-	__u64 dad_nonce;
-	long unsigned int cstamp;
-	long unsigned int tstamp;
-	struct delayed_work dad_work;
-	struct inet6_dev *idev;
-	struct fib6_info *rt;
-	struct hlist_node addr_lst;
-	struct list_head if_list;
-	struct list_head tmp_list;
-	struct inet6_ifaddr *ifpub;
-	int regen_count;
-	bool tokenized;
-	struct callback_head rcu;
-	struct in6_addr peer_addr;
 };
 
 struct fib_rule_uid_range {
@@ -112902,8 +109260,6 @@ struct bridge_mcast_querier {
 
 struct net_bridge;
 
-struct net_bridge_vlan_group;
-
 struct bridge_mcast_stats;
 
 struct net_bridge_port {
@@ -112911,7 +109267,6 @@ struct net_bridge_port {
 	struct net_device *dev;
 	struct list_head list;
 	long unsigned int flags;
-	struct net_bridge_vlan_group *vlgrp;
 	struct net_bridge_port *backup_port;
 	u8 priority;
 	u8 state;
@@ -112938,7 +109293,6 @@ struct net_bridge_port {
 	struct hlist_head mglist;
 	struct hlist_node rlist;
 	char sysfs_name[16];
-	struct netpoll *np;
 	int offload_fwd_mark;
 	u16 group_fwd_mask;
 	u16 backup_redirected_cnt;
@@ -112956,15 +109310,8 @@ struct net_bridge {
 	struct hlist_head frame_type_list;
 	struct net_device *dev;
 	long unsigned int options;
-	__be16 vlan_proto;
-	u16 default_pvid;
-	struct net_bridge_vlan_group *vlgrp;
 	struct rhashtable fdb_hash_tbl;
 	struct list_head port_list;
-	union {
-		struct rtable fake_rtable;
-		struct rt6_info fake_rt6_info;
-	};
 	u16 group_fwd_mask;
 	u16 group_fwd_mask_required;
 	bridge_id designated_root;
@@ -113023,15 +109370,6 @@ struct net_bridge {
 	int offload_fwd_mark;
 	struct hlist_head fdb_list;
 	struct hlist_head mrp_list;
-};
-
-struct net_bridge_vlan_group {
-	struct rhashtable vlan_hash;
-	struct rhashtable tunnel_hash;
-	struct list_head vlan_list;
-	u16 num_vlans;
-	u16 pvid;
-	u8 pvid_state;
 };
 
 struct net_bridge_fdb_key {
@@ -113120,58 +109458,6 @@ typedef void (*btf_trace_br_fdb_external_learn_add)(void *, struct net_bridge *,
 typedef void (*btf_trace_fdb_delete)(void *, struct net_bridge *, struct net_bridge_fdb_entry *);
 
 typedef void (*btf_trace_br_fdb_update)(void *, struct net_bridge *, struct net_bridge_port *, const unsigned char *, u16, long unsigned int);
-
-struct trace_event_raw_page_pool_release {
-	struct trace_entry ent;
-	const struct page_pool *pool;
-	s32 inflight;
-	u32 hold;
-	u32 release;
-	u64 cnt;
-	char __data[0];
-};
-
-struct trace_event_raw_page_pool_state_release {
-	struct trace_entry ent;
-	const struct page_pool *pool;
-	const struct page *page;
-	u32 release;
-	long unsigned int pfn;
-	char __data[0];
-};
-
-struct trace_event_raw_page_pool_state_hold {
-	struct trace_entry ent;
-	const struct page_pool *pool;
-	const struct page *page;
-	u32 hold;
-	long unsigned int pfn;
-	char __data[0];
-};
-
-struct trace_event_raw_page_pool_update_nid {
-	struct trace_entry ent;
-	const struct page_pool *pool;
-	int pool_nid;
-	int new_nid;
-	char __data[0];
-};
-
-struct trace_event_data_offsets_page_pool_release {};
-
-struct trace_event_data_offsets_page_pool_state_release {};
-
-struct trace_event_data_offsets_page_pool_state_hold {};
-
-struct trace_event_data_offsets_page_pool_update_nid {};
-
-typedef void (*btf_trace_page_pool_release)(void *, const struct page_pool *, s32, u32, u32);
-
-typedef void (*btf_trace_page_pool_state_release)(void *, const struct page_pool *, const struct page *, u32);
-
-typedef void (*btf_trace_page_pool_state_hold)(void *, const struct page_pool *, const struct page *, u32);
-
-typedef void (*btf_trace_page_pool_update_nid)(void *, const struct page_pool *, int);
 
 struct trace_event_raw_neigh_create {
 	struct trace_entry ent;
@@ -113566,842 +109852,6 @@ struct dst_cache_pcpu {
 	};
 };
 
-enum devlink_command {
-	DEVLINK_CMD_UNSPEC = 0,
-	DEVLINK_CMD_GET = 1,
-	DEVLINK_CMD_SET = 2,
-	DEVLINK_CMD_NEW = 3,
-	DEVLINK_CMD_DEL = 4,
-	DEVLINK_CMD_PORT_GET = 5,
-	DEVLINK_CMD_PORT_SET = 6,
-	DEVLINK_CMD_PORT_NEW = 7,
-	DEVLINK_CMD_PORT_DEL = 8,
-	DEVLINK_CMD_PORT_SPLIT = 9,
-	DEVLINK_CMD_PORT_UNSPLIT = 10,
-	DEVLINK_CMD_SB_GET = 11,
-	DEVLINK_CMD_SB_SET = 12,
-	DEVLINK_CMD_SB_NEW = 13,
-	DEVLINK_CMD_SB_DEL = 14,
-	DEVLINK_CMD_SB_POOL_GET = 15,
-	DEVLINK_CMD_SB_POOL_SET = 16,
-	DEVLINK_CMD_SB_POOL_NEW = 17,
-	DEVLINK_CMD_SB_POOL_DEL = 18,
-	DEVLINK_CMD_SB_PORT_POOL_GET = 19,
-	DEVLINK_CMD_SB_PORT_POOL_SET = 20,
-	DEVLINK_CMD_SB_PORT_POOL_NEW = 21,
-	DEVLINK_CMD_SB_PORT_POOL_DEL = 22,
-	DEVLINK_CMD_SB_TC_POOL_BIND_GET = 23,
-	DEVLINK_CMD_SB_TC_POOL_BIND_SET = 24,
-	DEVLINK_CMD_SB_TC_POOL_BIND_NEW = 25,
-	DEVLINK_CMD_SB_TC_POOL_BIND_DEL = 26,
-	DEVLINK_CMD_SB_OCC_SNAPSHOT = 27,
-	DEVLINK_CMD_SB_OCC_MAX_CLEAR = 28,
-	DEVLINK_CMD_ESWITCH_GET = 29,
-	DEVLINK_CMD_ESWITCH_SET = 30,
-	DEVLINK_CMD_DPIPE_TABLE_GET = 31,
-	DEVLINK_CMD_DPIPE_ENTRIES_GET = 32,
-	DEVLINK_CMD_DPIPE_HEADERS_GET = 33,
-	DEVLINK_CMD_DPIPE_TABLE_COUNTERS_SET = 34,
-	DEVLINK_CMD_RESOURCE_SET = 35,
-	DEVLINK_CMD_RESOURCE_DUMP = 36,
-	DEVLINK_CMD_RELOAD = 37,
-	DEVLINK_CMD_PARAM_GET = 38,
-	DEVLINK_CMD_PARAM_SET = 39,
-	DEVLINK_CMD_PARAM_NEW = 40,
-	DEVLINK_CMD_PARAM_DEL = 41,
-	DEVLINK_CMD_REGION_GET = 42,
-	DEVLINK_CMD_REGION_SET = 43,
-	DEVLINK_CMD_REGION_NEW = 44,
-	DEVLINK_CMD_REGION_DEL = 45,
-	DEVLINK_CMD_REGION_READ = 46,
-	DEVLINK_CMD_PORT_PARAM_GET = 47,
-	DEVLINK_CMD_PORT_PARAM_SET = 48,
-	DEVLINK_CMD_PORT_PARAM_NEW = 49,
-	DEVLINK_CMD_PORT_PARAM_DEL = 50,
-	DEVLINK_CMD_INFO_GET = 51,
-	DEVLINK_CMD_HEALTH_REPORTER_GET = 52,
-	DEVLINK_CMD_HEALTH_REPORTER_SET = 53,
-	DEVLINK_CMD_HEALTH_REPORTER_RECOVER = 54,
-	DEVLINK_CMD_HEALTH_REPORTER_DIAGNOSE = 55,
-	DEVLINK_CMD_HEALTH_REPORTER_DUMP_GET = 56,
-	DEVLINK_CMD_HEALTH_REPORTER_DUMP_CLEAR = 57,
-	DEVLINK_CMD_FLASH_UPDATE = 58,
-	DEVLINK_CMD_FLASH_UPDATE_END = 59,
-	DEVLINK_CMD_FLASH_UPDATE_STATUS = 60,
-	DEVLINK_CMD_TRAP_GET = 61,
-	DEVLINK_CMD_TRAP_SET = 62,
-	DEVLINK_CMD_TRAP_NEW = 63,
-	DEVLINK_CMD_TRAP_DEL = 64,
-	DEVLINK_CMD_TRAP_GROUP_GET = 65,
-	DEVLINK_CMD_TRAP_GROUP_SET = 66,
-	DEVLINK_CMD_TRAP_GROUP_NEW = 67,
-	DEVLINK_CMD_TRAP_GROUP_DEL = 68,
-	DEVLINK_CMD_TRAP_POLICER_GET = 69,
-	DEVLINK_CMD_TRAP_POLICER_SET = 70,
-	DEVLINK_CMD_TRAP_POLICER_NEW = 71,
-	DEVLINK_CMD_TRAP_POLICER_DEL = 72,
-	DEVLINK_CMD_HEALTH_REPORTER_TEST = 73,
-	__DEVLINK_CMD_MAX = 74,
-	DEVLINK_CMD_MAX = 73,
-};
-
-enum devlink_eswitch_mode {
-	DEVLINK_ESWITCH_MODE_LEGACY = 0,
-	DEVLINK_ESWITCH_MODE_SWITCHDEV = 1,
-};
-
-enum {
-	DEVLINK_ATTR_STATS_RX_PACKETS = 0,
-	DEVLINK_ATTR_STATS_RX_BYTES = 1,
-	DEVLINK_ATTR_STATS_RX_DROPPED = 2,
-	__DEVLINK_ATTR_STATS_MAX = 3,
-	DEVLINK_ATTR_STATS_MAX = 2,
-};
-
-enum {
-	DEVLINK_FLASH_OVERWRITE_SETTINGS_BIT = 0,
-	DEVLINK_FLASH_OVERWRITE_IDENTIFIERS_BIT = 1,
-	__DEVLINK_FLASH_OVERWRITE_MAX_BIT = 2,
-	DEVLINK_FLASH_OVERWRITE_MAX_BIT = 1,
-};
-
-enum {
-	DEVLINK_ATTR_TRAP_METADATA_TYPE_IN_PORT = 0,
-	DEVLINK_ATTR_TRAP_METADATA_TYPE_FA_COOKIE = 1,
-};
-
-enum devlink_attr {
-	DEVLINK_ATTR_UNSPEC = 0,
-	DEVLINK_ATTR_BUS_NAME = 1,
-	DEVLINK_ATTR_DEV_NAME = 2,
-	DEVLINK_ATTR_PORT_INDEX = 3,
-	DEVLINK_ATTR_PORT_TYPE = 4,
-	DEVLINK_ATTR_PORT_DESIRED_TYPE = 5,
-	DEVLINK_ATTR_PORT_NETDEV_IFINDEX = 6,
-	DEVLINK_ATTR_PORT_NETDEV_NAME = 7,
-	DEVLINK_ATTR_PORT_IBDEV_NAME = 8,
-	DEVLINK_ATTR_PORT_SPLIT_COUNT = 9,
-	DEVLINK_ATTR_PORT_SPLIT_GROUP = 10,
-	DEVLINK_ATTR_SB_INDEX = 11,
-	DEVLINK_ATTR_SB_SIZE = 12,
-	DEVLINK_ATTR_SB_INGRESS_POOL_COUNT = 13,
-	DEVLINK_ATTR_SB_EGRESS_POOL_COUNT = 14,
-	DEVLINK_ATTR_SB_INGRESS_TC_COUNT = 15,
-	DEVLINK_ATTR_SB_EGRESS_TC_COUNT = 16,
-	DEVLINK_ATTR_SB_POOL_INDEX = 17,
-	DEVLINK_ATTR_SB_POOL_TYPE = 18,
-	DEVLINK_ATTR_SB_POOL_SIZE = 19,
-	DEVLINK_ATTR_SB_POOL_THRESHOLD_TYPE = 20,
-	DEVLINK_ATTR_SB_THRESHOLD = 21,
-	DEVLINK_ATTR_SB_TC_INDEX = 22,
-	DEVLINK_ATTR_SB_OCC_CUR = 23,
-	DEVLINK_ATTR_SB_OCC_MAX = 24,
-	DEVLINK_ATTR_ESWITCH_MODE = 25,
-	DEVLINK_ATTR_ESWITCH_INLINE_MODE = 26,
-	DEVLINK_ATTR_DPIPE_TABLES = 27,
-	DEVLINK_ATTR_DPIPE_TABLE = 28,
-	DEVLINK_ATTR_DPIPE_TABLE_NAME = 29,
-	DEVLINK_ATTR_DPIPE_TABLE_SIZE = 30,
-	DEVLINK_ATTR_DPIPE_TABLE_MATCHES = 31,
-	DEVLINK_ATTR_DPIPE_TABLE_ACTIONS = 32,
-	DEVLINK_ATTR_DPIPE_TABLE_COUNTERS_ENABLED = 33,
-	DEVLINK_ATTR_DPIPE_ENTRIES = 34,
-	DEVLINK_ATTR_DPIPE_ENTRY = 35,
-	DEVLINK_ATTR_DPIPE_ENTRY_INDEX = 36,
-	DEVLINK_ATTR_DPIPE_ENTRY_MATCH_VALUES = 37,
-	DEVLINK_ATTR_DPIPE_ENTRY_ACTION_VALUES = 38,
-	DEVLINK_ATTR_DPIPE_ENTRY_COUNTER = 39,
-	DEVLINK_ATTR_DPIPE_MATCH = 40,
-	DEVLINK_ATTR_DPIPE_MATCH_VALUE = 41,
-	DEVLINK_ATTR_DPIPE_MATCH_TYPE = 42,
-	DEVLINK_ATTR_DPIPE_ACTION = 43,
-	DEVLINK_ATTR_DPIPE_ACTION_VALUE = 44,
-	DEVLINK_ATTR_DPIPE_ACTION_TYPE = 45,
-	DEVLINK_ATTR_DPIPE_VALUE = 46,
-	DEVLINK_ATTR_DPIPE_VALUE_MASK = 47,
-	DEVLINK_ATTR_DPIPE_VALUE_MAPPING = 48,
-	DEVLINK_ATTR_DPIPE_HEADERS = 49,
-	DEVLINK_ATTR_DPIPE_HEADER = 50,
-	DEVLINK_ATTR_DPIPE_HEADER_NAME = 51,
-	DEVLINK_ATTR_DPIPE_HEADER_ID = 52,
-	DEVLINK_ATTR_DPIPE_HEADER_FIELDS = 53,
-	DEVLINK_ATTR_DPIPE_HEADER_GLOBAL = 54,
-	DEVLINK_ATTR_DPIPE_HEADER_INDEX = 55,
-	DEVLINK_ATTR_DPIPE_FIELD = 56,
-	DEVLINK_ATTR_DPIPE_FIELD_NAME = 57,
-	DEVLINK_ATTR_DPIPE_FIELD_ID = 58,
-	DEVLINK_ATTR_DPIPE_FIELD_BITWIDTH = 59,
-	DEVLINK_ATTR_DPIPE_FIELD_MAPPING_TYPE = 60,
-	DEVLINK_ATTR_PAD = 61,
-	DEVLINK_ATTR_ESWITCH_ENCAP_MODE = 62,
-	DEVLINK_ATTR_RESOURCE_LIST = 63,
-	DEVLINK_ATTR_RESOURCE = 64,
-	DEVLINK_ATTR_RESOURCE_NAME = 65,
-	DEVLINK_ATTR_RESOURCE_ID = 66,
-	DEVLINK_ATTR_RESOURCE_SIZE = 67,
-	DEVLINK_ATTR_RESOURCE_SIZE_NEW = 68,
-	DEVLINK_ATTR_RESOURCE_SIZE_VALID = 69,
-	DEVLINK_ATTR_RESOURCE_SIZE_MIN = 70,
-	DEVLINK_ATTR_RESOURCE_SIZE_MAX = 71,
-	DEVLINK_ATTR_RESOURCE_SIZE_GRAN = 72,
-	DEVLINK_ATTR_RESOURCE_UNIT = 73,
-	DEVLINK_ATTR_RESOURCE_OCC = 74,
-	DEVLINK_ATTR_DPIPE_TABLE_RESOURCE_ID = 75,
-	DEVLINK_ATTR_DPIPE_TABLE_RESOURCE_UNITS = 76,
-	DEVLINK_ATTR_PORT_FLAVOUR = 77,
-	DEVLINK_ATTR_PORT_NUMBER = 78,
-	DEVLINK_ATTR_PORT_SPLIT_SUBPORT_NUMBER = 79,
-	DEVLINK_ATTR_PARAM = 80,
-	DEVLINK_ATTR_PARAM_NAME = 81,
-	DEVLINK_ATTR_PARAM_GENERIC = 82,
-	DEVLINK_ATTR_PARAM_TYPE = 83,
-	DEVLINK_ATTR_PARAM_VALUES_LIST = 84,
-	DEVLINK_ATTR_PARAM_VALUE = 85,
-	DEVLINK_ATTR_PARAM_VALUE_DATA = 86,
-	DEVLINK_ATTR_PARAM_VALUE_CMODE = 87,
-	DEVLINK_ATTR_REGION_NAME = 88,
-	DEVLINK_ATTR_REGION_SIZE = 89,
-	DEVLINK_ATTR_REGION_SNAPSHOTS = 90,
-	DEVLINK_ATTR_REGION_SNAPSHOT = 91,
-	DEVLINK_ATTR_REGION_SNAPSHOT_ID = 92,
-	DEVLINK_ATTR_REGION_CHUNKS = 93,
-	DEVLINK_ATTR_REGION_CHUNK = 94,
-	DEVLINK_ATTR_REGION_CHUNK_DATA = 95,
-	DEVLINK_ATTR_REGION_CHUNK_ADDR = 96,
-	DEVLINK_ATTR_REGION_CHUNK_LEN = 97,
-	DEVLINK_ATTR_INFO_DRIVER_NAME = 98,
-	DEVLINK_ATTR_INFO_SERIAL_NUMBER = 99,
-	DEVLINK_ATTR_INFO_VERSION_FIXED = 100,
-	DEVLINK_ATTR_INFO_VERSION_RUNNING = 101,
-	DEVLINK_ATTR_INFO_VERSION_STORED = 102,
-	DEVLINK_ATTR_INFO_VERSION_NAME = 103,
-	DEVLINK_ATTR_INFO_VERSION_VALUE = 104,
-	DEVLINK_ATTR_SB_POOL_CELL_SIZE = 105,
-	DEVLINK_ATTR_FMSG = 106,
-	DEVLINK_ATTR_FMSG_OBJ_NEST_START = 107,
-	DEVLINK_ATTR_FMSG_PAIR_NEST_START = 108,
-	DEVLINK_ATTR_FMSG_ARR_NEST_START = 109,
-	DEVLINK_ATTR_FMSG_NEST_END = 110,
-	DEVLINK_ATTR_FMSG_OBJ_NAME = 111,
-	DEVLINK_ATTR_FMSG_OBJ_VALUE_TYPE = 112,
-	DEVLINK_ATTR_FMSG_OBJ_VALUE_DATA = 113,
-	DEVLINK_ATTR_HEALTH_REPORTER = 114,
-	DEVLINK_ATTR_HEALTH_REPORTER_NAME = 115,
-	DEVLINK_ATTR_HEALTH_REPORTER_STATE = 116,
-	DEVLINK_ATTR_HEALTH_REPORTER_ERR_COUNT = 117,
-	DEVLINK_ATTR_HEALTH_REPORTER_RECOVER_COUNT = 118,
-	DEVLINK_ATTR_HEALTH_REPORTER_DUMP_TS = 119,
-	DEVLINK_ATTR_HEALTH_REPORTER_GRACEFUL_PERIOD = 120,
-	DEVLINK_ATTR_HEALTH_REPORTER_AUTO_RECOVER = 121,
-	DEVLINK_ATTR_FLASH_UPDATE_FILE_NAME = 122,
-	DEVLINK_ATTR_FLASH_UPDATE_COMPONENT = 123,
-	DEVLINK_ATTR_FLASH_UPDATE_STATUS_MSG = 124,
-	DEVLINK_ATTR_FLASH_UPDATE_STATUS_DONE = 125,
-	DEVLINK_ATTR_FLASH_UPDATE_STATUS_TOTAL = 126,
-	DEVLINK_ATTR_PORT_PCI_PF_NUMBER = 127,
-	DEVLINK_ATTR_PORT_PCI_VF_NUMBER = 128,
-	DEVLINK_ATTR_STATS = 129,
-	DEVLINK_ATTR_TRAP_NAME = 130,
-	DEVLINK_ATTR_TRAP_ACTION = 131,
-	DEVLINK_ATTR_TRAP_TYPE = 132,
-	DEVLINK_ATTR_TRAP_GENERIC = 133,
-	DEVLINK_ATTR_TRAP_METADATA = 134,
-	DEVLINK_ATTR_TRAP_GROUP_NAME = 135,
-	DEVLINK_ATTR_RELOAD_FAILED = 136,
-	DEVLINK_ATTR_HEALTH_REPORTER_DUMP_TS_NS = 137,
-	DEVLINK_ATTR_NETNS_FD = 138,
-	DEVLINK_ATTR_NETNS_PID = 139,
-	DEVLINK_ATTR_NETNS_ID = 140,
-	DEVLINK_ATTR_HEALTH_REPORTER_AUTO_DUMP = 141,
-	DEVLINK_ATTR_TRAP_POLICER_ID = 142,
-	DEVLINK_ATTR_TRAP_POLICER_RATE = 143,
-	DEVLINK_ATTR_TRAP_POLICER_BURST = 144,
-	DEVLINK_ATTR_PORT_FUNCTION = 145,
-	DEVLINK_ATTR_INFO_BOARD_SERIAL_NUMBER = 146,
-	DEVLINK_ATTR_PORT_LANES = 147,
-	DEVLINK_ATTR_PORT_SPLITTABLE = 148,
-	DEVLINK_ATTR_PORT_EXTERNAL = 149,
-	DEVLINK_ATTR_PORT_CONTROLLER_NUMBER = 150,
-	DEVLINK_ATTR_FLASH_UPDATE_STATUS_TIMEOUT = 151,
-	DEVLINK_ATTR_FLASH_UPDATE_OVERWRITE_MASK = 152,
-	DEVLINK_ATTR_RELOAD_ACTION = 153,
-	DEVLINK_ATTR_RELOAD_ACTIONS_PERFORMED = 154,
-	DEVLINK_ATTR_RELOAD_LIMITS = 155,
-	DEVLINK_ATTR_DEV_STATS = 156,
-	DEVLINK_ATTR_RELOAD_STATS = 157,
-	DEVLINK_ATTR_RELOAD_STATS_ENTRY = 158,
-	DEVLINK_ATTR_RELOAD_STATS_LIMIT = 159,
-	DEVLINK_ATTR_RELOAD_STATS_VALUE = 160,
-	DEVLINK_ATTR_REMOTE_RELOAD_STATS = 161,
-	DEVLINK_ATTR_RELOAD_ACTION_INFO = 162,
-	DEVLINK_ATTR_RELOAD_ACTION_STATS = 163,
-	__DEVLINK_ATTR_MAX = 164,
-	DEVLINK_ATTR_MAX = 163,
-};
-
-enum devlink_dpipe_match_type {
-	DEVLINK_DPIPE_MATCH_TYPE_FIELD_EXACT = 0,
-};
-
-enum devlink_dpipe_action_type {
-	DEVLINK_DPIPE_ACTION_TYPE_FIELD_MODIFY = 0,
-};
-
-enum devlink_dpipe_field_ethernet_id {
-	DEVLINK_DPIPE_FIELD_ETHERNET_DST_MAC = 0,
-};
-
-enum devlink_dpipe_field_ipv4_id {
-	DEVLINK_DPIPE_FIELD_IPV4_DST_IP = 0,
-};
-
-enum devlink_dpipe_field_ipv6_id {
-	DEVLINK_DPIPE_FIELD_IPV6_DST_IP = 0,
-};
-
-enum devlink_dpipe_header_id {
-	DEVLINK_DPIPE_HEADER_ETHERNET = 0,
-	DEVLINK_DPIPE_HEADER_IPV4 = 1,
-	DEVLINK_DPIPE_HEADER_IPV6 = 2,
-};
-
-enum devlink_resource_unit {
-	DEVLINK_RESOURCE_UNIT_ENTRY = 0,
-};
-
-enum devlink_port_function_attr {
-	DEVLINK_PORT_FUNCTION_ATTR_UNSPEC = 0,
-	DEVLINK_PORT_FUNCTION_ATTR_HW_ADDR = 1,
-	__DEVLINK_PORT_FUNCTION_ATTR_MAX = 2,
-	DEVLINK_PORT_FUNCTION_ATTR_MAX = 1,
-};
-
-struct devlink_dpipe_match {
-	enum devlink_dpipe_match_type type;
-	unsigned int header_index;
-	struct devlink_dpipe_header *header;
-	unsigned int field_id;
-};
-
-struct devlink_dpipe_action {
-	enum devlink_dpipe_action_type type;
-	unsigned int header_index;
-	struct devlink_dpipe_header *header;
-	unsigned int field_id;
-};
-
-struct devlink_dpipe_value {
-	union {
-		struct devlink_dpipe_action *action;
-		struct devlink_dpipe_match *match;
-	};
-	unsigned int mapping_value;
-	bool mapping_valid;
-	unsigned int value_size;
-	void *value;
-	void *mask;
-};
-
-struct devlink_dpipe_entry {
-	u64 index;
-	struct devlink_dpipe_value *match_values;
-	unsigned int match_values_count;
-	struct devlink_dpipe_value *action_values;
-	unsigned int action_values_count;
-	u64 counter;
-	bool counter_valid;
-};
-
-struct devlink_dpipe_dump_ctx {
-	struct genl_info *info;
-	enum devlink_command cmd;
-	struct sk_buff *skb;
-	struct nlattr *nest;
-	void *hdr;
-};
-
-struct devlink_dpipe_table_ops;
-
-struct devlink_dpipe_table {
-	void *priv;
-	struct list_head list;
-	const char *name;
-	bool counters_enabled;
-	bool counter_control_extern;
-	bool resource_valid;
-	u64 resource_id;
-	u64 resource_units;
-	struct devlink_dpipe_table_ops *table_ops;
-	struct callback_head rcu;
-};
-
-struct devlink_dpipe_table_ops {
-	int (*actions_dump)(void *, struct sk_buff *);
-	int (*matches_dump)(void *, struct sk_buff *);
-	int (*entries_dump)(void *, bool, struct devlink_dpipe_dump_ctx *);
-	int (*counters_set_update)(void *, bool);
-	u64 (*size_get)(void *);
-};
-
-struct devlink_resource_size_params {
-	u64 size_min;
-	u64 size_max;
-	u64 size_granularity;
-	enum devlink_resource_unit unit;
-};
-
-typedef u64 devlink_resource_occ_get_t(void *);
-
-struct devlink_resource {
-	const char *name;
-	u64 id;
-	u64 size;
-	u64 size_new;
-	bool size_valid;
-	struct devlink_resource *parent;
-	struct devlink_resource_size_params size_params;
-	struct list_head list;
-	struct list_head resource_list;
-	devlink_resource_occ_get_t *occ_get;
-	void *occ_get_priv;
-};
-
-enum devlink_param_type {
-	DEVLINK_PARAM_TYPE_U8 = 0,
-	DEVLINK_PARAM_TYPE_U16 = 1,
-	DEVLINK_PARAM_TYPE_U32 = 2,
-	DEVLINK_PARAM_TYPE_STRING = 3,
-	DEVLINK_PARAM_TYPE_BOOL = 4,
-};
-
-struct devlink_flash_notify {
-	const char *status_msg;
-	const char *component;
-	long unsigned int done;
-	long unsigned int total;
-	long unsigned int timeout;
-};
-
-struct devlink_param {
-	u32 id;
-	const char *name;
-	bool generic;
-	enum devlink_param_type type;
-	long unsigned int supported_cmodes;
-	int (*get)(struct devlink *, u32, struct devlink_param_gset_ctx *);
-	int (*set)(struct devlink *, u32, struct devlink_param_gset_ctx *);
-	int (*validate)(struct devlink *, u32, union devlink_param_value, struct netlink_ext_ack *);
-};
-
-struct devlink_param_item {
-	struct list_head list;
-	const struct devlink_param *param;
-	union devlink_param_value driverinit_value;
-	bool driverinit_value_valid;
-	bool published;
-};
-
-enum devlink_param_generic_id {
-	DEVLINK_PARAM_GENERIC_ID_INT_ERR_RESET = 0,
-	DEVLINK_PARAM_GENERIC_ID_MAX_MACS = 1,
-	DEVLINK_PARAM_GENERIC_ID_ENABLE_SRIOV = 2,
-	DEVLINK_PARAM_GENERIC_ID_REGION_SNAPSHOT = 3,
-	DEVLINK_PARAM_GENERIC_ID_IGNORE_ARI = 4,
-	DEVLINK_PARAM_GENERIC_ID_MSIX_VEC_PER_PF_MAX = 5,
-	DEVLINK_PARAM_GENERIC_ID_MSIX_VEC_PER_PF_MIN = 6,
-	DEVLINK_PARAM_GENERIC_ID_FW_LOAD_POLICY = 7,
-	DEVLINK_PARAM_GENERIC_ID_RESET_DEV_ON_DRV_PROBE = 8,
-	DEVLINK_PARAM_GENERIC_ID_ENABLE_ROCE = 9,
-	DEVLINK_PARAM_GENERIC_ID_ENABLE_REMOTE_DEV_RESET = 10,
-	__DEVLINK_PARAM_GENERIC_ID_MAX = 11,
-	DEVLINK_PARAM_GENERIC_ID_MAX = 10,
-};
-
-struct devlink_region_ops {
-	const char *name;
-	void (*destructor)(const void *);
-	int (*snapshot)(struct devlink *, const struct devlink_region_ops *, struct netlink_ext_ack *, u8 **);
-	void *priv;
-};
-
-struct devlink_port_region_ops {
-	const char *name;
-	void (*destructor)(const void *);
-	int (*snapshot)(struct devlink_port *, const struct devlink_port_region_ops *, struct netlink_ext_ack *, u8 **);
-	void *priv;
-};
-
-enum devlink_health_reporter_state {
-	DEVLINK_HEALTH_REPORTER_STATE_HEALTHY = 0,
-	DEVLINK_HEALTH_REPORTER_STATE_ERROR = 1,
-};
-
-struct devlink_health_reporter;
-
-struct devlink_fmsg;
-
-struct devlink_health_reporter_ops {
-	char *name;
-	int (*recover)(struct devlink_health_reporter *, void *, struct netlink_ext_ack *);
-	int (*dump)(struct devlink_health_reporter *, struct devlink_fmsg *, void *, struct netlink_ext_ack *);
-	int (*diagnose)(struct devlink_health_reporter *, struct devlink_fmsg *, struct netlink_ext_ack *);
-	int (*test)(struct devlink_health_reporter *, struct netlink_ext_ack *);
-};
-
-struct devlink_health_reporter {
-	struct list_head list;
-	void *priv;
-	const struct devlink_health_reporter_ops *ops;
-	struct devlink *devlink;
-	struct devlink_port *devlink_port;
-	struct devlink_fmsg *dump_fmsg;
-	struct mutex dump_lock;
-	u64 graceful_period;
-	bool auto_recover;
-	bool auto_dump;
-	u8 health_state;
-	u64 dump_ts;
-	u64 dump_real_ts;
-	u64 error_count;
-	u64 recovery_count;
-	u64 last_recovery_ts;
-	refcount_t refcount;
-};
-
-struct devlink_fmsg {
-	struct list_head item_list;
-	bool putting_binary;
-};
-
-enum devlink_trap_generic_id {
-	DEVLINK_TRAP_GENERIC_ID_SMAC_MC = 0,
-	DEVLINK_TRAP_GENERIC_ID_VLAN_TAG_MISMATCH = 1,
-	DEVLINK_TRAP_GENERIC_ID_INGRESS_VLAN_FILTER = 2,
-	DEVLINK_TRAP_GENERIC_ID_INGRESS_STP_FILTER = 3,
-	DEVLINK_TRAP_GENERIC_ID_EMPTY_TX_LIST = 4,
-	DEVLINK_TRAP_GENERIC_ID_PORT_LOOPBACK_FILTER = 5,
-	DEVLINK_TRAP_GENERIC_ID_BLACKHOLE_ROUTE = 6,
-	DEVLINK_TRAP_GENERIC_ID_TTL_ERROR = 7,
-	DEVLINK_TRAP_GENERIC_ID_TAIL_DROP = 8,
-	DEVLINK_TRAP_GENERIC_ID_NON_IP_PACKET = 9,
-	DEVLINK_TRAP_GENERIC_ID_UC_DIP_MC_DMAC = 10,
-	DEVLINK_TRAP_GENERIC_ID_DIP_LB = 11,
-	DEVLINK_TRAP_GENERIC_ID_SIP_MC = 12,
-	DEVLINK_TRAP_GENERIC_ID_SIP_LB = 13,
-	DEVLINK_TRAP_GENERIC_ID_CORRUPTED_IP_HDR = 14,
-	DEVLINK_TRAP_GENERIC_ID_IPV4_SIP_BC = 15,
-	DEVLINK_TRAP_GENERIC_ID_IPV6_MC_DIP_RESERVED_SCOPE = 16,
-	DEVLINK_TRAP_GENERIC_ID_IPV6_MC_DIP_INTERFACE_LOCAL_SCOPE = 17,
-	DEVLINK_TRAP_GENERIC_ID_MTU_ERROR = 18,
-	DEVLINK_TRAP_GENERIC_ID_UNRESOLVED_NEIGH = 19,
-	DEVLINK_TRAP_GENERIC_ID_RPF = 20,
-	DEVLINK_TRAP_GENERIC_ID_REJECT_ROUTE = 21,
-	DEVLINK_TRAP_GENERIC_ID_IPV4_LPM_UNICAST_MISS = 22,
-	DEVLINK_TRAP_GENERIC_ID_IPV6_LPM_UNICAST_MISS = 23,
-	DEVLINK_TRAP_GENERIC_ID_NON_ROUTABLE = 24,
-	DEVLINK_TRAP_GENERIC_ID_DECAP_ERROR = 25,
-	DEVLINK_TRAP_GENERIC_ID_OVERLAY_SMAC_MC = 26,
-	DEVLINK_TRAP_GENERIC_ID_INGRESS_FLOW_ACTION_DROP = 27,
-	DEVLINK_TRAP_GENERIC_ID_EGRESS_FLOW_ACTION_DROP = 28,
-	DEVLINK_TRAP_GENERIC_ID_STP = 29,
-	DEVLINK_TRAP_GENERIC_ID_LACP = 30,
-	DEVLINK_TRAP_GENERIC_ID_LLDP = 31,
-	DEVLINK_TRAP_GENERIC_ID_IGMP_QUERY = 32,
-	DEVLINK_TRAP_GENERIC_ID_IGMP_V1_REPORT = 33,
-	DEVLINK_TRAP_GENERIC_ID_IGMP_V2_REPORT = 34,
-	DEVLINK_TRAP_GENERIC_ID_IGMP_V3_REPORT = 35,
-	DEVLINK_TRAP_GENERIC_ID_IGMP_V2_LEAVE = 36,
-	DEVLINK_TRAP_GENERIC_ID_MLD_QUERY = 37,
-	DEVLINK_TRAP_GENERIC_ID_MLD_V1_REPORT = 38,
-	DEVLINK_TRAP_GENERIC_ID_MLD_V2_REPORT = 39,
-	DEVLINK_TRAP_GENERIC_ID_MLD_V1_DONE = 40,
-	DEVLINK_TRAP_GENERIC_ID_IPV4_DHCP = 41,
-	DEVLINK_TRAP_GENERIC_ID_IPV6_DHCP = 42,
-	DEVLINK_TRAP_GENERIC_ID_ARP_REQUEST = 43,
-	DEVLINK_TRAP_GENERIC_ID_ARP_RESPONSE = 44,
-	DEVLINK_TRAP_GENERIC_ID_ARP_OVERLAY = 45,
-	DEVLINK_TRAP_GENERIC_ID_IPV6_NEIGH_SOLICIT = 46,
-	DEVLINK_TRAP_GENERIC_ID_IPV6_NEIGH_ADVERT = 47,
-	DEVLINK_TRAP_GENERIC_ID_IPV4_BFD = 48,
-	DEVLINK_TRAP_GENERIC_ID_IPV6_BFD = 49,
-	DEVLINK_TRAP_GENERIC_ID_IPV4_OSPF = 50,
-	DEVLINK_TRAP_GENERIC_ID_IPV6_OSPF = 51,
-	DEVLINK_TRAP_GENERIC_ID_IPV4_BGP = 52,
-	DEVLINK_TRAP_GENERIC_ID_IPV6_BGP = 53,
-	DEVLINK_TRAP_GENERIC_ID_IPV4_VRRP = 54,
-	DEVLINK_TRAP_GENERIC_ID_IPV6_VRRP = 55,
-	DEVLINK_TRAP_GENERIC_ID_IPV4_PIM = 56,
-	DEVLINK_TRAP_GENERIC_ID_IPV6_PIM = 57,
-	DEVLINK_TRAP_GENERIC_ID_UC_LB = 58,
-	DEVLINK_TRAP_GENERIC_ID_LOCAL_ROUTE = 59,
-	DEVLINK_TRAP_GENERIC_ID_EXTERNAL_ROUTE = 60,
-	DEVLINK_TRAP_GENERIC_ID_IPV6_UC_DIP_LINK_LOCAL_SCOPE = 61,
-	DEVLINK_TRAP_GENERIC_ID_IPV6_DIP_ALL_NODES = 62,
-	DEVLINK_TRAP_GENERIC_ID_IPV6_DIP_ALL_ROUTERS = 63,
-	DEVLINK_TRAP_GENERIC_ID_IPV6_ROUTER_SOLICIT = 64,
-	DEVLINK_TRAP_GENERIC_ID_IPV6_ROUTER_ADVERT = 65,
-	DEVLINK_TRAP_GENERIC_ID_IPV6_REDIRECT = 66,
-	DEVLINK_TRAP_GENERIC_ID_IPV4_ROUTER_ALERT = 67,
-	DEVLINK_TRAP_GENERIC_ID_IPV6_ROUTER_ALERT = 68,
-	DEVLINK_TRAP_GENERIC_ID_PTP_EVENT = 69,
-	DEVLINK_TRAP_GENERIC_ID_PTP_GENERAL = 70,
-	DEVLINK_TRAP_GENERIC_ID_FLOW_ACTION_SAMPLE = 71,
-	DEVLINK_TRAP_GENERIC_ID_FLOW_ACTION_TRAP = 72,
-	DEVLINK_TRAP_GENERIC_ID_EARLY_DROP = 73,
-	DEVLINK_TRAP_GENERIC_ID_VXLAN_PARSING = 74,
-	DEVLINK_TRAP_GENERIC_ID_LLC_SNAP_PARSING = 75,
-	DEVLINK_TRAP_GENERIC_ID_VLAN_PARSING = 76,
-	DEVLINK_TRAP_GENERIC_ID_PPPOE_PPP_PARSING = 77,
-	DEVLINK_TRAP_GENERIC_ID_MPLS_PARSING = 78,
-	DEVLINK_TRAP_GENERIC_ID_ARP_PARSING = 79,
-	DEVLINK_TRAP_GENERIC_ID_IP_1_PARSING = 80,
-	DEVLINK_TRAP_GENERIC_ID_IP_N_PARSING = 81,
-	DEVLINK_TRAP_GENERIC_ID_GRE_PARSING = 82,
-	DEVLINK_TRAP_GENERIC_ID_UDP_PARSING = 83,
-	DEVLINK_TRAP_GENERIC_ID_TCP_PARSING = 84,
-	DEVLINK_TRAP_GENERIC_ID_IPSEC_PARSING = 85,
-	DEVLINK_TRAP_GENERIC_ID_SCTP_PARSING = 86,
-	DEVLINK_TRAP_GENERIC_ID_DCCP_PARSING = 87,
-	DEVLINK_TRAP_GENERIC_ID_GTP_PARSING = 88,
-	DEVLINK_TRAP_GENERIC_ID_ESP_PARSING = 89,
-	DEVLINK_TRAP_GENERIC_ID_BLACKHOLE_NEXTHOP = 90,
-	__DEVLINK_TRAP_GENERIC_ID_MAX = 91,
-	DEVLINK_TRAP_GENERIC_ID_MAX = 90,
-};
-
-enum devlink_trap_group_generic_id {
-	DEVLINK_TRAP_GROUP_GENERIC_ID_L2_DROPS = 0,
-	DEVLINK_TRAP_GROUP_GENERIC_ID_L3_DROPS = 1,
-	DEVLINK_TRAP_GROUP_GENERIC_ID_L3_EXCEPTIONS = 2,
-	DEVLINK_TRAP_GROUP_GENERIC_ID_BUFFER_DROPS = 3,
-	DEVLINK_TRAP_GROUP_GENERIC_ID_TUNNEL_DROPS = 4,
-	DEVLINK_TRAP_GROUP_GENERIC_ID_ACL_DROPS = 5,
-	DEVLINK_TRAP_GROUP_GENERIC_ID_STP = 6,
-	DEVLINK_TRAP_GROUP_GENERIC_ID_LACP = 7,
-	DEVLINK_TRAP_GROUP_GENERIC_ID_LLDP = 8,
-	DEVLINK_TRAP_GROUP_GENERIC_ID_MC_SNOOPING = 9,
-	DEVLINK_TRAP_GROUP_GENERIC_ID_DHCP = 10,
-	DEVLINK_TRAP_GROUP_GENERIC_ID_NEIGH_DISCOVERY = 11,
-	DEVLINK_TRAP_GROUP_GENERIC_ID_BFD = 12,
-	DEVLINK_TRAP_GROUP_GENERIC_ID_OSPF = 13,
-	DEVLINK_TRAP_GROUP_GENERIC_ID_BGP = 14,
-	DEVLINK_TRAP_GROUP_GENERIC_ID_VRRP = 15,
-	DEVLINK_TRAP_GROUP_GENERIC_ID_PIM = 16,
-	DEVLINK_TRAP_GROUP_GENERIC_ID_UC_LB = 17,
-	DEVLINK_TRAP_GROUP_GENERIC_ID_LOCAL_DELIVERY = 18,
-	DEVLINK_TRAP_GROUP_GENERIC_ID_EXTERNAL_DELIVERY = 19,
-	DEVLINK_TRAP_GROUP_GENERIC_ID_IPV6 = 20,
-	DEVLINK_TRAP_GROUP_GENERIC_ID_PTP_EVENT = 21,
-	DEVLINK_TRAP_GROUP_GENERIC_ID_PTP_GENERAL = 22,
-	DEVLINK_TRAP_GROUP_GENERIC_ID_ACL_SAMPLE = 23,
-	DEVLINK_TRAP_GROUP_GENERIC_ID_ACL_TRAP = 24,
-	DEVLINK_TRAP_GROUP_GENERIC_ID_PARSER_ERROR_DROPS = 25,
-	__DEVLINK_TRAP_GROUP_GENERIC_ID_MAX = 26,
-	DEVLINK_TRAP_GROUP_GENERIC_ID_MAX = 25,
-};
-
-struct devlink_info_req {
-	struct sk_buff *msg;
-};
-
-struct trace_event_raw_devlink_hwmsg {
-	struct trace_entry ent;
-	u32 __data_loc_bus_name;
-	u32 __data_loc_dev_name;
-	u32 __data_loc_driver_name;
-	bool incoming;
-	long unsigned int type;
-	u32 __data_loc_buf;
-	size_t len;
-	char __data[0];
-};
-
-struct trace_event_raw_devlink_hwerr {
-	struct trace_entry ent;
-	u32 __data_loc_bus_name;
-	u32 __data_loc_dev_name;
-	u32 __data_loc_driver_name;
-	int err;
-	u32 __data_loc_msg;
-	char __data[0];
-};
-
-struct trace_event_raw_devlink_health_report {
-	struct trace_entry ent;
-	u32 __data_loc_bus_name;
-	u32 __data_loc_dev_name;
-	u32 __data_loc_driver_name;
-	u32 __data_loc_reporter_name;
-	u32 __data_loc_msg;
-	char __data[0];
-};
-
-struct trace_event_raw_devlink_health_recover_aborted {
-	struct trace_entry ent;
-	u32 __data_loc_bus_name;
-	u32 __data_loc_dev_name;
-	u32 __data_loc_driver_name;
-	u32 __data_loc_reporter_name;
-	bool health_state;
-	u64 time_since_last_recover;
-	char __data[0];
-};
-
-struct trace_event_raw_devlink_health_reporter_state_update {
-	struct trace_entry ent;
-	u32 __data_loc_bus_name;
-	u32 __data_loc_dev_name;
-	u32 __data_loc_driver_name;
-	u32 __data_loc_reporter_name;
-	u8 new_state;
-	char __data[0];
-};
-
-struct trace_event_raw_devlink_trap_report {
-	struct trace_entry ent;
-	u32 __data_loc_bus_name;
-	u32 __data_loc_dev_name;
-	u32 __data_loc_driver_name;
-	u32 __data_loc_trap_name;
-	u32 __data_loc_trap_group_name;
-	u32 __data_loc_input_dev_name;
-	char __data[0];
-};
-
-struct trace_event_data_offsets_devlink_hwmsg {
-	u32 bus_name;
-	u32 dev_name;
-	u32 driver_name;
-	u32 buf;
-};
-
-struct trace_event_data_offsets_devlink_hwerr {
-	u32 bus_name;
-	u32 dev_name;
-	u32 driver_name;
-	u32 msg;
-};
-
-struct trace_event_data_offsets_devlink_health_report {
-	u32 bus_name;
-	u32 dev_name;
-	u32 driver_name;
-	u32 reporter_name;
-	u32 msg;
-};
-
-struct trace_event_data_offsets_devlink_health_recover_aborted {
-	u32 bus_name;
-	u32 dev_name;
-	u32 driver_name;
-	u32 reporter_name;
-};
-
-struct trace_event_data_offsets_devlink_health_reporter_state_update {
-	u32 bus_name;
-	u32 dev_name;
-	u32 driver_name;
-	u32 reporter_name;
-};
-
-struct trace_event_data_offsets_devlink_trap_report {
-	u32 bus_name;
-	u32 dev_name;
-	u32 driver_name;
-	u32 trap_name;
-	u32 trap_group_name;
-	u32 input_dev_name;
-};
-
-typedef void (*btf_trace_devlink_hwmsg)(void *, const struct devlink *, bool, long unsigned int, const u8 *, size_t);
-
-typedef void (*btf_trace_devlink_hwerr)(void *, const struct devlink *, int, const char *);
-
-typedef void (*btf_trace_devlink_health_report)(void *, const struct devlink *, const char *, const char *);
-
-typedef void (*btf_trace_devlink_health_recover_aborted)(void *, const struct devlink *, const char *, bool, u64);
-
-typedef void (*btf_trace_devlink_health_reporter_state_update)(void *, const struct devlink *, const char *, bool);
-
-typedef void (*btf_trace_devlink_trap_report)(void *, const struct devlink *, struct sk_buff *, const struct devlink_trap_metadata *);
-
-struct devlink_sb {
-	struct list_head list;
-	unsigned int index;
-	u32 size;
-	u16 ingress_pools_count;
-	u16 egress_pools_count;
-	u16 ingress_tc_count;
-	u16 egress_tc_count;
-};
-
-struct devlink_region {
-	struct devlink *devlink;
-	struct devlink_port *port;
-	struct list_head list;
-	union {
-		const struct devlink_region_ops *ops;
-		const struct devlink_port_region_ops *port_ops;
-	};
-	struct list_head snapshot_list;
-	u32 max_snapshots;
-	u32 cur_snapshots;
-	u64 size;
-};
-
-struct devlink_snapshot {
-	struct list_head list;
-	struct devlink_region *region;
-	u8 *data;
-	u32 id;
-};
-
-enum devlink_multicast_groups {
-	DEVLINK_MCGRP_CONFIG = 0,
-};
-
-struct devlink_reload_combination {
-	enum devlink_reload_action action;
-	enum devlink_reload_limit limit;
-};
-
-struct devlink_fmsg_item {
-	struct list_head list;
-	int attrtype;
-	u8 nla_type;
-	u16 len;
-	int value[0];
-};
-
-struct devlink_stats {
-	u64 rx_bytes;
-	u64 rx_packets;
-	struct u64_stats_sync syncp;
-};
-
-struct devlink_trap_policer_item {
-	const struct devlink_trap_policer *policer;
-	u64 rate;
-	u64 burst;
-	struct list_head list;
-};
-
-struct devlink_trap_group_item {
-	const struct devlink_trap_group *group;
-	struct devlink_trap_policer_item *policer_item;
-	struct list_head list;
-	struct devlink_stats *stats;
-};
-
-struct devlink_trap_item {
-	const struct devlink_trap *trap;
-	struct devlink_trap_group_item *group_item;
-	struct list_head list;
-	enum devlink_trap_action action;
-	struct devlink_stats *stats;
-	void *priv;
-};
-
 struct gro_cell;
 
 struct gro_cells {
@@ -114490,14 +109940,6 @@ struct fcllc {
 	__be16 ethertype;
 };
 
-enum macvlan_mode {
-	MACVLAN_MODE_PRIVATE = 1,
-	MACVLAN_MODE_VEPA = 2,
-	MACVLAN_MODE_BRIDGE = 4,
-	MACVLAN_MODE_PASSTHRU = 8,
-	MACVLAN_MODE_SOURCE = 16,
-};
-
 struct tc_ratespec {
 	unsigned char cell_log;
 	__u8 linklayer;
@@ -114532,40 +109974,8 @@ enum {
 	__TCA_MAX = 16,
 };
 
-struct vlan_pcpu_stats {
-	u64 rx_packets;
-	u64 rx_bytes;
-	u64 rx_multicast;
-	u64 tx_packets;
-	u64 tx_bytes;
-	struct u64_stats_sync syncp;
-	u32 rx_errors;
-	u32 tx_dropped;
-};
-
-struct netpoll___2;
-
 struct skb_array {
 	struct ptr_ring ring;
-};
-
-struct macvlan_port;
-
-struct macvlan_dev {
-	struct net_device *dev;
-	struct list_head list;
-	struct hlist_node hlist;
-	struct macvlan_port *port;
-	struct net_device *lowerdev;
-	void *accel_priv;
-	struct vlan_pcpu_stats *pcpu_stats;
-	long unsigned int mc_filter[4];
-	netdev_features_t set_features;
-	enum macvlan_mode mode;
-	u16 flags;
-	unsigned int macaddr_count;
-	u32 bc_queue_len_req;
-	struct netpoll___2 *netpoll;
 };
 
 struct psched_ratecfg {
@@ -114951,10 +110361,6 @@ struct tcf_csum {
 
 struct tcf_gact {
 	struct tc_action common;
-	u16 tcfg_ptype;
-	u16 tcfg_pval;
-	int tcfg_paction;
-	atomic_t packets;
 };
 
 struct tcf_police_params {
@@ -116472,8 +111878,6 @@ struct nf_queue_entry {
 	struct sk_buff *skb;
 	unsigned int id;
 	unsigned int hook_index;
-	struct net_device *physin;
-	struct net_device *physout;
 	struct nf_hook_state state;
 	u16 size;
 };
@@ -116497,25 +111901,6 @@ struct nf_loginfo {
 struct nf_log_buf {
 	unsigned int count;
 	char buf[1020];
-};
-
-struct nf_bridge_info {
-	enum {
-		BRNF_PROTO_UNCHANGED = 0,
-		BRNF_PROTO_8021Q = 1,
-		BRNF_PROTO_PPPOE = 2,
-	} orig_proto: 8;
-	u8 pkt_otherhost: 1;
-	u8 in_prerouting: 1;
-	u8 bridged_dnat: 1;
-	__u16 frag_max_size;
-	struct net_device *physindev;
-	struct net_device *physoutdev;
-	union {
-		__be32 ipv4_daddr;
-		struct in6_addr ipv6_daddr;
-		char neigh_header[8];
-	};
 };
 
 struct ip_rt_info {
@@ -116918,13 +112303,6 @@ struct uncached_list {
 	struct list_head head;
 };
 
-struct ip_rt_acct {
-	__u32 o_bytes;
-	__u32 o_packets;
-	__u32 i_bytes;
-	__u32 i_packets;
-};
-
 struct rt_cache_stat {
 	unsigned int in_slow_tot;
 	unsigned int in_slow_mc;
@@ -117316,12 +112694,6 @@ struct tcp_sack_block_wire {
 	__be32 end_seq;
 };
 
-struct static_key_false_deferred {
-	struct static_key_false key;
-	long unsigned int timeout;
-	struct delayed_work work;
-};
-
 struct mptcp_ext {
 	union {
 		u64 data_ack;
@@ -117638,10 +113010,6 @@ struct arpreq {
 	struct sockaddr arp_netmask;
 	char arp_dev[16];
 };
-
-typedef struct {
-	char ax25_call[7];
-} ax25_address;
 
 enum {
 	AX25_VALUES_IPDEFMODE = 0,
@@ -118314,7 +113682,6 @@ struct fib4_rule {
 	__be32 srcmask;
 	__be32 dst;
 	__be32 dstmask;
-	u32 tclassid;
 };
 
 enum {
@@ -118968,13 +114335,6 @@ struct ip_beet_phdr {
 	__u8 reserved;
 };
 
-struct ip_tunnel_6rd_parm {
-	struct in6_addr prefix;
-	__be32 relay_prefix;
-	u16 prefixlen;
-	u16 relay_prefixlen;
-};
-
 struct ip_tunnel_prl_entry;
 
 struct ip_tunnel {
@@ -118997,7 +114357,6 @@ struct ip_tunnel {
 	int encap_hlen;
 	int hlen;
 	struct ip_tunnel_encap encap;
-	struct ip_tunnel_6rd_parm ip6rd;
 	struct ip_tunnel_prl_entry *prl;
 	unsigned int prl_count;
 	unsigned int ip_tnl_net_id;
@@ -119081,11 +114440,6 @@ struct xfrm_trans_cb {
 	} header;
 	int (*finish)(struct net *, struct sock *, struct sk_buff *);
 	struct net *net;
-};
-
-struct xfrm_user_offload {
-	int ifindex;
-	__u8 flags;
 };
 
 struct sadb_alg {
@@ -119320,6 +114674,11 @@ struct xfrm_user_mapping {
 	__be16 new_sport;
 };
 
+struct xfrm_user_offload {
+	int ifindex;
+	__u8 flags;
+};
+
 struct xfrm_dump_info {
 	struct sk_buff *in_skb;
 	struct sk_buff *out_skb;
@@ -119334,25 +114693,6 @@ struct xfrm_link {
 	int (*done)(struct netlink_callback *);
 	const struct nla_policy *nla_pol;
 	int nla_max;
-};
-
-struct espintcp_msg {
-	struct sk_buff *skb;
-	struct sk_msg skmsg;
-	int offset;
-	int len;
-};
-
-struct espintcp_ctx {
-	struct strparser strp;
-	struct sk_buff_head ike_queue;
-	struct sk_buff_head out_queue;
-	struct espintcp_msg partial;
-	void (*saved_data_ready)(struct sock *);
-	void (*saved_write_space)(struct sock *);
-	void (*saved_destruct)(struct sock *);
-	struct work_struct work;
-	bool tx_running;
 };
 
 struct unix_stream_read_state {
@@ -119406,6 +114746,35 @@ struct ac6_iter_state {
 	struct seq_net_private p;
 	struct net_device *dev;
 	struct inet6_dev *idev;
+};
+
+struct inet6_ifaddr {
+	struct in6_addr addr;
+	__u32 prefix_len;
+	__u32 rt_priority;
+	__u32 valid_lft;
+	__u32 prefered_lft;
+	refcount_t refcnt;
+	spinlock_t lock;
+	int state;
+	__u32 flags;
+	__u8 dad_probes;
+	__u8 stable_privacy_retry;
+	__u16 scope;
+	__u64 dad_nonce;
+	long unsigned int cstamp;
+	long unsigned int tstamp;
+	struct delayed_work dad_work;
+	struct inet6_dev *idev;
+	struct fib6_info *rt;
+	struct hlist_node addr_lst;
+	struct list_head if_list;
+	struct list_head tmp_list;
+	struct inet6_ifaddr *ifpub;
+	int regen_count;
+	bool tokenized;
+	struct callback_head rcu;
+	struct in6_addr peer_addr;
 };
 
 struct ip6_fraglist_iter {
@@ -120099,6 +115468,12 @@ struct ra_msg {
 	__be32 retrans_timer;
 };
 
+struct static_key_false_deferred {
+	struct static_key_false key;
+	long unsigned int timeout;
+	struct delayed_work work;
+};
+
 struct icmp6_filter {
 	__u32 data[8];
 };
@@ -120384,8 +115759,6 @@ struct br_input_skb_cb {
 	u8 mrouters_only: 1;
 	u8 proxyarp_replied: 1;
 	u8 src_port_isolated: 1;
-	u8 vlan_filtered: 1;
-	u8 br_netfilter_broute: 1;
 	int offload_fwd_mark;
 };
 
@@ -120882,6 +116255,7 @@ struct packet_sock {
 	struct net_device *cached_dev;
 	int (*xmit)(struct sk_buff *);
 	long: 64;
+	long: 64;
 	struct packet_type prot_hook;
 	atomic_t tp_drops;
 	long: 32;
@@ -120921,62 +116295,6 @@ struct packet_skb_cb {
 struct _strp_msg {
 	struct strp_msg strp;
 	int accum_len;
-};
-
-struct vlan_group {
-	unsigned int nr_vlan_devs;
-	struct hlist_node hlist;
-	struct net_device **vlan_devices_arrays[16];
-};
-
-struct vlan_info {
-	struct net_device *real_dev;
-	struct vlan_group grp;
-	struct list_head vid_list;
-	unsigned int nr_vids;
-	struct callback_head rcu;
-};
-
-enum vlan_flags {
-	VLAN_FLAG_REORDER_HDR = 1,
-	VLAN_FLAG_GVRP = 2,
-	VLAN_FLAG_LOOSE_BINDING = 4,
-	VLAN_FLAG_MVRP = 8,
-	VLAN_FLAG_BRIDGE_BINDING = 16,
-};
-
-struct vlan_priority_tci_mapping {
-	u32 priority;
-	u16 vlan_qos;
-	struct vlan_priority_tci_mapping *next;
-};
-
-struct vlan_dev_priv {
-	unsigned int nr_ingress_mappings;
-	u32 ingress_priority_map[8];
-	unsigned int nr_egress_mappings;
-	struct vlan_priority_tci_mapping *egress_priority_map[16];
-	__be16 vlan_proto;
-	u16 vlan_id;
-	u16 flags;
-	struct net_device *real_dev;
-	unsigned char real_dev_addr[6];
-	struct proc_dir_entry *dent;
-	struct vlan_pcpu_stats *vlan_pcpu_stats;
-	struct netpoll *netpoll;
-};
-
-enum vlan_protos {
-	VLAN_PROTO_8021Q = 0,
-	VLAN_PROTO_8021AD = 1,
-	VLAN_PROTO_NUM = 2,
-};
-
-struct vlan_vid_info {
-	struct list_head list;
-	__be16 proto;
-	u16 vid;
-	int refcount;
 };
 
 enum nl80211_iftype {
@@ -121295,6 +116613,45 @@ struct wireless_dev {
 	long unsigned int unprot_beacon_reported;
 };
 
+struct iw_param {
+	__s32 value;
+	__u8 fixed;
+	__u8 disabled;
+	__u16 flags;
+};
+
+struct iw_point {
+	void *pointer;
+	__u16 length;
+	__u16 flags;
+};
+
+struct iw_freq {
+	__s32 m;
+	__s16 e;
+	__u8 i;
+	__u8 flags;
+};
+
+struct iw_quality {
+	__u8 qual;
+	__u8 level;
+	__u8 noise;
+	__u8 updated;
+};
+
+struct iw_discarded {
+	__u32 nwid;
+	__u32 code;
+	__u32 fragment;
+	__u32 retries;
+	__u32 misc;
+};
+
+struct iw_missed {
+	__u32 beacon;
+};
+
 struct iw_encode_ext {
 	__u32 ext_flags;
 	__u8 tx_seq[8];
@@ -121303,6 +116660,34 @@ struct iw_encode_ext {
 	__u16 alg;
 	__u16 key_len;
 	__u8 key[0];
+};
+
+struct iw_statistics {
+	__u16 status;
+	struct iw_quality qual;
+	struct iw_discarded discard;
+	struct iw_missed miss;
+};
+
+union iwreq_data {
+	char name[16];
+	struct iw_point essid;
+	struct iw_param nwid;
+	struct iw_freq freq;
+	struct iw_param sens;
+	struct iw_param bitrate;
+	struct iw_param txpower;
+	struct iw_param rts;
+	struct iw_param frag;
+	__u32 mode;
+	struct iw_param retry;
+	struct iw_point encoding;
+	struct iw_param power;
+	struct iw_quality qual;
+	struct sockaddr ap_addr;
+	struct sockaddr addr;
+	struct iw_param param;
+	struct iw_point data;
 };
 
 struct iwreq {
@@ -121670,6 +117055,8 @@ struct cfg80211_wowlan;
 
 struct wiphy_iftype_ext_capab;
 
+struct iw_handler_def;
+
 struct wiphy_coalesce_support;
 
 struct wiphy_vendor_command;
@@ -121940,6 +117327,21 @@ struct wiphy_iftype_akm_suites {
 	int n_akm_suites;
 };
 
+struct iw_request_info;
+
+typedef int (*iw_handler)(struct net_device *, struct iw_request_info *, union iwreq_data *, char *);
+
+struct iw_handler_def {
+	const iw_handler *standard;
+	__u16 num_standard;
+	struct iw_statistics * (*get_wireless_stats)(struct net_device *);
+};
+
+struct iw_request_info {
+	__u16 cmd;
+	__u16 flags;
+};
+
 struct iw_ioctl_description {
 	__u8 header_type;
 	__u8 token_type;
@@ -121950,13 +117352,6 @@ struct iw_ioctl_description {
 };
 
 typedef int (*wext_ioctl_func)(struct net_device *, struct iwreq *, unsigned int, struct iw_request_info *, iw_handler);
-
-struct iw_thrspy {
-	struct sockaddr addr;
-	struct iw_quality qual;
-	struct iw_quality low;
-	struct iw_quality high;
-};
 
 struct netlbl_af4list {
 	__be32 addr;
@@ -122418,6 +117813,10 @@ struct reply_func {
 	int (*cb)(struct net_device *, struct nlmsghdr *, u32, struct nlattr **, struct sk_buff *);
 };
 
+struct switchdev_trans {
+	bool ph_prepare;
+};
+
 enum switchdev_attr_id {
 	SWITCHDEV_ATTR_ID_UNDEFINED = 0,
 	SWITCHDEV_ATTR_ID_PORT_STP_STATE = 1,
@@ -122429,8 +117828,7 @@ enum switchdev_attr_id {
 	SWITCHDEV_ATTR_ID_BRIDGE_VLAN_PROTOCOL = 7,
 	SWITCHDEV_ATTR_ID_BRIDGE_MC_DISABLED = 8,
 	SWITCHDEV_ATTR_ID_BRIDGE_MROUTER = 9,
-	SWITCHDEV_ATTR_ID_MRP_PORT_STATE = 10,
-	SWITCHDEV_ATTR_ID_MRP_PORT_ROLE = 11,
+	SWITCHDEV_ATTR_ID_MRP_PORT_ROLE = 10,
 };
 
 struct switchdev_attr {
@@ -122447,9 +117845,30 @@ struct switchdev_attr {
 		bool vlan_filtering;
 		u16 vlan_protocol;
 		bool mc_disabled;
-		u8 mrp_port_state;
 		u8 mrp_port_role;
 	} u;
+};
+
+enum switchdev_obj_id {
+	SWITCHDEV_OBJ_ID_UNDEFINED = 0,
+	SWITCHDEV_OBJ_ID_PORT_VLAN = 1,
+	SWITCHDEV_OBJ_ID_PORT_MDB = 2,
+	SWITCHDEV_OBJ_ID_HOST_MDB = 3,
+	SWITCHDEV_OBJ_ID_MRP = 4,
+	SWITCHDEV_OBJ_ID_RING_TEST_MRP = 5,
+	SWITCHDEV_OBJ_ID_RING_ROLE_MRP = 6,
+	SWITCHDEV_OBJ_ID_RING_STATE_MRP = 7,
+	SWITCHDEV_OBJ_ID_IN_TEST_MRP = 8,
+	SWITCHDEV_OBJ_ID_IN_ROLE_MRP = 9,
+	SWITCHDEV_OBJ_ID_IN_STATE_MRP = 10,
+};
+
+struct switchdev_obj {
+	struct net_device *orig_dev;
+	enum switchdev_obj_id id;
+	u32 flags;
+	void *complete_priv;
+	void (*complete)(struct net_device *, int, void *);
 };
 
 enum switchdev_notifier_type {

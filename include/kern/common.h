@@ -111,12 +111,12 @@ static __always_inline void record_provenance(bool is_long_prov, void* prov){
 static __always_inline uint64_t get_key(const void *obj) {
     return (uint64_t)obj;
 }
-
+/*
 static __always_inline struct inode *SOCK_INODE(struct socket *socket)
 {
 	return &container_of(socket, struct socket_alloc, socket)->vfs_inode;
 }
-
+*/
 /*!
  * @brief Helper function to return permissions of a file/directory from mask.
  *

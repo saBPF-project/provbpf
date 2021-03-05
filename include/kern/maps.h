@@ -89,7 +89,7 @@ struct {
 	__uint(type, BPF_MAP_TYPE_TASK_STORAGE);
 	__uint(map_flags, BPF_F_NO_PREALLOC);
 //	__uint(max_entries, 4096);
-	__type(key, int); //uint64_t not possible? can we do task storage get?
+	__type(key, int); 
 	__type(value, union prov_elt);
 } task_storage_map SEC(".maps");
 

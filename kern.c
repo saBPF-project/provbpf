@@ -2081,7 +2081,7 @@ int BPF_PROG(socket_post_create, struct socket *sock, int family, int type, int 
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_sock_inode = get_or_create_inode_prov(SOCK_INODE(sock));
+    ptr_prov_sock_inode = get_or_create_inode_prov((struct inode *)bpf_inode_from_sock(sock));
     if (!ptr_prov_sock_inode) {
       return 0;
     }
@@ -2132,7 +2132,7 @@ int BPF_PROG(socket_bind, struct socket *sock, struct sockaddr *address, int add
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_sock_inode = get_or_create_inode_prov(SOCK_INODE(sock));
+    ptr_prov_sock_inode = get_or_create_inode_prov((struct inode *)bpf_inode_from_sock(sock));
     if (!ptr_prov_sock_inode) {
       return 0;
     }
@@ -2182,7 +2182,7 @@ int BPF_PROG(socket_connect, struct socket *sock, struct sockaddr *address, int 
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_sock_inode = get_or_create_inode_prov(SOCK_INODE(sock));
+    ptr_prov_sock_inode = get_or_create_inode_prov((struct inode *)bpf_inode_from_sock(sock));
     if (!ptr_prov_sock_inode) {
       return 0;
     }
@@ -2227,7 +2227,7 @@ int BPF_PROG(socket_listen, struct socket *sock, int backlog) {
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_sock_inode = get_or_create_inode_prov(SOCK_INODE(sock));
+    ptr_prov_sock_inode = get_or_create_inode_prov((struct inode *)bpf_inode_from_sock(sock));
     if (!ptr_prov_sock_inode) {
       return 0;
     }
@@ -2279,11 +2279,11 @@ int BPF_PROG(socket_accept, struct socket *sock, struct socket *newsock) {
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_sock_inode = get_or_create_inode_prov(SOCK_INODE(sock));
+    ptr_prov_sock_inode = get_or_create_inode_prov((struct inode *)bpf_inode_from_sock(sock));
     if (!ptr_prov_sock_inode) {
       return 0;
     }
-    ptr_prov_newsock_inode = get_or_create_inode_prov(SOCK_INODE(newsock));
+    ptr_prov_newsock_inode = get_or_create_inode_prov((struct inode *)bpf_inode_from_sock(newsock));
     if (!ptr_prov_newsock_inode) {
       return 0;
     }
@@ -2335,7 +2335,7 @@ int BPF_PROG(socket_sendmsg, struct socket *sock, struct msghdr *msg, int size) 
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_sock_inode_a = get_or_create_inode_prov(SOCK_INODE(sock));
+    ptr_prov_sock_inode_a = get_or_create_inode_prov((struct inode *)bpf_inode_from_sock(sock));
     if (!ptr_prov_sock_inode_a) {
       return 0;
     }
@@ -2393,7 +2393,7 @@ int BPF_PROG(socket_recvmsg, struct socket *sock, struct msghdr *msg, int size, 
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_sock_inode = get_or_create_inode_prov(SOCK_INODE(sock));
+    ptr_prov_sock_inode = get_or_create_inode_prov((struct inode *)bpf_inode_from_sock(sock));
     if (!ptr_prov_sock_inode) {
       return 0;
     }
@@ -2424,11 +2424,11 @@ int BPF_PROG(socket_socketpair, struct socket *socka, struct socket *sockb) {
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_sock_a = get_or_create_inode_prov(SOCK_INODE(socka));
+    ptr_prov_sock_a = get_or_create_inode_prov((struct inode *)bpf_inode_from_sock(socka));
     if (!ptr_prov_sock_a) {
       return 0;
     }
-    ptr_prov_sock_b = get_or_create_inode_prov(SOCK_INODE(sockb));
+    ptr_prov_sock_b = get_or_create_inode_prov((struct inode *)bpf_inode_from_sock(sockb));
     if (!ptr_prov_sock_b) {
       return 0;
     }
@@ -2475,7 +2475,7 @@ int BPF_PROG(unix_stream_connect, struct sock *sock, struct sock *other, struct 
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_sock_inode = get_or_create_inode_prov(SOCK_INODE(sock->sk_socket));
+    ptr_prov_sock_inode = get_or_create_inode_prov((struct inode *)bpf_inode_from_sock(sock->sk_socket));
     if (!ptr_prov_sock_inode) {
       return 0;
     }
@@ -2505,11 +2505,11 @@ SEC("lsm/unix_may_send")
 int BPF_PROG(unix_may_send, struct socket *sock, struct socket *other) {
     union prov_elt *ptr_prov_inode_sock, *ptr_prov_inode_other;
 
-    ptr_prov_inode_sock = get_or_create_inode_prov(SOCK_INODE(sock));
+    ptr_prov_inode_sock = get_or_create_inode_prov((struct inode *)bpf_inode_from_sock(sock));
     if (!ptr_prov_inode_sock) {
       return 0;
     }
-    ptr_prov_inode_other = get_or_create_inode_prov(SOCK_INODE(other));
+    ptr_prov_inode_other = get_or_create_inode_prov((struct inode *)bpf_inode_from_sock(other));
     if (!ptr_prov_inode_other) {
       return 0;
     }
