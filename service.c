@@ -262,7 +262,7 @@ int main(void) {
       goto close_prog;
     }
 
-    search_map_key = -1;
+    search_map_key = prev_search_map_key = -1;
     while (bpf_map_get_next_key(search_map_fd, &prev_search_map_key, &search_map_key) == 0) {
       res = bpf_map_lookup_elem(search_map_fd, &search_map_key, &search_map_value);
       if (res > -1) {
