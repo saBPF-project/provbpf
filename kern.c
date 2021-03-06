@@ -280,7 +280,6 @@ int BPF_PROG(inode_free_security, struct inode *inode) {
     if (is_inode_dir(inode))
         return 0;
 
-//    uint64_t key = get_key(inode);
     ptr_prov = get_or_create_inode_prov(inode);
     if(!ptr_prov) // something is wrong
         return 0;
@@ -289,7 +288,7 @@ int BPF_PROG(inode_free_security, struct inode *inode) {
     record_terminate(RL_FREED, ptr_prov);
 
     bpf_inode_storage_delete(&inode_storage_map, inode);
-//    bpf_map_delete_elem(&inode_map, &key);
+    
     return 0;
 }
 #endif

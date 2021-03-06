@@ -61,14 +61,6 @@ struct bpf_map_def SEC("maps") prov_machine_map = {
     .max_entries = 1,
 };
 
-struct bpf_map_def SEC("maps") inode_map = {
-    .type = BPF_MAP_TYPE_HASH,
-    .key_size = sizeof(uint64_t),
-    .value_size = sizeof(union prov_elt),
-    .max_entries = 4096, // TODO: set as big as possible; real size is dynamically adjusted
-};
-
-
 struct {
 	__uint(type, BPF_MAP_TYPE_INODE_STORAGE);
 	__uint(map_flags, BPF_F_NO_PREALLOC);

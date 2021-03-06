@@ -46,7 +46,6 @@ static __always_inline void prov_init_inode(struct inode *inode, union prov_elt 
 }
 
 static union prov_elt* get_or_create_inode_prov(struct inode *inode) {
-//    uint64_t key;
     umode_t imode;
     int map_id = INODE_PERCPU_TMP;
     union prov_elt *prov_on_map, *prov_tmp;
@@ -54,8 +53,6 @@ static union prov_elt* get_or_create_inode_prov(struct inode *inode) {
     if (!inode)
       return NULL;
 
-//    key = get_key(inode);
-//    prov_on_map = bpf_map_lookup_elem(&inode_map, &key);
     prov_on_map = bpf_inode_storage_get(&inode_storage_map, inode, 0, 0);
 
     // inode provenance already being tracked
@@ -95,9 +92,7 @@ static union prov_elt* get_or_create_inode_prov(struct inode *inode) {
         }
 
         prov_init_inode(inode, prov_tmp);
-//        bpf_map_update_elem(&inode_map, &key, prov_tmp, BPF_NOEXIST);
         prov_on_map = bpf_inode_storage_get(&inode_storage_map, inode, prov_tmp, BPF_NOEXIST | BPF_LOCAL_STORAGE_GET_F_CREATE);
-//        prov_on_map = bpf_map_lookup_elem(&inode_map, &key);
     }
     return prov_on_map;
 }
