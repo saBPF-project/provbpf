@@ -38,7 +38,6 @@ static __always_inline union prov_elt* get_or_create_iattr_prov(struct iattr *ia
     if (prov_on_map) {
       prov_update_iattr(iattr, prov_on_map);
     } else {
-      __builtin_memset(&prov_tmp, 0, sizeof(union prov_elt));
       prov_init_node(&prov_tmp, ENT_IATTR);
       prov_update_iattr(iattr, &prov_tmp);
       bpf_map_update_elem(&iattr_map, &key, &prov_tmp, BPF_NOEXIST);

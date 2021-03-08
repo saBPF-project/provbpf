@@ -63,7 +63,6 @@ static union prov_elt* get_or_create_inode_prov(struct inode *inode) {
         prov_tmp = bpf_map_lookup_elem(&tmp_prov_elt_map, &map_id);
         if (!prov_tmp)
             return NULL;
-        __builtin_memset(prov_tmp, 0, sizeof(union prov_elt));
         bpf_probe_read(&imode, sizeof(imode), &inode->i_mode);
         if (S_ISREG(imode)) {
             // inode mode is regular file

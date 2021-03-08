@@ -75,7 +75,7 @@ static __always_inline void prov_update_task(struct task_struct *task,
  static __always_inline union prov_elt* get_or_create_task_prov(struct task_struct *task) {
     if (!task)
         return NULL;
-    
+
     union prov_elt prov_tmp;
     union prov_elt *prov_on_map = bpf_task_storage_get(&task_storage_map, task, 0, 0);
     // provenance is already tracked
@@ -83,7 +83,6 @@ static __always_inline void prov_update_task(struct task_struct *task,
         // update the task's provenance since it may have changed
         prov_update_task(task, prov_on_map);
     } else { // a new task
-        __builtin_memset(&prov_tmp, 0, sizeof(union prov_elt));
         // int map_id = 0;
         // prov_tmp = bpf_map_lookup_elem(&tmp_prov_map, &map_id);
         // if (!prov_tmp) {
