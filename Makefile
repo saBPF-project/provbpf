@@ -1,14 +1,10 @@
-prepare_clone:
+prepare:
 	mkdir -p ~/build
 	cd ~/build && git clone https://github.com/tfjmp/provbpf-kernel.git
-
-prepare_build:
 	cd ~/build/provbpf-kernel && $(MAKE) prepare
 	cd ~/build/provbpf-kernel && $(MAKE) config
 	cd ~/build/provbpf-kernel && $(MAKE) build
 	cd ~/build/provbpf-kernel && $(MAKE) install
-
-prepare: prepare_clone prepare_build
 
 delete_dependency:
 	rm -rf ~/libbpf
