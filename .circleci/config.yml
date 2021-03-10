@@ -16,7 +16,7 @@ jobs:
       - run: 'sudo dnf install -y ruby uthash-devel inih-devel'
       - run: 'sudo dnf install -y rpm-build redhat-rpm-config'
       - run: 'cd ~/build && git clone https://${GH_TOKEN}@github.com/tfjmp/provbpf-kernel.git'
-      - run: 'make prepare'
+      - run: 'make prepare_build'
       - run: 'make clean'
       - run: 'make btf_circle'
       - run: 'make kern'
