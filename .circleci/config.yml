@@ -15,7 +15,7 @@ jobs:
       - run: 'sudo dnf install -y elfutils-libelf libcap'
       - run: 'sudo dnf install -y ruby uthash-devel inih-devel'
       - run: 'sudo dnf install -y rpm-build redhat-rpm-config'
-      - run: 'cd ~/build && git clone https://${GH_TOKEN}@github.com/tfjmp/camflow-bpf.git'
+      - run: 'cd ~/build && git clone https://${GH_TOKEN}@github.com/tfjmp/provbpf-kernel.git'
       - run: 'make prepare'
       - run: 'make clean'
       - run: 'make btf_circle'
