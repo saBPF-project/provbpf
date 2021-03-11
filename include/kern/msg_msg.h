@@ -32,7 +32,6 @@ static __always_inline union prov_elt* get_or_create_msg_msg_prov(struct msg_msg
       prov_on_map->msg_msg_info.type = msg->m_type;
     } else {
       // a new msg_msg
-      __builtin_memset(&prov_tmp, 0, sizeof(union prov_elt));
       prov_init_node(&prov_tmp, ENT_MSG);
       prov_tmp.msg_msg_info.type = msg->m_type;
       bpf_map_update_elem(&msg_msg_map, &key, &prov_tmp, BPF_NOEXIST);

@@ -93,7 +93,6 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
 #ifndef PROV_FILTER_TASK_FREE_OFF
 SEC("lsm/task_free")
 int BPF_PROG(task_free, struct task_struct *task) {
-    uint64_t key = get_key(task);
     union prov_elt *ptr_prov;
 
     ptr_prov = get_or_create_task_prov(task);
@@ -104,7 +103,7 @@ int BPF_PROG(task_free, struct task_struct *task) {
     record_terminate(RL_TERMINATE_TASK, ptr_prov);
 
     /* Delete task provenance since the task no longer exists */
-    bpf_map_delete_elem(&task_map, &key);
+    bpf_task_storage_delete(&task_storage_map, task);
 
     return 0;
 }
@@ -282,7 +281,6 @@ int BPF_PROG(inode_free_security, struct inode *inode) {
     if (is_inode_dir(inode))
         return 0;
 
-    uint64_t key = get_key(inode);
     ptr_prov = get_or_create_inode_prov(inode);
     if(!ptr_prov) // something is wrong
         return 0;
@@ -290,7 +288,8 @@ int BPF_PROG(inode_free_security, struct inode *inode) {
     /* Record inode freed */
     record_terminate(RL_FREED, ptr_prov);
 
-    bpf_map_delete_elem(&inode_map, &key);
+    bpf_inode_storage_delete(&inode_storage_map, inode);
+
     return 0;
 }
 #endif
@@ -1083,25 +1082,25 @@ int BPF_PROG(ptrace_access_check, struct task_struct *child, unsigned int mode) 
 }
 #endif
 
-    #ifndef PROV_FILTER_PTRACE_TRACEME_OFF
-    SEC("lsm/ptrace_traceme")
-    int BPF_PROG(ptrace_traceme, struct task_struct *parent) {
-        union prov_elt *ptr_prov, *ptr_prov_current;
-        struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
+#ifndef PROV_FILTER_PTRACE_TRACEME_OFF
+SEC("lsm/ptrace_traceme")
+int BPF_PROG(ptrace_traceme, struct task_struct *parent) {
+    union prov_elt *ptr_prov, *ptr_prov_current;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
 
-        ptr_prov = get_or_create_task_prov(parent);
-        if (!ptr_prov) {
-          return 0;
-        }
-        ptr_prov_current = get_task_provenance(current_task, false);
-        if (!ptr_prov_current) {
-          return 0;
-        }
-
-        informs(RL_PTRACE_TRACEME, ptr_prov_current, ptr_prov, NULL, 0);
-        return 0;
+    ptr_prov = get_or_create_task_prov(parent);
+    if (!ptr_prov) {
+      return 0;
     }
-    #endif
+    ptr_prov_current = get_task_provenance(current_task, false);
+    if (!ptr_prov_current) {
+      return 0;
+    }
+
+    informs(RL_PTRACE_TRACEME, ptr_prov_current, ptr_prov, NULL, 0);
+    return 0;
+}
+#endif
 
 /*!
  * @brief Record provenance when mmap_file hook is triggered.
@@ -2079,7 +2078,7 @@ int BPF_PROG(socket_post_create, struct socket *sock, int family, int type, int 
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_sock_inode = get_or_create_inode_prov(SOCK_INODE(sock));
+    ptr_prov_sock_inode = get_or_create_inode_prov((struct inode *)bpf_inode_from_sock(sock));
     if (!ptr_prov_sock_inode) {
       return 0;
     }
@@ -2130,7 +2129,7 @@ int BPF_PROG(socket_bind, struct socket *sock, struct sockaddr *address, int add
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_sock_inode = get_or_create_inode_prov(SOCK_INODE(sock));
+    ptr_prov_sock_inode = get_or_create_inode_prov((struct inode *)bpf_inode_from_sock(sock));
     if (!ptr_prov_sock_inode) {
       return 0;
     }
@@ -2180,7 +2179,7 @@ int BPF_PROG(socket_connect, struct socket *sock, struct sockaddr *address, int 
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_sock_inode = get_or_create_inode_prov(SOCK_INODE(sock));
+    ptr_prov_sock_inode = get_or_create_inode_prov((struct inode *)bpf_inode_from_sock(sock));
     if (!ptr_prov_sock_inode) {
       return 0;
     }
@@ -2225,7 +2224,7 @@ int BPF_PROG(socket_listen, struct socket *sock, int backlog) {
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_sock_inode = get_or_create_inode_prov(SOCK_INODE(sock));
+    ptr_prov_sock_inode = get_or_create_inode_prov((struct inode *)bpf_inode_from_sock(sock));
     if (!ptr_prov_sock_inode) {
       return 0;
     }
@@ -2277,11 +2276,11 @@ int BPF_PROG(socket_accept, struct socket *sock, struct socket *newsock) {
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_sock_inode = get_or_create_inode_prov(SOCK_INODE(sock));
+    ptr_prov_sock_inode = get_or_create_inode_prov((struct inode *)bpf_inode_from_sock(sock));
     if (!ptr_prov_sock_inode) {
       return 0;
     }
-    ptr_prov_newsock_inode = get_or_create_inode_prov(SOCK_INODE(newsock));
+    ptr_prov_newsock_inode = get_or_create_inode_prov((struct inode *)bpf_inode_from_sock(newsock));
     if (!ptr_prov_newsock_inode) {
       return 0;
     }
@@ -2333,7 +2332,7 @@ int BPF_PROG(socket_sendmsg, struct socket *sock, struct msghdr *msg, int size) 
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_sock_inode_a = get_or_create_inode_prov(SOCK_INODE(sock));
+    ptr_prov_sock_inode_a = get_or_create_inode_prov((struct inode *)bpf_inode_from_sock(sock));
     if (!ptr_prov_sock_inode_a) {
       return 0;
     }
@@ -2391,7 +2390,7 @@ int BPF_PROG(socket_recvmsg, struct socket *sock, struct msghdr *msg, int size, 
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_sock_inode = get_or_create_inode_prov(SOCK_INODE(sock));
+    ptr_prov_sock_inode = get_or_create_inode_prov((struct inode *)bpf_inode_from_sock(sock));
     if (!ptr_prov_sock_inode) {
       return 0;
     }
@@ -2422,11 +2421,11 @@ int BPF_PROG(socket_socketpair, struct socket *socka, struct socket *sockb) {
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_sock_a = get_or_create_inode_prov(SOCK_INODE(socka));
+    ptr_prov_sock_a = get_or_create_inode_prov((struct inode *)bpf_inode_from_sock(socka));
     if (!ptr_prov_sock_a) {
       return 0;
     }
-    ptr_prov_sock_b = get_or_create_inode_prov(SOCK_INODE(sockb));
+    ptr_prov_sock_b = get_or_create_inode_prov((struct inode *)bpf_inode_from_sock(sockb));
     if (!ptr_prov_sock_b) {
       return 0;
     }
@@ -2473,7 +2472,7 @@ int BPF_PROG(unix_stream_connect, struct sock *sock, struct sock *other, struct 
     if (!ptr_prov_current_cred) {
       return 0;
     }
-    ptr_prov_sock_inode = get_or_create_inode_prov(SOCK_INODE(sock->sk_socket));
+    ptr_prov_sock_inode = get_or_create_inode_prov((struct inode *)bpf_inode_from_sock(sock->sk_socket));
     if (!ptr_prov_sock_inode) {
       return 0;
     }
@@ -2498,26 +2497,25 @@ int BPF_PROG(unix_stream_connect, struct sock *sock, struct sock *other, struct 
  * inherited from derives function.
  *
  */
-// TODO: eBPF verifier error: "access beyond struct socket at off 132 size 4"
-// #ifndef PROV_FILTER_UNIX_MAY_SEND_OFF
-// SEC("lsm/unix_may_send")
-// int BPF_PROG(unix_may_send, struct socket *sock, struct socket *other) {
-//     union prov_elt *ptr_prov_inode_sock, *ptr_prov_inode_other;
-//
-//     ptr_prov_inode_sock = get_or_create_inode_prov(SOCK_INODE(sock));
-//     if (!ptr_prov_inode_sock) {
-//       return 0;
-//     }
-//     ptr_prov_inode_other = get_or_create_inode_prov(SOCK_INODE(other));
-//     if (!ptr_prov_inode_other) {
-//       return 0;
-//     }
-//
-//     derives(RL_SND_UNIX, ptr_prov_inode_sock, ptr_prov_inode_other, NULL, 0);
-//
-//     return 0;
-// }
-// #endif
+#ifndef PROV_FILTER_UNIX_MAY_SEND_OFF
+SEC("lsm/unix_may_send")
+int BPF_PROG(unix_may_send, struct socket *sock, struct socket *other) {
+    union prov_elt *ptr_prov_inode_sock, *ptr_prov_inode_other;
+
+    ptr_prov_inode_sock = get_or_create_inode_prov((struct inode *)bpf_inode_from_sock(sock));
+    if (!ptr_prov_inode_sock) {
+      return 0;
+    }
+    ptr_prov_inode_other = get_or_create_inode_prov((struct inode *)bpf_inode_from_sock(other));
+    if (!ptr_prov_inode_other) {
+      return 0;
+    }
+
+    derives(RL_SND_UNIX, ptr_prov_inode_sock, ptr_prov_inode_other, NULL, 0);
+
+    return 0;
+}
+#endif
 
 /*!
  * @brief Record provenance when bprm_creds_for_exec hook is triggered.

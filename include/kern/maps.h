@@ -55,13 +55,6 @@ struct bpf_map_def SEC("maps") long_tmp_prov_map = {
     .max_entries = 3,
 };
 
-struct bpf_map_def SEC("maps") task_map = {
-    .type = BPF_MAP_TYPE_HASH,
-    .key_size = sizeof(uint64_t),
-    .value_size = sizeof(union prov_elt),
-    .max_entries = 4096, // TODO: set as big as possible; real size is dynamically adjusted
-};
-
 struct bpf_map_def SEC("maps") prov_machine_map = {
     .type = BPF_MAP_TYPE_ARRAY,
     .key_size = sizeof(uint32_t),
@@ -69,20 +62,19 @@ struct bpf_map_def SEC("maps") prov_machine_map = {
     .max_entries = 1,
 };
 
-struct bpf_map_def SEC("maps") inode_map = {
-    .type = BPF_MAP_TYPE_HASH,
-    .key_size = sizeof(uint64_t),
-    .value_size = sizeof(union prov_elt),
-    .max_entries = 4096, // TODO: set as big as possible; real size is dynamically adjusted
-};
-
 struct {
 	__uint(type, BPF_MAP_TYPE_INODE_STORAGE);
 	__uint(map_flags, BPF_F_NO_PREALLOC);
-//	__uint(max_entries, 4096);
 	__type(key, int);
 	__type(value, union prov_elt);
 } inode_storage_map SEC(".maps");
+
+struct {
+	__uint(type, BPF_MAP_TYPE_TASK_STORAGE);
+	__uint(map_flags, BPF_F_NO_PREALLOC);
+	__type(key, int);
+	__type(value, union prov_elt);
+} task_storage_map SEC(".maps");
 
 struct {
 	__uint(type, BPF_MAP_TYPE_HASH);

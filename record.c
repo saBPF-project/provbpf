@@ -34,8 +34,7 @@ static struct provenance_ops prov_ops;
 extern configuration __config;
 
 void init( void ){
-  pid_t tid = gettid();
-  syslog(LOG_INFO, "Init audit thread (%d)", (int) tid);
+  return;
 }
 
 void log_error(char* error){

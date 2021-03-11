@@ -25,6 +25,7 @@ static __always_inline void prov_init_relation(union prov_elt *prov,
 					                            const uint64_t flags)
 {
     loff_t offset;
+    __builtin_memset(prov, 0, sizeof(union prov_elt));
     relation_identifier(prov).type=type;
     relation_identifier(prov).id = prov_next_id(RELATION_ID_INDEX);
     relation_identifier(prov).boot_id = prov_get_id(BOOT_ID_INDEX);
@@ -80,7 +81,6 @@ static __always_inline void record_terminate(uint64_t type,
     union long_prov_elt *n = node;
     union prov_elt relation;
 
-    __builtin_memset(&relation, 0, sizeof(union prov_elt));
     prov_init_relation(&relation, type, NULL, 0);
     // set send node
     __builtin_memcpy(&(relation.relation_info.snd), &node_identifier(n), sizeof(union prov_identifier));
