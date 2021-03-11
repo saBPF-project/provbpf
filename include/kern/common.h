@@ -17,6 +17,7 @@
 #define __KERN_BPF_COMMON_H
 
 #include "kern/maps.h"
+#include "shared/id.h"
 
 // probably bad, find where it is defined
 #define NULL 0
@@ -100,7 +101,13 @@ static __always_inline uint64_t prov_get_id(uint32_t key) {
 }
 
 static __always_inline void record_provenance(bool is_long_prov, void* prov){
-    if (is_long_prov) {
+	uint32_t policy_key = 0;
+    struct capture_policy *prov_policy = bpf_map_lookup_elem(&policy_map, &policy_key);
+
+	if (provenance_is_recorded((union prov_elt*)prov) && prov_policy && !prov_policy->should_duplicate)
+		return;
+	set_prov_recorded((union prov_elt*)prov);
+	if (is_long_prov) {
       bpf_ringbuf_output(&r_buf, prov, sizeof(union long_prov_elt), 0);
     } else {
       bpf_ringbuf_output(&r_buf, prov, sizeof(union prov_elt), 0);

@@ -41,31 +41,31 @@
 #define vm_read_exec_mayshare(flags) \
 	((vm_read(flags) || vm_exec(flags)) && vm_mayshare(flags))
 
-/* Update fields in a task's provenance */
+/* Update fields in a task's provenance detected by an LSM hook */
 // TODO: further refactor this function.
 static __always_inline void prov_update_task(struct task_struct *task,
-                                             union prov_elt *prov) {
+                                             union prov_elt *ptr_prov) {
+    ptr_prov->task_info.pid = task->pid;
+  	ptr_prov->task_info.vpid = task->tgid;
+  	ptr_prov->task_info.utime = task->utime;
+  	ptr_prov->task_info.stime = task->stime;
+  	ptr_prov->task_info.vm = task->mm->total_vm;
+  	// ptr_prov->task_info.rss = (task->mm->rss_stat.count[MM_FILEPAGES].counter +
+  	//                           task->mm->rss_stat.count[MM_ANONPAGES].counter +
+  	//                           task->mm->rss_stat.count[MM_SHMEMPAGES].counter) * IOC_PAGE_SIZE / KB;
+  	ptr_prov->task_info.rss = 0; // TODO: eBPF Verifier error output: "Type 'atomic_long_t' is not a struct". Need to find a fix
+  	ptr_prov->task_info.hw_vm = (task->mm->hiwater_vm > ptr_prov->task_info.vm) ? (task->mm->hiwater_vm * IOC_PAGE_SIZE / KB) : (ptr_prov->task_info.vm * IOC_PAGE_SIZE / KB);
+  	ptr_prov->task_info.hw_rss = (task->mm->hiwater_rss > ptr_prov->task_info.rss) ? (task->mm->hiwater_rss * IOC_PAGE_SIZE / KB) : (ptr_prov->task_info.rss * IOC_PAGE_SIZE / KB);
 
-    bpf_probe_read(&prov->task_info.pid, sizeof(prov->task_info.pid), &task->pid);
-    bpf_probe_read(&prov->task_info.vpid, sizeof(prov->task_info.vpid), &task->tgid);
-    bpf_probe_read(&prov->task_info.utime, sizeof(prov->task_info.utime), &task->utime);
-    bpf_probe_read(&prov->task_info.stime, sizeof(prov->task_info.stime), &task->stime);
-    /*
-    struct mm_struct *mm;
-    bpf_probe_read(&mm, sizeof(mm), &task->mm);
-    bpf_probe_read(&prov->task_info.vm, sizeof(prov->task_info.vm), &mm->total_vm);
-    prov->task_info.vm = prov->task_info.vm * IOC_PAGE_SIZE / KB;
-    struct mm_rss_stat rss_stat;
-    bpf_probe_read(&rss_stat, sizeof(rss_stat), &mm->rss_stat);
-    prov->task_info.rss = (rss_stat.count[MM_FILEPAGES].counter +
-                           rss_stat.count[MM_ANONPAGES].counter +
-                           rss_stat.count[MM_SHMEMPAGES].counter) * IOC_PAGE_SIZE / KB;
-    uint64_t current_task_hw_vm, current_task_hw_rss;
-    bpf_probe_read(&current_task_hw_vm, sizeof(current_task_hw_vm), &mm->hiwater_vm);
-    prov->task_info.hw_vm = u64_max(current_task_hw_vm, prov->task_info.vm) * IOC_PAGE_SIZE / KB;
-    bpf_probe_read(&current_task_hw_rss, sizeof(current_task_hw_rss), &mm->hiwater_rss);
-    prov->task_info.hw_rss = u64_max(current_task_hw_rss, prov->task_info.rss) * IOC_PAGE_SIZE / KB;
-    */
+	// old proc_prov_struct entries
+	ptr_prov->task_info.tgid = task->tgid;
+	ptr_prov->task_info.utsns = task->nsproxy->uts_ns->ns.inum;
+	ptr_prov->task_info.ipcns = task->nsproxy->ipc_ns->ns.inum;
+	ptr_prov->task_info.mntns = task->nsproxy->mnt_ns->ns.inum;
+	ptr_prov->task_info.pidns = task->thread_pid->numbers[0].ns->ns.inum;
+	ptr_prov->task_info.netns = task->nsproxy->net_ns->ns.inum;
+	ptr_prov->task_info.cgroupns = task->nsproxy->cgroup_ns->ns.inum;
+
 }
 
 /* Create a provenance entry for a task if it does not exist
@@ -83,11 +83,6 @@ static __always_inline void prov_update_task(struct task_struct *task,
         // update the task's provenance since it may have changed
         prov_update_task(task, prov_on_map);
     } else { // a new task
-        // int map_id = 0;
-        // prov_tmp = bpf_map_lookup_elem(&tmp_prov_map, &map_id);
-        // if (!prov_tmp) {
-        //     return 0;
-        // }
         prov_init_node(&prov_tmp, ACT_TASK);
         prov_update_task(task, &prov_tmp);
         prov_on_map = bpf_task_storage_get(&task_storage_map, task, &prov_tmp, BPF_NOEXIST | BPF_LOCAL_STORAGE_GET_F_CREATE);

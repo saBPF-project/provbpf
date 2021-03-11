@@ -137,7 +137,10 @@ union prov_identifier {
 #define clear_saved(node)                       prov_clear_flag(node, SAVED_BIT)
 #define provenance_is_saved(node)               prov_check_flag(node, SAVED_BIT)
 
-
+#define RECORDED_BIT			7
+#define set_prov_recorded(node)						prov_set_flag(node, RECORDED_BIT)
+#define clear_prov_recorded(node)					prov_clear_flag(node, RECORDED_BIT)
+#define provenance_is_recorded(node)			prov_check_flag(node, RECORDED_BIT)
 
 #define basic_elements          union prov_identifier identifier; uint32_t epoch; uint32_t nepoch; uint32_t internal_flag; uint64_t jiffies; uint64_t taint
 #define shared_node_elements    uint64_t previous_id; uint64_t previous_type; uint32_t k_version; uint32_t secid; uint32_t uid; uint32_t gid; void *var_ptr
@@ -188,6 +191,13 @@ struct task_prov_struct {
 	uint64_t rss;
 	uint64_t hw_vm;
 	uint64_t hw_rss;
+	uint32_t tgid;
+	uint32_t utsns;
+	uint32_t ipcns;
+	uint32_t mntns;
+	uint32_t pidns;
+	uint32_t netns;
+	uint32_t cgroupns;
 };
 
 #define PROV_SBUUID_LEN 16

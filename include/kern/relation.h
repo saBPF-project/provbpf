@@ -32,7 +32,7 @@ static __always_inline void prov_init_relation(union prov_elt *prov,
     relation_identifier(prov).machine_id = prov_get_id(MACHINE_ID_INDEX);
     if (file) {
 		prov->relation_info.set = FILE_INFO_SET;
-        bpf_probe_read(&offset, sizeof(offset), &file->f_pos);
+        offset = file->f_pos;
 		prov->relation_info.offset = offset;
 	}
     prov->relation_info.flags = flags;
@@ -124,58 +124,69 @@ static __always_inline void record_terminate(uint64_t type,
  *
  */
 static __always_inline void update_version(const uint64_t type,
-                                          void *prov,
-                                          bool prov_is_long)
+                                           union prov_elt *prov)
 {
     union prov_elt old_prov;
 
-    union prov_elt *p = prov;
+    // Check provenance policy
+    uint32_t policy_key = 0;
+    struct capture_policy *prov_policy = bpf_map_lookup_elem(&policy_map, &policy_key);
+
+    if (!provenance_has_outgoing(prov) && prov_policy && prov_policy->should_compress_node)
+        return;
+
     __builtin_memset(&old_prov, 0, sizeof(union prov_elt));
-    __builtin_memcpy(&old_prov, p, sizeof(union prov_elt));
+    __builtin_memcpy(&old_prov, prov, sizeof(union prov_elt));
 
     // Update the version of prov to the newer version
-    node_identifier(p).version++;
-    clear_recorded(p);
+    node_identifier(prov).version++;
+    clear_recorded(prov);
 
     // Record the version relation between two versions of the same identity.
-    if (node_identifier(p).type == ACT_TASK) {
-        __write_relation(RL_VERSION_TASK, &old_prov, prov_is_long, prov, prov_is_long, NULL, 0);
+    if (node_identifier(prov).type == ACT_TASK) {
+        __write_relation(RL_VERSION_TASK, &old_prov, false, prov, false, NULL, 0);
     } else {
-        __write_relation(RL_VERSION, &old_prov, prov_is_long, prov, prov_is_long, NULL, 0);
+        __write_relation(RL_VERSION, &old_prov, false, prov, false, NULL, 0);
     }
     // Newer version now has no outgoing edge
-    clear_has_outgoing(p);
+    clear_has_outgoing(prov);
     // For inode provenance persistance
-    clear_saved(p);
+    clear_saved(prov);
 }
 
 static __always_inline void update_version_long(const uint64_t type,
-                                          void *prov,
-                                          bool prov_is_long)
+                                                union long_prov_elt *prov)
 {
     int map_id = UPDATE_PERCPU_LONG_TMP;
+
+    // Check provenance policy
+    uint32_t policy_key = 0;
+    struct capture_policy *prov_policy = bpf_map_lookup_elem(&policy_map, &policy_key);
+
+    if (!provenance_has_outgoing(prov) && prov_policy && prov_policy->should_compress_node)
+        return;
+
     union long_prov_elt *old_prov = bpf_map_lookup_elem(&long_tmp_prov_map, &map_id);
     if (!old_prov)
         return;
 
-    union long_prov_elt *p = prov;
-    bpf_map_update_elem(&long_tmp_prov_map, &map_id, p, BPF_NOEXIST);
+    bpf_map_update_elem(&long_tmp_prov_map, &map_id, prov, BPF_NOEXIST);
     // __builtin_memcpy(old_prov, p, sizeof(union prov_elt));
 
     // Update the version of prov to the newer version
-    node_identifier(p).version++;
-    clear_recorded(p);
+    node_identifier(prov).version++;
+    clear_recorded(prov);
 
     // Record the version relation between two versions of the same identity.
-    if (node_identifier(p).type == ACT_TASK) {
-        __write_relation(RL_VERSION_TASK, old_prov, prov_is_long, prov, prov_is_long, NULL, 0);
+    if (node_identifier(prov).type == ACT_TASK) {
+        __write_relation(RL_VERSION_TASK, old_prov, true, prov, true, NULL, 0);
     } else {
-        __write_relation(RL_VERSION, old_prov, prov_is_long, prov, prov_is_long, NULL, 0);
+        __write_relation(RL_VERSION, old_prov, true, prov, true, NULL, 0);
     }
     // Newer version now has no outgoing edge
-    clear_has_outgoing(p);
+    clear_has_outgoing(prov);
     // For inode provenance persistance
-    clear_saved(p);
+    clear_saved(prov);
 }
 
 static __always_inline void record_relation(uint64_t type,
@@ -186,8 +197,23 @@ static __always_inline void record_relation(uint64_t type,
                                             const struct file *file,
                                             const uint64_t flags)
 {
+    uint32_t policy_key = 0;
+    struct capture_policy *prov_policy = bpf_map_lookup_elem(&policy_map, &policy_key);
+
+    if (prov_policy && prov_policy->should_compress_edge) {
+        if (node_previous_id((union prov_elt *)to) == node_identifier((union prov_elt *)from).id
+		    && node_previous_type((union prov_elt *)to) == type)
+            return;
+
+        node_previous_id((union prov_elt *)to) = node_identifier((union prov_elt *)from).id;
+		node_previous_type((union prov_elt *)to) = type;
+    }
+
     // Update node version
-    update_version(type, to, to_is_long);
+    if (to_is_long)
+        update_version_long(type, to);
+    else
+        update_version(type, to);
 
     // Write relation provenance to ring buffer
     __write_relation(type, from, from_is_long, to, to_is_long, file, flags);
@@ -215,8 +241,7 @@ static __always_inline void current_update_shst(union prov_elt *cprov,
                                                struct task_struct *current_task,
 					                                     bool read)
 {
-    struct mm_struct *mm;
-    bpf_probe_read(&mm, sizeof(mm), &current_task->mm);
+    struct mm_struct *mm = current_task->mm;
     struct vm_area_struct *vma;
     struct file *mmapf;
     vm_flags_t flags;
@@ -225,19 +250,19 @@ static __always_inline void current_update_shst(union prov_elt *cprov,
 
     if (!mm)
         return;
-    bpf_probe_read(&vma, sizeof(vma), &mm->mmap);
+    vma = mm->mmap;
 
     for (int i = 0; i < MAX_VMA; i++) {
         // If this is the last mmaped file, break
         if (!vma)
             return;
         // Perform operations of vma
-        bpf_probe_read(&mmapf, sizeof(mmapf), &vma->vm_file);
+        mmapf = vma->vm_file;
         if (!mmapf)
           return;
-        bpf_probe_read(&flags, sizeof(flags), &vma->vm_flags);
+        flags = vma->vm_flags;
 
-        bpf_probe_read(&mmapf_inode, sizeof(mmapf_inode), &mmapf->f_inode);
+        mmapf_inode = mmapf->f_inode;
         mmprov = get_or_create_inode_prov(mmapf_inode);
         if (mmprov) {
             if (vm_read_exec_mayshare(flags) && read) {
@@ -249,7 +274,7 @@ static __always_inline void current_update_shst(union prov_elt *cprov,
             }
         }
         // Get next mmaped file
-        bpf_probe_read(&vma, sizeof(vma), &vma->vm_next);
+        vma = vma->vm_next;
     }
     return;
 }
@@ -445,8 +470,7 @@ static __always_inline int record_write_xattr(uint64_t type,
     ptr_prov_xattr->xattr_info.size = (size < PROV_XATTR_VALUE_SIZE) ? size : PROV_XATTR_VALUE_SIZE;
 
     record_relation(RL_PROC_READ, cprov, false, tprov, false, NULL, 0);
-    update_version_long(type, ptr_prov_xattr, true);
-    __write_relation(type, tprov, false, ptr_prov_xattr, true, NULL, flags);
+    record_relation(type, tprov, false, ptr_prov_xattr, true, NULL, 0);
 
     if (type == RL_SETXATTR) {
       record_relation(RL_SETXATTR_INODE, ptr_prov_xattr, true, iprov, false, NULL, flags);
@@ -498,8 +522,7 @@ static __always_inline void record_read_xattr(void *cprov,
     __builtin_memcpy(&(xattr->xattr_info.name), &name, PROV_XATTR_NAME_SIZE);
     xattr->xattr_info.name[PROV_XATTR_NAME_SIZE - 1] = '\0';
 
-    update_version_long(RL_GETXATTR_INODE, xattr, true);
-    __write_relation(RL_GETXATTR_INODE, iprov, false, xattr, true, NULL, 0);
+    record_relation(RL_GETXATTR_INODE, iprov, false, xattr, true, NULL, 0);
     record_relation(RL_GETXATTR, xattr, true, tprov, false, NULL, 0);
     record_relation(RL_PROC_WRITE, tprov, false, cprov, false, NULL, 0);
 }
@@ -519,8 +542,7 @@ static __always_inline int record_influences_kernel(const uint64_t type,
 
     record_relation(RL_LOAD_FILE, entity, false, activity, false, file, 0);
     if (ptr_prov_machine) {
-        update_version_long(type, ptr_prov_machine, true);
-        __write_relation(type, activity, false, ptr_prov_machine, true, NULL, 0);
+        record_relation(type, activity, false, ptr_prov_machine, true, NULL, 0);
     }
 
     return 0;

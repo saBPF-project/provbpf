@@ -47,7 +47,6 @@ char _license[] SEC("license") = "GPL";
  * Template is: SEC("lsm/HOOK_NAMES")
  */
 
-
 /*!
  * @brief Record provenance when task_alloc is triggered.
  *
@@ -67,13 +66,15 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
     union prov_elt *ptr_prov, *ptr_prov_current;
     struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
 
-    ptr_prov_current = get_or_create_task_prov(current_task);
-    if (!ptr_prov_current)
-        return 0;
-
     ptr_prov = get_or_create_task_prov(task);
-    if (!ptr_prov)
+    if (!ptr_prov) {
         return 0;
+    }
+
+    ptr_prov_current = get_or_create_task_prov(current_task);
+    if (!ptr_prov_current) {
+        return 0;
+    }
 
     //uses_two(RL_PROC_READ, ptr_prov_cred, false, ptr_prov_current, false, NULL, clone_flags);
     informs(RL_CLONE, ptr_prov_current, ptr_prov, NULL, clone_flags);
@@ -95,7 +96,7 @@ int BPF_PROG(task_free, struct task_struct *task) {
     union prov_elt *ptr_prov;
 
     ptr_prov = get_or_create_task_prov(task);
-    if(!ptr_prov) // something is wrong
+    if (!ptr_prov) // something is wrong
         return 0;
 
     /* Record task terminate */
@@ -130,7 +131,7 @@ int BPF_PROG(task_free, struct task_struct *task) {
 SEC("lsm/task_fix_setuid")
 int BPF_PROG(task_fix_setuid, struct cred *new, const struct cred *old, int flags) {
     union prov_elt *ptr_prov_new_cred, *ptr_prov_old_cred, *ptr_prov_task;
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
 
     ptr_prov_new_cred = get_or_create_cred_prov(new);
     if (!ptr_prov_new_cred) {
@@ -167,7 +168,7 @@ int BPF_PROG(task_fix_setuid, struct cred *new, const struct cred *old, int flag
 SEC("lsm/task_fix_setgid")
 int BPF_PROG(task_fix_setgid, struct cred *new, const struct cred *old, int flags) {
     union prov_elt *ptr_prov_new_cred, *ptr_prov_old_cred, *ptr_prov_task;
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
 
     ptr_prov_new_cred = get_or_create_cred_prov(new);
     if (!ptr_prov_new_cred) {
@@ -200,7 +201,7 @@ int BPF_PROG(task_fix_setgid, struct cred *new, const struct cred *old, int flag
 SEC("lsm/task_getpgid")
 int BPF_PROG(task_getpgid, struct task_struct *p) {
     union prov_elt *ptr_prov, *ptr_prov_current_task, *ptr_prov_current_cred;
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
     struct cred *current_cred, *p_task_cred;
     current_cred = get_task_cred(current_task);
     p_task_cred = get_task_cred(p);
@@ -288,7 +289,7 @@ int BPF_PROG(inode_free_security, struct inode *inode) {
     record_terminate(RL_FREED, ptr_prov);
 
     bpf_inode_storage_delete(&inode_storage_map, inode);
-    
+
     return 0;
 }
 #endif
@@ -382,7 +383,7 @@ int BPF_PROG(inode_permission, struct inode *inode, int mask) {
       return 0;
     }
 
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
     struct cred *current_cred;
     current_cred = get_task_cred(current_task);
 
@@ -452,7 +453,7 @@ int BPF_PROG(inode_link, struct dentry *old_dentry, struct inode *dir, struct de
     if (is_inode_dir(old_dentry->d_inode))
         return 0;
 
-    current_task = (struct task_struct *)bpf_get_current_task();
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
 
     current_cred = get_task_cred(current_task);
 
@@ -493,7 +494,7 @@ int BPF_PROG(inode_unlink, struct inode *dir, struct dentry *dentry) {
     if (is_inode_dir(dentry->d_inode))
         return 0;
 
-    current_task = (struct task_struct *)bpf_get_current_task();
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
     current_cred = get_task_cred(current_task);
 
     ptr_prov_current_cred = get_or_create_cred_prov(current_cred);
@@ -534,7 +535,7 @@ int BPF_PROG(inode_symlink, struct inode *dir, struct dentry *dentry, const char
     if (is_inode_dir(dentry->d_inode))
         return 0;
 
-    current_task = (struct task_struct *)bpf_get_current_task();
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
     current_cred = get_task_cred(current_task);
 
     ptr_prov_current_cred = get_or_create_cred_prov(current_cred);
@@ -578,7 +579,7 @@ int BPF_PROG(inode_rename, struct inode *old_dir, struct dentry *old_dentry, str
     if (is_inode_dir(old_dentry->d_inode))
         return 0;
 
-    current_task = (struct task_struct *)bpf_get_current_task();
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
     current_cred = get_task_cred(current_task);
 
     ptr_prov_current_cred = get_or_create_cred_prov(current_cred);
@@ -627,14 +628,14 @@ int BPF_PROG(inode_rename, struct inode *old_dir, struct dentry *old_dentry, str
 #ifndef PROV_FILTER_INODE_SETATTR_OFF
 SEC("lsm/inode_setattr")
 int BPF_PROG(inode_setattr, struct dentry *dentry, struct iattr *attr) {
-    union prov_elt *ptr_prov_current_cred, *ptr_prov_current_task, *ptr_prov_inode, *ptr_prov_iattr;
+    union prov_elt *ptr_prov_current_cred, *ptr_prov_current_task, *ptr_prov_inode, prov_iattr;
     struct task_struct *current_task;
     struct cred *current_cred;
 
     if (is_inode_dir(dentry->d_inode))
         return 0;
 
-    current_task = (struct task_struct *)bpf_get_current_task();
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
     current_cred = get_task_cred(current_task);
 
     ptr_prov_current_cred = get_or_create_cred_prov(current_cred);
@@ -649,13 +650,10 @@ int BPF_PROG(inode_setattr, struct dentry *dentry, struct iattr *attr) {
     if (!ptr_prov_inode) {
       return 0;
     }
-    ptr_prov_iattr = get_or_create_iattr_prov(attr);
-    if (!ptr_prov_iattr) {
-      return 0;
-    }
+    iattr_init(&prov_iattr, attr);
 
-    generates(RL_SETATTR, current_task, ptr_prov_current_cred, ptr_prov_current_task, ptr_prov_iattr, NULL, 0);
-    derives(RL_SETATTR_INODE, ptr_prov_iattr, ptr_prov_inode, NULL, 0);
+    generates(RL_SETATTR, current_task, ptr_prov_current_cred, ptr_prov_current_task, &prov_iattr, NULL, 0);
+    derives(RL_SETATTR_INODE, &prov_iattr, ptr_prov_inode, NULL, 0);
 
     return 0;
 }
@@ -684,7 +682,7 @@ int BPF_PROG(inode_getattr, const struct path *path) {
     if (is_inode_dir(path->dentry->d_inode))
         return 0;
 
-    current_task = (struct task_struct *)bpf_get_current_task();
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
     current_cred = get_task_cred(current_task);
 
     ptr_prov_current_cred = get_or_create_cred_prov(current_cred);
@@ -729,7 +727,7 @@ int BPF_PROG(inode_readlink, struct dentry *dentry) {
     if (is_inode_dir(dentry->d_inode))
         return 0;
 
-    current_task = (struct task_struct *)bpf_get_current_task();
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
     current_cred = get_task_cred(current_task);
 
     ptr_prov_current_cred = get_or_create_cred_prov(current_cred);
@@ -779,7 +777,7 @@ int BPF_PROG(inode_post_setxattr, struct dentry *dentry, const char *name,const 
     if (is_inode_dir(dentry->d_inode))
         return 0;
 
-    current_task = (struct task_struct *)bpf_get_current_task();
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
     current_cred = get_task_cred(current_task);
 
     ptr_prov_current_cred = get_or_create_cred_prov(current_cred);
@@ -827,7 +825,7 @@ int BPF_PROG(inode_getxattr, struct dentry *dentry, const char *name) {
     if (is_inode_dir(dentry->d_inode))
         return 0;
 
-    current_task = (struct task_struct *)bpf_get_current_task();
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
     current_cred = get_task_cred(current_task);
 
     ptr_prov_current_cred = get_or_create_cred_prov(current_cred);
@@ -871,7 +869,7 @@ int BPF_PROG(inode_listxattr, struct dentry *dentry) {
     if (is_inode_dir(dentry->d_inode))
         return 0;
 
-    current_task = (struct task_struct *)bpf_get_current_task();
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
     current_cred = get_task_cred(current_task);
 
     ptr_prov_current_cred = get_or_create_cred_prov(current_cred);
@@ -918,7 +916,7 @@ int BPF_PROG(inode_removexattr, struct dentry *dentry, const char *name) {
     if (is_inode_dir(dentry->d_inode))
         return 0;
 
-    current_task = (struct task_struct *)bpf_get_current_task();
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
     current_cred = get_task_cred(current_task);
 
     ptr_prov_current_cred = get_or_create_cred_prov(current_cred);
@@ -1021,7 +1019,7 @@ int BPF_PROG(cred_free, struct cred *cred) {
 SEC("lsm/cred_prepare")
 int BPF_PROG(cred_prepare, struct cred *new, const struct cred *old, gfp_t gfp) {
     union prov_elt *ptr_prov_new, *ptr_prov_old, *ptr_prov_task;
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
 
     ptr_prov_new = get_or_create_cred_prov(new);
     if (!ptr_prov_new)
@@ -1045,7 +1043,7 @@ int BPF_PROG(cred_prepare, struct cred *new, const struct cred *old, gfp_t gfp) 
 SEC("lsm/ptrace_access_check")
 int BPF_PROG(ptrace_access_check, struct task_struct *child, unsigned int mode) {
     union prov_elt *ptr_prov_child, *ptr_prov_child_cred, *ptr_prov_current_task, *ptr_prov_current_cred;
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
     struct cred *current_cred, *child_cred;
     current_cred = get_task_cred(current_task);
     child_cred = get_task_cred(child);
@@ -1221,7 +1219,7 @@ int BPF_PROG(mmap_file, struct file *file, unsigned long reqprot, unsigned long 
 SEC("lsm/mmap_munmap")
 int BPF_PROG(mmap_munmap, struct mm_struct *mm, struct vm_area_struct *vma, unsigned long start, unsigned long end) {
     union prov_elt *ptr_prov_current, *ptr_prov_current_cred, *ptr_prov_inode;
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
     struct cred *current_cred;
     current_cred = get_task_cred(current_task);
     struct file *mmapf;
@@ -1290,7 +1288,7 @@ int BPF_PROG(file_permission, struct file *file, int mask) {
     if (is_inode_dir(file->f_inode))
         return 0;
 
-    current_task = (struct task_struct *)bpf_get_current_task();
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
     current_cred = get_task_cred(current_task);
 
     uint32_t perms = file_mask_to_perms((file->f_inode)->i_mode, mask);
@@ -1353,7 +1351,7 @@ int BPF_PROG(file_permission, struct file *file, int mask) {
 SEC("lsm/file_splice_pipe_to_pipe")
 int BPF_PROG(file_splice_pipe_to_pipe, struct file *in, struct file *out) {
     union prov_elt *ptr_prov_current_task, *ptr_prov_current_cred, *ptr_prov_in_inode, *ptr_prov_out_inode;
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
     struct cred *current_cred;
     current_cred = get_task_cred(current_task);
 
@@ -1574,8 +1572,7 @@ SEC("lsm/file_send_sigiotask")
 int BPF_PROG(file_send_sigiotask, struct task_struct *task, struct fown_struct *fown, int signum) {
     struct file *file = container_of(fown, struct file, f_owner);
 
-    struct inode *inode;
-    bpf_probe_read(&inode, sizeof(inode), &file->f_inode);
+    struct inode *inode = file->f_inode;
 
     union prov_elt *ptr_prov_task, *ptr_prov_cred, *ptr_prov_inode;
     struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();

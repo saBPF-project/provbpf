@@ -35,12 +35,13 @@ struct {
 
 #define INODE_PERCPU_TMP 0
 #define RELATION_PERCPU_TMP 1
+#define IATTR_PERCPU_TMP 2
 
 struct bpf_map_def SEC("maps") tmp_prov_elt_map = {
     .type = BPF_MAP_TYPE_PERCPU_ARRAY,
     .key_size = sizeof(uint32_t),
     .value_size = sizeof(union prov_elt),
-    .max_entries = 2,
+    .max_entries = 3,
 };
 
 #define ADDRESS_PERCPU_LONG_TMP 0
@@ -81,13 +82,6 @@ struct {
 	__type(value, union prov_elt);
 	__uint(max_entries, 4096); // TODO: set as big as possible; real size is dynamically adjusted
 } cred_map SEC(".maps");
-
-struct bpf_map_def SEC("maps") iattr_map = {
-    .type = BPF_MAP_TYPE_HASH,
-    .key_size = sizeof(uint64_t),
-    .value_size = sizeof(union prov_elt),
-    .max_entries = 4096, // TODO: set as big as possible; real size is dynamically adjusted
-};
 
 struct bpf_map_def SEC("maps") msg_msg_map = {
     .type = BPF_MAP_TYPE_HASH,

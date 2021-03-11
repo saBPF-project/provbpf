@@ -92,6 +92,9 @@ start:
 stop:
 	sudo systemctl stop provbpfd.service
 
+status:
+	sudo systemctl status provbpfd.service
+
 uninstall:
 	sudo systemctl stop provbpfd.service
 	sudo systemctl disable provbpfd.service
@@ -101,7 +104,7 @@ uninstall:
 
 run:
 	rm -rf audit.log
-	sudo ./provbpfd
+	sudo provbpfd
 
 run_valgrind: usr_dbg
 	rm -rf audit.log

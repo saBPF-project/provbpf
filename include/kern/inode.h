@@ -28,20 +28,18 @@
 #define is_inode_file(inode)            S_ISREG(inode->i_mode)
 
 static __always_inline void prov_update_inode(struct inode *inode, union prov_elt *prov) {
-    bpf_probe_read(&prov->inode_info.uid, sizeof(prov->inode_info.uid), &inode->i_uid.val);
-    bpf_probe_read(&prov->inode_info.gid, sizeof(prov->inode_info.gid), &inode->i_gid.val);
+    prov->inode_info.uid = inode->i_uid.val;
+    prov->inode_info.gid = inode->i_gid.val;
 }
 
 static __always_inline void prov_init_inode(struct inode *inode, union prov_elt *prov) {
     int index;
-    struct super_block *isb;
-    bpf_probe_read(&isb, sizeof(isb), &inode->i_sb);
     for (index = 0; index < PROV_SBUUID_LEN; index++) {
-      bpf_probe_read(&prov->inode_info.sb_uuid[index], sizeof(prov->inode_info.sb_uuid[index]), &isb->s_uuid.b[index]);
+      prov->inode_info.sb_uuid[index] = (inode->i_sb)->s_uuid.b[index];
     }
     prov->inode_info.secid = 0;
-    bpf_probe_read(&prov->inode_info.mode, sizeof(prov->inode_info.mode), &inode->i_mode);
-    bpf_probe_read(&prov->inode_info.ino, sizeof(prov->inode_info.ino), &inode->i_ino);
+    prov->inode_info.mode = inode->i_mode;
+    prov->inode_info.ino = inode->i_ino;
     prov_update_inode(inode, prov);
 }
 
@@ -63,7 +61,7 @@ static union prov_elt* get_or_create_inode_prov(struct inode *inode) {
         prov_tmp = bpf_map_lookup_elem(&tmp_prov_elt_map, &map_id);
         if (!prov_tmp)
             return NULL;
-        bpf_probe_read(&imode, sizeof(imode), &inode->i_mode);
+        imode = inode->i_mode;
         if (S_ISREG(imode)) {
             // inode mode is regular file
             prov_init_node(prov_tmp, ENT_INODE_FILE);
