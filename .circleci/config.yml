@@ -16,6 +16,7 @@ jobs:
       - run: 'sudo dnf install -y ruby uthash-devel inih-devel'
       - run: 'sudo dnf install -y rpm-build redhat-rpm-config elfutils-devel'
       - run: 'sudo dnf install -y bison flex dwarves libcap openssl'
+      - run: 'sudo dnf install -y rsync'
       - run: 'cd ~/build && git clone https://${GH_TOKEN}@github.com/tfjmp/provbpf-kernel.git'
       - run: 'cd ~/build/provbpf-kernel && make prepare'
       - run: 'cd ~/build/provbpf-kernel && make save_space'
