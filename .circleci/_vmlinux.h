@@ -947,7 +947,6 @@ struct task_struct {
 	struct sched_rt_entity rt;
 	struct task_group *sched_task_group;
 	struct sched_dl_entity dl;
-	struct hlist_head preempt_notifiers;
 	unsigned int btrace_seq;
 	unsigned int policy;
 	int nr_cpus_allowed;
@@ -1165,8 +1164,11 @@ struct task_struct {
 	long: 64;
 	long: 64;
 	long: 64;
+<<<<<<< HEAD
 	long: 64;
 	long: 64;
+=======
+>>>>>>> 46b5bac (tweak to Makefile)
 	struct thread_struct thread;
 };
 
@@ -10001,10 +10003,13 @@ struct netns_nf {
 	struct ctl_table_header *nf_log_dir_header;
 	struct nf_hook_entries *hooks_ipv4[5];
 	struct nf_hook_entries *hooks_ipv6[5];
+<<<<<<< HEAD
 	struct nf_hook_entries *hooks_arp[3];
 	struct nf_hook_entries *hooks_bridge[5];
 	bool defrag_ipv4;
 	bool defrag_ipv6;
+=======
+>>>>>>> 46b5bac (tweak to Makefile)
 };
 
 struct ebt_table;
@@ -10018,6 +10023,7 @@ struct netns_xt {
 	struct ebt_table *frame_nat;
 };
 
+<<<<<<< HEAD
 struct nf_generic_net {
 	unsigned int timeout;
 };
@@ -10106,6 +10112,8 @@ struct netns_nf_frag {
 	struct fqdir *fqdir;
 };
 
+=======
+>>>>>>> 46b5bac (tweak to Makefile)
 struct netns_bpf {
 	struct bpf_prog_array *run_array[2];
 	struct bpf_prog *progs[2];
@@ -10255,20 +10263,18 @@ struct net {
 	struct netns_sctp sctp;
 	struct netns_nf nf;
 	struct netns_xt xt;
-	struct netns_ct ct;
-	struct netns_nftables nft;
-	struct netns_nf_frag nf_frag;
-	struct ctl_table_header *nf_frag_frags_hdr;
 	struct sock *nfnl;
 	struct sock *nfnl_stash;
-	struct sk_buff_head wext_nlevents;
 	struct net_generic *gen;
 	struct netns_bpf bpf;
+<<<<<<< HEAD
 	long: 64;
 	long: 64;
 	long: 64;
 	long: 64;
 	long: 64;
+=======
+>>>>>>> 46b5bac (tweak to Makefile)
 	struct netns_xfrm xfrm;
 	atomic64_t net_cookie;
 	struct netns_ipvs *ipvs;
@@ -10916,9 +10922,13 @@ struct netdev_hw_addr_list {
 	int count;
 };
 
+<<<<<<< HEAD
 struct tipc_bearer;
 
 struct mpls_dev;
+=======
+struct wireless_dev;
+>>>>>>> 46b5bac (tweak to Makefile)
 
 enum rx_handler_result {
 	RX_HANDLER_CONSUMED = 0,
@@ -10982,8 +10992,6 @@ struct dsa_port;
 struct in_device;
 
 struct inet6_dev;
-
-struct wireless_dev;
 
 struct wpan_dev;
 
@@ -11332,7 +11340,6 @@ struct sk_buff {
 		};
 		struct list_head tcp_tsorted_anchor;
 	};
-	long unsigned int _nfct;
 	unsigned int len;
 	unsigned int data_len;
 	__u16 mac_len;
@@ -11753,7 +11760,7 @@ struct dst_entry {
 struct hh_cache {
 	unsigned int hh_len;
 	seqlock_t hh_lock;
-	long unsigned int hh_data[16];
+	long unsigned int hh_data[12];
 };
 
 struct neigh_table;
@@ -11877,31 +11884,6 @@ struct nf_logger {
 	enum nf_log_type type;
 	nf_logfn *logfn;
 	struct module *me;
-};
-
-struct hlist_nulls_head {
-	struct hlist_nulls_node *first;
-};
-
-struct ip_conntrack_stat {
-	unsigned int found;
-	unsigned int invalid;
-	unsigned int insert;
-	unsigned int insert_failed;
-	unsigned int clash_resolve;
-	unsigned int drop;
-	unsigned int early_drop;
-	unsigned int error;
-	unsigned int expect_new;
-	unsigned int expect_create;
-	unsigned int expect_delete;
-	unsigned int search_restart;
-};
-
-struct ct_pcpu {
-	spinlock_t lock;
-	struct hlist_nulls_head unconfirmed;
-	struct hlist_nulls_head dying;
 };
 
 typedef struct {
@@ -14152,6 +14134,7 @@ enum {
 	NFPROTO_NUMPROTO = 13,
 };
 
+<<<<<<< HEAD
 enum tcp_conntrack {
 	TCP_CONNTRACK_NONE = 0,
 	TCP_CONNTRACK_SYN_SENT = 1,
@@ -14216,6 +14199,8 @@ enum gre_conntrack {
 	GRE_CT_MAX = 2,
 };
 
+=======
+>>>>>>> 46b5bac (tweak to Makefile)
 enum {
 	XFRM_POLICY_IN = 0,
 	XFRM_POLICY_OUT = 1,
@@ -14272,7 +14257,6 @@ typedef enum irqreturn irqreturn_t;
 
 typedef struct {
 	u16 __softirq_pending;
-	u8 kvm_cpu_l1tf_flush_l1d;
 	unsigned int __nmi_count;
 	unsigned int apic_timer_irqs;
 	unsigned int irq_spurious_count;
@@ -30420,19 +30404,15 @@ enum {
 	HP_THREAD_PARKED = 2,
 };
 
+struct umd_info {
+	const char *driver_name;
+	struct file *pipe_to_umh;
+	struct file *pipe_from_umh;
+	struct path wd;
+	struct pid *tgid;
+};
+
 struct pin_cookie {};
-
-struct preempt_notifier;
-
-struct preempt_ops {
-	void (*sched_in)(struct preempt_notifier *, int);
-	void (*sched_out)(struct preempt_notifier *, struct task_struct *);
-};
-
-struct preempt_notifier {
-	struct hlist_node link;
-	struct preempt_ops *ops;
-};
 
 enum {
 	CSD_FLAG_LOCK = 1,
@@ -33311,1241 +33291,6 @@ struct trace_event_data_offsets_sys_exit {};
 typedef void (*btf_trace_sys_enter)(void *, struct pt_regs *, long int);
 
 typedef void (*btf_trace_sys_exit)(void *, struct pt_regs *, long int);
-
-enum mmu_notifier_event {
-	MMU_NOTIFY_UNMAP = 0,
-	MMU_NOTIFY_CLEAR = 1,
-	MMU_NOTIFY_PROTECTION_VMA = 2,
-	MMU_NOTIFY_PROTECTION_PAGE = 3,
-	MMU_NOTIFY_SOFT_DIRTY = 4,
-	MMU_NOTIFY_RELEASE = 5,
-	MMU_NOTIFY_MIGRATE = 6,
-};
-
-struct mmu_notifier;
-
-struct mmu_notifier_range;
-
-struct mmu_notifier_ops {
-	void (*release)(struct mmu_notifier *, struct mm_struct *);
-	int (*clear_flush_young)(struct mmu_notifier *, struct mm_struct *, long unsigned int, long unsigned int);
-	int (*clear_young)(struct mmu_notifier *, struct mm_struct *, long unsigned int, long unsigned int);
-	int (*test_young)(struct mmu_notifier *, struct mm_struct *, long unsigned int);
-	void (*change_pte)(struct mmu_notifier *, struct mm_struct *, long unsigned int, pte_t);
-	int (*invalidate_range_start)(struct mmu_notifier *, const struct mmu_notifier_range *);
-	void (*invalidate_range_end)(struct mmu_notifier *, const struct mmu_notifier_range *);
-	void (*invalidate_range)(struct mmu_notifier *, struct mm_struct *, long unsigned int, long unsigned int);
-	struct mmu_notifier * (*alloc_notifier)(struct mm_struct *);
-	void (*free_notifier)(struct mmu_notifier *);
-};
-
-struct mmu_notifier {
-	struct hlist_node hlist;
-	const struct mmu_notifier_ops *ops;
-	struct mm_struct *mm;
-	struct callback_head rcu;
-	unsigned int users;
-};
-
-struct mmu_notifier_range {
-	struct vm_area_struct *vma;
-	struct mm_struct *mm;
-	long unsigned int start;
-	long unsigned int end;
-	unsigned int flags;
-	enum mmu_notifier_event event;
-	void *migrate_pgmap_owner;
-};
-
-struct kvm_regs {
-	__u64 rax;
-	__u64 rbx;
-	__u64 rcx;
-	__u64 rdx;
-	__u64 rsi;
-	__u64 rdi;
-	__u64 rsp;
-	__u64 rbp;
-	__u64 r8;
-	__u64 r9;
-	__u64 r10;
-	__u64 r11;
-	__u64 r12;
-	__u64 r13;
-	__u64 r14;
-	__u64 r15;
-	__u64 rip;
-	__u64 rflags;
-};
-
-struct kvm_segment {
-	__u64 base;
-	__u32 limit;
-	__u16 selector;
-	__u8 type;
-	__u8 present;
-	__u8 dpl;
-	__u8 db;
-	__u8 s;
-	__u8 l;
-	__u8 g;
-	__u8 avl;
-	__u8 unusable;
-	__u8 padding;
-};
-
-struct kvm_dtable {
-	__u64 base;
-	__u16 limit;
-	__u16 padding[3];
-};
-
-struct kvm_sregs {
-	struct kvm_segment cs;
-	struct kvm_segment ds;
-	struct kvm_segment es;
-	struct kvm_segment fs;
-	struct kvm_segment gs;
-	struct kvm_segment ss;
-	struct kvm_segment tr;
-	struct kvm_segment ldt;
-	struct kvm_dtable gdt;
-	struct kvm_dtable idt;
-	__u64 cr0;
-	__u64 cr2;
-	__u64 cr3;
-	__u64 cr4;
-	__u64 cr8;
-	__u64 efer;
-	__u64 apic_base;
-	__u64 interrupt_bitmap[4];
-};
-
-struct kvm_cpuid_entry2 {
-	__u32 function;
-	__u32 index;
-	__u32 flags;
-	__u32 eax;
-	__u32 ebx;
-	__u32 ecx;
-	__u32 edx;
-	__u32 padding[3];
-};
-
-struct kvm_debug_exit_arch {
-	__u32 exception;
-	__u32 pad;
-	__u64 pc;
-	__u64 dr6;
-	__u64 dr7;
-};
-
-struct kvm_vcpu_events {
-	struct {
-		__u8 injected;
-		__u8 nr;
-		__u8 has_error_code;
-		__u8 pending;
-		__u32 error_code;
-	} exception;
-	struct {
-		__u8 injected;
-		__u8 nr;
-		__u8 soft;
-		__u8 shadow;
-	} interrupt;
-	struct {
-		__u8 injected;
-		__u8 pending;
-		__u8 masked;
-		__u8 pad;
-	} nmi;
-	__u32 sipi_vector;
-	__u32 flags;
-	struct {
-		__u8 smm;
-		__u8 pending;
-		__u8 smm_inside_nmi;
-		__u8 latched_init;
-	} smi;
-	__u8 reserved[27];
-	__u8 exception_has_payload;
-	__u64 exception_payload;
-};
-
-struct kvm_sync_regs {
-	struct kvm_regs regs;
-	struct kvm_sregs sregs;
-	struct kvm_vcpu_events events;
-};
-
-struct kvm_pmu_event_filter {
-	__u32 action;
-	__u32 nevents;
-	__u32 fixed_counter_bitmap;
-	__u32 flags;
-	__u32 pad[4];
-	__u64 events[0];
-};
-
-struct kvm_hyperv_exit {
-	__u32 type;
-	__u32 pad1;
-	union {
-		struct {
-			__u32 msr;
-			__u32 pad2;
-			__u64 control;
-			__u64 evt_page;
-			__u64 msg_page;
-		} synic;
-		struct {
-			__u64 input;
-			__u64 result;
-			__u64 params[2];
-		} hcall;
-		struct {
-			__u32 msr;
-			__u32 pad2;
-			__u64 control;
-			__u64 status;
-			__u64 send_page;
-			__u64 recv_page;
-			__u64 pending_page;
-		} syndbg;
-	} u;
-};
-
-struct kvm_run {
-	__u8 request_interrupt_window;
-	__u8 immediate_exit;
-	__u8 padding1[6];
-	__u32 exit_reason;
-	__u8 ready_for_interrupt_injection;
-	__u8 if_flag;
-	__u16 flags;
-	__u64 cr8;
-	__u64 apic_base;
-	union {
-		struct {
-			__u64 hardware_exit_reason;
-		} hw;
-		struct {
-			__u64 hardware_entry_failure_reason;
-			__u32 cpu;
-		} fail_entry;
-		struct {
-			__u32 exception;
-			__u32 error_code;
-		} ex;
-		struct {
-			__u8 direction;
-			__u8 size;
-			__u16 port;
-			__u32 count;
-			__u64 data_offset;
-		} io;
-		struct {
-			struct kvm_debug_exit_arch arch;
-		} debug;
-		struct {
-			__u64 phys_addr;
-			__u8 data[8];
-			__u32 len;
-			__u8 is_write;
-		} mmio;
-		struct {
-			__u64 nr;
-			__u64 args[6];
-			__u64 ret;
-			__u32 longmode;
-			__u32 pad;
-		} hypercall;
-		struct {
-			__u64 rip;
-			__u32 is_write;
-			__u32 pad;
-		} tpr_access;
-		struct {
-			__u8 icptcode;
-			__u16 ipa;
-			__u32 ipb;
-		} s390_sieic;
-		__u64 s390_reset_flags;
-		struct {
-			__u64 trans_exc_code;
-			__u32 pgm_code;
-		} s390_ucontrol;
-		struct {
-			__u32 dcrn;
-			__u32 data;
-			__u8 is_write;
-		} dcr;
-		struct {
-			__u32 suberror;
-			__u32 ndata;
-			__u64 data[16];
-		} internal;
-		struct {
-			__u64 gprs[32];
-		} osi;
-		struct {
-			__u64 nr;
-			__u64 ret;
-			__u64 args[9];
-		} papr_hcall;
-		struct {
-			__u16 subchannel_id;
-			__u16 subchannel_nr;
-			__u32 io_int_parm;
-			__u32 io_int_word;
-			__u32 ipb;
-			__u8 dequeued;
-		} s390_tsch;
-		struct {
-			__u32 epr;
-		} epr;
-		struct {
-			__u32 type;
-			__u64 flags;
-		} system_event;
-		struct {
-			__u64 addr;
-			__u8 ar;
-			__u8 reserved;
-			__u8 fc;
-			__u8 sel1;
-			__u16 sel2;
-		} s390_stsi;
-		struct {
-			__u8 vector;
-		} eoi;
-		struct kvm_hyperv_exit hyperv;
-		struct {
-			__u64 esr_iss;
-			__u64 fault_ipa;
-		} arm_nisv;
-		struct {
-			__u8 error;
-			__u8 pad[7];
-			__u32 reason;
-			__u32 index;
-			__u64 data;
-		} msr;
-		char padding[256];
-	};
-	__u64 kvm_valid_regs;
-	__u64 kvm_dirty_regs;
-	union {
-		struct kvm_sync_regs regs;
-		char padding[2048];
-	} s;
-};
-
-struct kvm_coalesced_mmio {
-	__u64 phys_addr;
-	__u32 len;
-	union {
-		__u32 pad;
-		__u32 pio;
-	};
-	__u8 data[8];
-};
-
-struct kvm_coalesced_mmio_ring {
-	__u32 first;
-	__u32 last;
-	struct kvm_coalesced_mmio coalesced_mmio[0];
-};
-
-struct kvm_xen_hvm_config {
-	__u32 flags;
-	__u32 msr;
-	__u64 blob_addr_32;
-	__u64 blob_addr_64;
-	__u8 blob_size_32;
-	__u8 blob_size_64;
-	__u8 pad2[30];
-};
-
-struct kvm_dirty_gfn {
-	__u32 flags;
-	__u32 slot;
-	__u64 offset;
-};
-
-typedef long unsigned int gva_t;
-
-typedef u64 gpa_t;
-
-typedef u64 gfn_t;
-
-typedef u64 hpa_t;
-
-typedef u64 hfn_t;
-
-typedef hfn_t kvm_pfn_t;
-
-struct kvm_memory_slot;
-
-struct gfn_to_hva_cache {
-	u64 generation;
-	gpa_t gpa;
-	long unsigned int hva;
-	long unsigned int len;
-	struct kvm_memory_slot *memslot;
-};
-
-struct kvm_rmap_head;
-
-struct kvm_lpage_info;
-
-struct kvm_arch_memory_slot {
-	struct kvm_rmap_head *rmap[3];
-	struct kvm_lpage_info *lpage_info[2];
-	short unsigned int *gfn_track[1];
-};
-
-struct kvm_memory_slot {
-	gfn_t base_gfn;
-	long unsigned int npages;
-	long unsigned int *dirty_bitmap;
-	struct kvm_arch_memory_slot arch;
-	long unsigned int userspace_addr;
-	u32 flags;
-	short int id;
-	u16 as_id;
-};
-
-struct gfn_to_pfn_cache {
-	u64 generation;
-	gfn_t gfn;
-	kvm_pfn_t pfn;
-	bool dirty;
-};
-
-struct kvm_mmu_memory_cache {
-	int nobjs;
-	gfp_t gfp_zero;
-	struct kmem_cache *kmem_cache;
-	void *objects[40];
-};
-
-struct hv_partition_assist_pg {
-	u32 tlb_lock_count;
-};
-
-union hv_message_flags {
-	__u8 asu8;
-	struct {
-		__u8 msg_pending: 1;
-		__u8 reserved: 7;
-	};
-};
-
-union hv_port_id {
-	__u32 asu32;
-	struct {
-		__u32 id: 24;
-		__u32 reserved: 8;
-	} u;
-};
-
-struct hv_message_header {
-	__u32 message_type;
-	__u8 payload_size;
-	union hv_message_flags message_flags;
-	__u8 reserved[2];
-	union {
-		__u64 sender;
-		union hv_port_id port;
-	};
-};
-
-struct hv_message {
-	struct hv_message_header header;
-	union {
-		__u64 payload[30];
-	} u;
-};
-
-union hv_stimer_config {
-	u64 as_uint64;
-	struct {
-		u64 enable: 1;
-		u64 periodic: 1;
-		u64 lazy: 1;
-		u64 auto_enable: 1;
-		u64 apic_vector: 8;
-		u64 direct_mode: 1;
-		u64 reserved_z0: 3;
-		u64 sintx: 4;
-		u64 reserved_z1: 44;
-	};
-};
-
-enum kvm_page_track_mode {
-	KVM_PAGE_TRACK_WRITE = 0,
-	KVM_PAGE_TRACK_MAX = 1,
-};
-
-struct kvm_page_track_notifier_head {
-	struct srcu_struct track_srcu;
-	struct hlist_head track_notifier_list;
-};
-
-struct kvm_vcpu;
-
-struct kvm;
-
-struct kvm_page_track_notifier_node {
-	struct hlist_node node;
-	void (*track_write)(struct kvm_vcpu *, gpa_t, const u8 *, int, struct kvm_page_track_notifier_node *);
-	void (*track_flush_slot)(struct kvm *, struct kvm_memory_slot *, struct kvm_page_track_notifier_node *);
-};
-
-struct kvm_vcpu_stat {
-	u64 pf_fixed;
-	u64 pf_guest;
-	u64 tlb_flush;
-	u64 invlpg;
-	u64 exits;
-	u64 io_exits;
-	u64 mmio_exits;
-	u64 signal_exits;
-	u64 irq_window_exits;
-	u64 nmi_window_exits;
-	u64 l1d_flush;
-	u64 halt_exits;
-	u64 halt_successful_poll;
-	u64 halt_attempted_poll;
-	u64 halt_poll_invalid;
-	u64 halt_wakeup;
-	u64 request_irq_exits;
-	u64 irq_exits;
-	u64 host_state_reload;
-	u64 fpu_reload;
-	u64 insn_emulation;
-	u64 insn_emulation_fail;
-	u64 hypercalls;
-	u64 irq_injections;
-	u64 nmi_injections;
-	u64 req_event;
-	u64 halt_poll_success_ns;
-	u64 halt_poll_fail_ns;
-};
-
-struct kvm_mmio_fragment {
-	gpa_t gpa;
-	void *data;
-	unsigned int len;
-};
-
-struct kvm_lapic;
-
-struct x86_exception;
-
-struct kvm_mmu_page;
-
-union kvm_mmu_page_role {
-	u32 word;
-	struct {
-		unsigned int level: 4;
-		unsigned int gpte_is_8_bytes: 1;
-		unsigned int quadrant: 2;
-		unsigned int direct: 1;
-		unsigned int access: 3;
-		unsigned int invalid: 1;
-		unsigned int nxe: 1;
-		unsigned int cr0_wp: 1;
-		unsigned int smep_andnot_wp: 1;
-		unsigned int smap_andnot_wp: 1;
-		unsigned int ad_disabled: 1;
-		unsigned int guest_mode: 1;
-		char: 6;
-		unsigned int smm: 8;
-	};
-};
-
-union kvm_mmu_extended_role {
-	u32 word;
-	struct {
-		unsigned int valid: 1;
-		unsigned int execonly: 1;
-		unsigned int cr0_pg: 1;
-		unsigned int cr4_pae: 1;
-		unsigned int cr4_pse: 1;
-		unsigned int cr4_pke: 1;
-		unsigned int cr4_smap: 1;
-		unsigned int cr4_smep: 1;
-		unsigned int maxphyaddr: 6;
-	};
-};
-
-union kvm_mmu_role {
-	u64 as_u64;
-	struct {
-		union kvm_mmu_page_role base;
-		union kvm_mmu_extended_role ext;
-	};
-};
-
-struct kvm_mmu_root_info {
-	gpa_t pgd;
-	hpa_t hpa;
-};
-
-struct rsvd_bits_validate {
-	u64 rsvd_bits_mask[10];
-	u64 bad_mt_xwr;
-};
-
-struct kvm_mmu {
-	long unsigned int (*get_guest_pgd)(struct kvm_vcpu *);
-	u64 (*get_pdptr)(struct kvm_vcpu *, int);
-	int (*page_fault)(struct kvm_vcpu *, gpa_t, u32, bool);
-	void (*inject_page_fault)(struct kvm_vcpu *, struct x86_exception *);
-	gpa_t (*gva_to_gpa)(struct kvm_vcpu *, gpa_t, u32, struct x86_exception *);
-	gpa_t (*translate_gpa)(struct kvm_vcpu *, gpa_t, u32, struct x86_exception *);
-	int (*sync_page)(struct kvm_vcpu *, struct kvm_mmu_page *);
-	void (*invlpg)(struct kvm_vcpu *, gva_t, hpa_t);
-	void (*update_pte)(struct kvm_vcpu *, struct kvm_mmu_page *, u64 *, const void *);
-	hpa_t root_hpa;
-	gpa_t root_pgd;
-	union kvm_mmu_role mmu_role;
-	u8 root_level;
-	u8 shadow_root_level;
-	u8 ept_ad;
-	bool direct_map;
-	struct kvm_mmu_root_info prev_roots[3];
-	u8 permissions[16];
-	u32 pkru_mask;
-	u64 *pae_root;
-	u64 *lm_root;
-	struct rsvd_bits_validate shadow_zero_check;
-	struct rsvd_bits_validate guest_rsvd_check;
-	u8 last_nonleaf_level;
-	bool nx;
-	u64 pdptrs[4];
-};
-
-struct kvm_pio_request {
-	long unsigned int linear_rip;
-	long unsigned int count;
-	int in;
-	int port;
-	int size;
-};
-
-struct kvm_queued_exception {
-	bool pending;
-	bool injected;
-	bool has_error_code;
-	u8 nr;
-	u32 error_code;
-	long unsigned int payload;
-	bool has_payload;
-	u8 nested_apf;
-};
-
-struct kvm_queued_interrupt {
-	bool injected;
-	bool soft;
-	u8 nr;
-};
-
-struct x86_emulate_ctxt;
-
-struct kvm_mtrr_range {
-	u64 base;
-	u64 mask;
-	struct list_head node;
-};
-
-struct kvm_mtrr {
-	struct kvm_mtrr_range var_ranges[8];
-	mtrr_type fixed_ranges[88];
-	u64 deftype;
-	struct list_head head;
-};
-
-enum pmc_type {
-	KVM_PMC_GP = 0,
-	KVM_PMC_FIXED = 1,
-};
-
-struct kvm_pmc {
-	enum pmc_type type;
-	u8 idx;
-	u64 counter;
-	u64 eventsel;
-	struct perf_event *perf_event;
-	struct kvm_vcpu *vcpu;
-	u64 current_config;
-};
-
-struct kvm_pmu {
-	unsigned int nr_arch_gp_counters;
-	unsigned int nr_arch_fixed_counters;
-	unsigned int available_event_types;
-	u64 fixed_ctr_ctrl;
-	u64 global_ctrl;
-	u64 global_status;
-	u64 global_ovf_ctrl;
-	u64 counter_bitmask[2];
-	u64 global_ctrl_mask;
-	u64 global_ovf_ctrl_mask;
-	u64 reserved_bits;
-	u8 version;
-	struct kvm_pmc gp_counters[32];
-	struct kvm_pmc fixed_counters[4];
-	struct irq_work irq_work;
-	long unsigned int reprogram_pmi[1];
-	long unsigned int all_valid_pmc_idx[1];
-	long unsigned int pmc_in_use[1];
-	bool need_cleanup;
-	u8 event_count;
-};
-
-struct kvm_vcpu_hv_synic {
-	u64 version;
-	u64 control;
-	u64 msg_page;
-	u64 evt_page;
-	atomic64_t sint[16];
-	atomic_t sint_to_gsi[16];
-	long unsigned int auto_eoi_bitmap[4];
-	long unsigned int vec_bitmap[4];
-	bool active;
-	bool dont_zero_synic_pages;
-};
-
-struct kvm_vcpu_hv_stimer {
-	struct hrtimer timer;
-	int index;
-	union hv_stimer_config config;
-	u64 count;
-	u64 exp_time;
-	struct hv_message msg;
-	bool msg_pending;
-};
-
-struct kvm_vcpu_hv {
-	u32 vp_index;
-	u64 hv_vapic;
-	s64 runtime_offset;
-	struct kvm_vcpu_hv_synic synic;
-	struct kvm_hyperv_exit exit;
-	struct kvm_vcpu_hv_stimer stimer[4];
-	long unsigned int stimer_pending_bitmap[1];
-	cpumask_t tlb_flush;
-};
-
-struct kvm_vcpu_arch {
-	long unsigned int regs[17];
-	u32 regs_avail;
-	u32 regs_dirty;
-	long unsigned int cr0;
-	long unsigned int cr0_guest_owned_bits;
-	long unsigned int cr2;
-	long unsigned int cr3;
-	long unsigned int cr4;
-	long unsigned int cr4_guest_owned_bits;
-	long unsigned int cr4_guest_rsvd_bits;
-	long unsigned int cr8;
-	u32 host_pkru;
-	u32 pkru;
-	u32 hflags;
-	u64 efer;
-	u64 apic_base;
-	struct kvm_lapic *apic;
-	bool apicv_active;
-	bool load_eoi_exitmap_pending;
-	long unsigned int ioapic_handled_vectors[4];
-	long unsigned int apic_attention;
-	int32_t apic_arb_prio;
-	int mp_state;
-	u64 ia32_misc_enable_msr;
-	u64 smbase;
-	u64 smi_count;
-	bool tpr_access_reporting;
-	bool xsaves_enabled;
-	u64 ia32_xss;
-	u64 microcode_version;
-	u64 arch_capabilities;
-	u64 perf_capabilities;
-	struct kvm_mmu *mmu;
-	struct kvm_mmu root_mmu;
-	struct kvm_mmu guest_mmu;
-	struct kvm_mmu nested_mmu;
-	struct kvm_mmu *walk_mmu;
-	struct kvm_mmu_memory_cache mmu_pte_list_desc_cache;
-	struct kvm_mmu_memory_cache mmu_shadow_page_cache;
-	struct kvm_mmu_memory_cache mmu_gfn_array_cache;
-	struct kvm_mmu_memory_cache mmu_page_header_cache;
-	struct fpu *user_fpu;
-	struct fpu *guest_fpu;
-	u64 xcr0;
-	u64 guest_supported_xcr0;
-	struct kvm_pio_request pio;
-	void *pio_data;
-	void *guest_ins_data;
-	u8 event_exit_inst_len;
-	struct kvm_queued_exception exception;
-	struct kvm_queued_interrupt interrupt;
-	int halt_request;
-	int cpuid_nent;
-	struct kvm_cpuid_entry2 *cpuid_entries;
-	long unsigned int cr3_lm_rsvd_bits;
-	int maxphyaddr;
-	int max_tdp_level;
-	struct x86_emulate_ctxt *emulate_ctxt;
-	bool emulate_regs_need_sync_to_vcpu;
-	bool emulate_regs_need_sync_from_vcpu;
-	int (*complete_userspace_io)(struct kvm_vcpu *);
-	gpa_t time;
-	struct pvclock_vcpu_time_info hv_clock;
-	unsigned int hw_tsc_khz;
-	struct gfn_to_hva_cache pv_time;
-	bool pv_time_enabled;
-	bool pvclock_set_guest_stopped_request;
-	struct {
-		u8 preempted;
-		u64 msr_val;
-		u64 last_steal;
-		struct gfn_to_pfn_cache cache;
-	} st;
-	u64 l1_tsc_offset;
-	u64 tsc_offset;
-	u64 last_guest_tsc;
-	u64 last_host_tsc;
-	u64 tsc_offset_adjustment;
-	u64 this_tsc_nsec;
-	u64 this_tsc_write;
-	u64 this_tsc_generation;
-	bool tsc_catchup;
-	bool tsc_always_catchup;
-	s8 virtual_tsc_shift;
-	u32 virtual_tsc_mult;
-	u32 virtual_tsc_khz;
-	s64 ia32_tsc_adjust_msr;
-	u64 msr_ia32_power_ctl;
-	u64 tsc_scaling_ratio;
-	atomic_t nmi_queued;
-	unsigned int nmi_pending;
-	bool nmi_injected;
-	bool smi_pending;
-	struct kvm_mtrr mtrr_state;
-	u64 pat;
-	unsigned int switch_db_regs;
-	long unsigned int db[4];
-	long unsigned int dr6;
-	long unsigned int dr7;
-	long unsigned int eff_db[4];
-	long unsigned int guest_debug_dr7;
-	u64 msr_platform_info;
-	u64 msr_misc_features_enables;
-	u64 mcg_cap;
-	u64 mcg_status;
-	u64 mcg_ctl;
-	u64 mcg_ext_ctl;
-	u64 *mce_banks;
-	u64 mmio_gva;
-	unsigned int mmio_access;
-	gfn_t mmio_gfn;
-	u64 mmio_gen;
-	struct kvm_pmu pmu;
-	long unsigned int singlestep_rip;
-	struct kvm_vcpu_hv hyperv;
-	cpumask_var_t wbinvd_dirty_mask;
-	long unsigned int last_retry_eip;
-	long unsigned int last_retry_addr;
-	struct {
-		bool halted;
-		gfn_t gfns[64];
-		struct gfn_to_hva_cache data;
-		u64 msr_en_val;
-		u64 msr_int_val;
-		u16 vec;
-		u32 id;
-		bool send_user_only;
-		u32 host_apf_flags;
-		long unsigned int nested_apf_token;
-		bool delivery_as_pf_vmexit;
-		bool pageready_pending;
-	} apf;
-	struct {
-		u64 length;
-		u64 status;
-	} osvw;
-	struct {
-		u64 msr_val;
-		struct gfn_to_hva_cache data;
-	} pv_eoi;
-	u64 msr_kvm_poll_control;
-	bool write_fault_to_shadow_pgtable;
-	long unsigned int exit_qualification;
-	struct {
-		bool pv_unhalted;
-	} pv;
-	int pending_ioapic_eoi;
-	int pending_external_vector;
-	bool preempted_in_kernel;
-	bool l1tf_flush_l1d;
-	unsigned int last_vmentry_cpu;
-	u64 msr_hwcr;
-	struct {
-		u32 features;
-		bool enforce;
-	} pv_cpuid;
-	bool guest_state_protected;
-};
-
-struct kvm_dirty_ring {
-	u32 dirty_index;
-	u32 reset_index;
-	u32 size;
-	u32 soft_limit;
-	struct kvm_dirty_gfn *dirty_gfns;
-	int index;
-};
-
-struct kvm_vcpu {
-	struct kvm *kvm;
-	struct preempt_notifier preempt_notifier;
-	int cpu;
-	int vcpu_id;
-	int vcpu_idx;
-	int srcu_idx;
-	int mode;
-	u64 requests;
-	long unsigned int guest_debug;
-	int pre_pcpu;
-	struct list_head blocked_vcpu_list;
-	struct mutex mutex;
-	struct kvm_run *run;
-	struct rcuwait wait;
-	struct pid *pid;
-	int sigset_active;
-	sigset_t sigset;
-	struct kvm_vcpu_stat stat;
-	unsigned int halt_poll_ns;
-	bool valid_wakeup;
-	int mmio_needed;
-	int mmio_read_completed;
-	int mmio_is_write;
-	int mmio_cur_fragment;
-	int mmio_nr_fragments;
-	struct kvm_mmio_fragment mmio_fragments[2];
-	struct {
-		u32 queued;
-		struct list_head queue;
-		struct list_head done;
-		spinlock_t lock;
-	} async_pf;
-	struct {
-		bool in_spin_loop;
-		bool dy_eligible;
-	} spin_loop;
-	bool preempted;
-	bool ready;
-	struct kvm_vcpu_arch arch;
-	struct kvm_dirty_ring dirty_ring;
-};
-
-struct kvm_vm_stat {
-	ulong mmu_shadow_zapped;
-	ulong mmu_pte_write;
-	ulong mmu_pte_updated;
-	ulong mmu_pde_zapped;
-	ulong mmu_flooded;
-	ulong mmu_recycled;
-	ulong mmu_cache_miss;
-	ulong mmu_unsync;
-	ulong remote_tlb_flush;
-	ulong lpages;
-	ulong nx_lpage_splits;
-	ulong max_mmu_page_hash_collisions;
-};
-
-struct kvm_pic;
-
-struct kvm_ioapic;
-
-struct kvm_pit;
-
-struct kvm_hv_syndbg {
-	struct {
-		u64 control;
-		u64 status;
-		u64 send_page;
-		u64 recv_page;
-		u64 pending_page;
-	} control;
-	u64 options;
-};
-
-struct kvm_hv {
-	struct mutex hv_lock;
-	u64 hv_guest_os_id;
-	u64 hv_hypercall;
-	u64 hv_tsc_page;
-	u64 hv_crash_param[5];
-	u64 hv_crash_ctl;
-	struct ms_hyperv_tsc_page tsc_ref;
-	struct idr conn_to_evt;
-	u64 hv_reenlightenment_control;
-	u64 hv_tsc_emulation_control;
-	u64 hv_tsc_emulation_status;
-	atomic_t num_mismatched_vp_indexes;
-	struct hv_partition_assist_pg *hv_pa_pg;
-	struct kvm_hv_syndbg hv_syndbg;
-};
-
-enum kvm_irqchip_mode {
-	KVM_IRQCHIP_NONE = 0,
-	KVM_IRQCHIP_KERNEL = 1,
-	KVM_IRQCHIP_SPLIT = 2,
-};
-
-struct msr_bitmap_range {
-	u32 flags;
-	u32 nmsrs;
-	u32 base;
-	long unsigned int *bitmap;
-};
-
-struct kvm_apic_map;
-
-struct kvm_arch {
-	long unsigned int n_used_mmu_pages;
-	long unsigned int n_requested_mmu_pages;
-	long unsigned int n_max_mmu_pages;
-	unsigned int indirect_shadow_pages;
-	u8 mmu_valid_gen;
-	struct hlist_head mmu_page_hash[4096];
-	struct list_head active_mmu_pages;
-	struct list_head zapped_obsolete_pages;
-	struct list_head lpage_disallowed_mmu_pages;
-	struct kvm_page_track_notifier_node mmu_sp_tracker;
-	struct kvm_page_track_notifier_head track_notifier_head;
-	struct list_head assigned_dev_head;
-	struct iommu_domain *iommu_domain;
-	bool iommu_noncoherent;
-	atomic_t noncoherent_dma_count;
-	atomic_t assigned_device_count;
-	struct kvm_pic *vpic;
-	struct kvm_ioapic *vioapic;
-	struct kvm_pit *vpit;
-	atomic_t vapics_in_nmi_mode;
-	struct mutex apic_map_lock;
-	struct kvm_apic_map *apic_map;
-	atomic_t apic_map_dirty;
-	bool apic_access_page_done;
-	long unsigned int apicv_inhibit_reasons;
-	gpa_t wall_clock;
-	bool mwait_in_guest;
-	bool hlt_in_guest;
-	bool pause_in_guest;
-	bool cstate_in_guest;
-	long unsigned int irq_sources_bitmap;
-	s64 kvmclock_offset;
-	raw_spinlock_t tsc_write_lock;
-	u64 last_tsc_nsec;
-	u64 last_tsc_write;
-	u32 last_tsc_khz;
-	u64 cur_tsc_nsec;
-	u64 cur_tsc_write;
-	u64 cur_tsc_offset;
-	u64 cur_tsc_generation;
-	int nr_vcpus_matched_tsc;
-	spinlock_t pvclock_gtod_sync_lock;
-	bool use_master_clock;
-	u64 master_kernel_ns;
-	u64 master_cycle_now;
-	struct delayed_work kvmclock_update_work;
-	struct delayed_work kvmclock_sync_work;
-	struct kvm_xen_hvm_config xen_hvm_config;
-	struct hlist_head mask_notifier_list;
-	struct kvm_hv hyperv;
-	int audit_point;
-	bool backwards_tsc_observed;
-	bool boot_vcpu_runs_old_kvmclock;
-	u32 bsp_vcpu_id;
-	u64 disabled_quirks;
-	enum kvm_irqchip_mode irqchip_mode;
-	u8 nr_reserved_ioapic_pins;
-	bool disabled_lapic_found;
-	bool x2apic_format;
-	bool x2apic_broadcast_quirk_disabled;
-	bool guest_can_read_msr_platform_info;
-	bool exception_payload_enabled;
-	u32 user_space_msr_mask;
-	struct {
-		u8 count;
-		bool default_allow: 1;
-		struct msr_bitmap_range ranges[16];
-	} msr_filter;
-	struct kvm_pmu_event_filter *pmu_event_filter;
-	struct task_struct *nx_lpage_recovery_thread;
-	bool tdp_mmu_enabled;
-	struct list_head tdp_mmu_roots;
-	struct list_head tdp_mmu_pages;
-};
-
-struct kvm_memslots;
-
-struct kvm_io_bus;
-
-struct kvm_irq_routing_table;
-
-struct kvm_stat_data;
-
-struct kvm {
-	spinlock_t mmu_lock;
-	struct mutex slots_lock;
-	struct mm_struct *mm;
-	struct kvm_memslots *memslots[2];
-	struct kvm_vcpu *vcpus[288];
-	atomic_t online_vcpus;
-	int created_vcpus;
-	int last_boosted_vcpu;
-	struct list_head vm_list;
-	struct mutex lock;
-	struct kvm_io_bus *buses[4];
-	struct {
-		spinlock_t lock;
-		struct list_head items;
-		struct list_head resampler_list;
-		struct mutex resampler_lock;
-	} irqfds;
-	struct list_head ioeventfds;
-	struct kvm_vm_stat stat;
-	struct kvm_arch arch;
-	refcount_t users_count;
-	struct kvm_coalesced_mmio_ring *coalesced_mmio_ring;
-	spinlock_t ring_lock;
-	struct list_head coalesced_zones;
-	struct mutex irq_lock;
-	struct kvm_irq_routing_table *irq_routing;
-	struct hlist_head irq_ack_notifier_list;
-	struct mmu_notifier mmu_notifier;
-	long unsigned int mmu_notifier_seq;
-	long int mmu_notifier_count;
-	long int tlbs_dirty;
-	struct list_head devices;
-	u64 manual_dirty_log_protect;
-	struct dentry *debugfs_dentry;
-	struct kvm_stat_data **debugfs_stat_data;
-	struct srcu_struct srcu;
-	struct srcu_struct irq_srcu;
-	pid_t userspace_pid;
-	unsigned int max_halt_poll_ns;
-	u32 dirty_ring_size;
-};
-
-enum kvm_reg {
-	VCPU_REGS_RAX = 0,
-	VCPU_REGS_RCX = 1,
-	VCPU_REGS_RDX = 2,
-	VCPU_REGS_RBX = 3,
-	VCPU_REGS_RSP = 4,
-	VCPU_REGS_RBP = 5,
-	VCPU_REGS_RSI = 6,
-	VCPU_REGS_RDI = 7,
-	VCPU_REGS_R8 = 8,
-	VCPU_REGS_R9 = 9,
-	VCPU_REGS_R10 = 10,
-	VCPU_REGS_R11 = 11,
-	VCPU_REGS_R12 = 12,
-	VCPU_REGS_R13 = 13,
-	VCPU_REGS_R14 = 14,
-	VCPU_REGS_R15 = 15,
-	VCPU_REGS_RIP = 16,
-	NR_VCPU_REGS = 17,
-	VCPU_EXREG_PDPTR = 17,
-	VCPU_EXREG_CR0 = 18,
-	VCPU_EXREG_CR3 = 19,
-	VCPU_EXREG_CR4 = 20,
-	VCPU_EXREG_RFLAGS = 21,
-	VCPU_EXREG_SEGMENTS = 22,
-	VCPU_EXREG_EXIT_INFO_1 = 23,
-	VCPU_EXREG_EXIT_INFO_2 = 24,
-};
-
-struct kvm_rmap_head {
-	long unsigned int val;
-};
-
-struct kvm_lpage_info {
-	int disallow_lpage;
-};
-
-struct kvm_apic_map {
-	struct callback_head rcu;
-	u8 mode;
-	u32 max_apic_id;
-	union {
-		struct kvm_lapic *xapic_flat_map[8];
-		struct kvm_lapic *xapic_cluster_map[64];
-	};
-	struct kvm_lapic *phys_map[0];
-};
-
-struct kvm_io_device;
-
-struct kvm_io_range {
-	gpa_t addr;
-	int len;
-	struct kvm_io_device *dev;
-};
-
-struct kvm_io_bus {
-	int dev_count;
-	int ioeventfd_count;
-	struct kvm_io_range range[0];
-};
-
-enum kvm_bus {
-	KVM_MMIO_BUS = 0,
-	KVM_PIO_BUS = 1,
-	KVM_VIRTIO_CCW_NOTIFY_BUS = 2,
-	KVM_FAST_MMIO_BUS = 3,
-	KVM_NR_BUSES = 4,
-};
-
-struct kvm_irq_routing_table {
-	int chip[72];
-	u32 nr_rt_entries;
-	struct hlist_head map[0];
-};
-
-struct kvm_memslots {
-	u64 generation;
-	short int id_to_index[512];
-	atomic_t lru_slot;
-	int used_slots;
-	struct kvm_memory_slot memslots[0];
-};
-
-struct kvm_stats_debugfs_item;
-
-struct kvm_stat_data {
-	struct kvm *kvm;
-	struct kvm_stats_debugfs_item *dbgfs_item;
-};
-
-enum kvm_stat_kind {
-	KVM_STAT_VM = 0,
-	KVM_STAT_VCPU = 1,
-};
-
-struct kvm_stats_debugfs_item {
-	const char *name;
-	int offset;
-	enum kvm_stat_kind kind;
-	int mode;
-};
 
 enum kcmp_type {
 	KCMP_FILE = 0,
@@ -40630,14 +39375,6 @@ struct tree_descr {
 	int mode;
 };
 
-struct umd_info {
-	const char *driver_name;
-	struct file *pipe_to_umh;
-	struct file *pipe_from_umh;
-	struct path wd;
-	struct pid *tgid;
-};
-
 struct bpf_preload_info {
 	char link_name[16];
 	int link_id;
@@ -40867,6 +39604,10 @@ struct bpf_iter__bpf_map_elem {
 	union {
 		void *value;
 	};
+};
+
+struct hlist_nulls_head {
+	struct hlist_nulls_node *first;
 };
 
 struct pcpu_freelist_node;
@@ -44385,6 +43126,26 @@ struct page_vma_mapped_walk {
 	unsigned int flags;
 };
 
+enum mmu_notifier_event {
+	MMU_NOTIFY_UNMAP = 0,
+	MMU_NOTIFY_CLEAR = 1,
+	MMU_NOTIFY_PROTECTION_VMA = 2,
+	MMU_NOTIFY_PROTECTION_PAGE = 3,
+	MMU_NOTIFY_SOFT_DIRTY = 4,
+	MMU_NOTIFY_RELEASE = 5,
+	MMU_NOTIFY_MIGRATE = 6,
+};
+
+struct mmu_notifier_range {
+	struct vm_area_struct *vma;
+	struct mm_struct *mm;
+	long unsigned int start;
+	long unsigned int end;
+	unsigned int flags;
+	enum mmu_notifier_event event;
+	void *migrate_pgmap_owner;
+};
+
 struct compact_control {
 	struct list_head freepages;
 	struct list_head migratepages;
@@ -44427,6 +43188,7 @@ struct map_info {
 	long unsigned int vaddr;
 };
 
+<<<<<<< HEAD
 struct user_return_notifier {
 	void (*on_user_return)(struct user_return_notifier *);
 	struct hlist_node link;
@@ -44544,6 +43306,8 @@ struct padata_sysfs_entry {
 	ssize_t (*store)(struct padata_instance *, struct attribute *, const char *, size_t);
 };
 
+=======
+>>>>>>> 46b5bac (tweak to Makefile)
 struct static_key_mod {
 	struct static_key_mod *next;
 	struct jump_entry *entries;
@@ -46234,12 +44998,6 @@ struct vmap_block {
 	struct list_head purge;
 };
 
-struct vmap_pfn_data {
-	long unsigned int *pfns;
-	pgprot_t prot;
-	unsigned int idx;
-};
-
 struct page_frag_cache {
 	void *va;
 	__u16 offset;
@@ -46523,6 +45281,29 @@ struct interval_tree_node {
 	long unsigned int start;
 	long unsigned int last;
 	long unsigned int __subtree_last;
+};
+
+struct mmu_notifier;
+
+struct mmu_notifier_ops {
+	void (*release)(struct mmu_notifier *, struct mm_struct *);
+	int (*clear_flush_young)(struct mmu_notifier *, struct mm_struct *, long unsigned int, long unsigned int);
+	int (*clear_young)(struct mmu_notifier *, struct mm_struct *, long unsigned int, long unsigned int);
+	int (*test_young)(struct mmu_notifier *, struct mm_struct *, long unsigned int);
+	void (*change_pte)(struct mmu_notifier *, struct mm_struct *, long unsigned int, pte_t);
+	int (*invalidate_range_start)(struct mmu_notifier *, const struct mmu_notifier_range *);
+	void (*invalidate_range_end)(struct mmu_notifier *, const struct mmu_notifier_range *);
+	void (*invalidate_range)(struct mmu_notifier *, struct mm_struct *, long unsigned int, long unsigned int);
+	struct mmu_notifier * (*alloc_notifier)(struct mm_struct *);
+	void (*free_notifier)(struct mmu_notifier *);
+};
+
+struct mmu_notifier {
+	struct hlist_node hlist;
+	const struct mmu_notifier_ops *ops;
+	struct mm_struct *mm;
+	struct callback_head rcu;
+	unsigned int users;
 };
 
 struct mmu_interval_notifier;
@@ -47402,6 +46183,7 @@ typedef void (*btf_trace_cma_alloc)(void *, long unsigned int, const struct page
 
 typedef void (*btf_trace_cma_release)(void *, long unsigned int, const struct page *, unsigned int);
 
+<<<<<<< HEAD
 struct balloon_dev_info {
 	long unsigned int isolated_pages;
 	spinlock_t pages_lock;
@@ -47418,6 +46200,8 @@ struct frame_vector {
 	void *ptrs[0];
 };
 
+=======
+>>>>>>> 46b5bac (tweak to Makefile)
 enum {
 	BAD_STACK = 4294967295,
 	NOT_STACK = 0,
@@ -62302,7 +61086,6 @@ struct selinux_avc;
 struct selinux_policy;
 
 struct selinux_state {
-	bool disabled;
 	bool enforcing;
 	bool checkreqprot;
 	bool initialized;
@@ -65771,6 +64554,29 @@ struct ima_key_entry {
 	void *payload;
 	size_t payload_len;
 	char *keyring_name;
+};
+
+struct evm_xattr {
+	struct evm_ima_xattr_data data;
+	u8 digest[20];
+};
+
+struct xattr_list {
+	struct list_head list;
+	char *name;
+};
+
+struct evm_digest {
+	struct ima_digest_data hdr;
+	char digest[64];
+};
+
+struct h_misc {
+	long unsigned int ino;
+	__u32 generation;
+	uid_t uid;
+	gid_t gid;
+	umode_t mode;
 };
 
 enum {
@@ -87357,6 +86163,7 @@ struct tcpa_event {
 	u8 event_data[0];
 };
 
+<<<<<<< HEAD
 enum tcpa_event_types {
 	PREBOOT = 0,
 	POST_CODE = 1,
@@ -87502,6 +86309,13 @@ enum tis_status {
 	TPM_STS_DATA_AVAIL = 16,
 	TPM_STS_DATA_EXPECT = 8,
 	TPM_STS_READ_ZERO = 35,
+=======
+struct drm_dmi_panel_orientation_data {
+	int width;
+	int height;
+	const char * const *bios_dates;
+	int orientation;
+>>>>>>> 46b5bac (tweak to Makefile)
 };
 
 enum tis_int_flags {
@@ -100315,6 +99129,14 @@ enum {
 	year = 3,
 };
 
+struct nvmem_cell_info {
+	const char *name;
+	unsigned int offset;
+	unsigned int bytes;
+	unsigned int bit_offset;
+	unsigned int nbits;
+};
+
 typedef int (*nvmem_reg_read_t)(void *, unsigned int, void *, size_t);
 
 typedef int (*nvmem_reg_write_t)(void *, unsigned int, void *, size_t);
@@ -100331,8 +99153,6 @@ struct nvmem_keepout {
 	unsigned int end;
 	unsigned char value;
 };
-
-struct nvmem_cell_info;
 
 struct nvmem_config {
 	struct device *dev;
@@ -100358,13 +99178,7 @@ struct nvmem_config {
 	struct device *base_dev;
 };
 
-struct nvmem_cell_info {
-	const char *name;
-	unsigned int offset;
-	unsigned int bytes;
-	unsigned int bit_offset;
-	unsigned int nbits;
-};
+struct nvmem_device;
 
 struct cmos_rtc_board_info {
 	void (*wake_on)(struct device *);
@@ -106167,8 +104981,11 @@ struct snd_pcm_substream {
 	unsigned int f_flags;
 	void (*pcm_release)(struct snd_pcm_substream *);
 	struct pid *pid;
+<<<<<<< HEAD
 	struct snd_pcm_oss_substream oss;
 	struct snd_info_entry *proc_root;
+=======
+>>>>>>> 46b5bac (tweak to Makefile)
 	unsigned int hw_opened: 1;
 	unsigned int managed_buffer_alloc: 1;
 };
@@ -106325,8 +105142,11 @@ struct snd_pcm_str {
 	unsigned int substream_count;
 	unsigned int substream_opened;
 	struct snd_pcm_substream *substream;
+<<<<<<< HEAD
 	struct snd_pcm_oss_stream oss;
 	struct snd_info_entry *proc_root;
+=======
+>>>>>>> 46b5bac (tweak to Makefile)
 	struct snd_kcontrol *chmap_kctl;
 	struct device dev;
 };
@@ -106599,9 +105419,6 @@ struct snd_compr {
 	struct mutex lock;
 	int device;
 	bool use_pause_in_draining;
-	char id[64];
-	struct snd_info_entry *proc_root;
-	struct snd_info_entry *proc_info_entry;
 };
 
 struct snd_kcontrol_new {
@@ -107197,7 +106014,6 @@ struct snd_soc_dai_link {
 	unsigned int dpcm_merged_rate: 1;
 	unsigned int ignore_pmdown_time: 1;
 	unsigned int ignore: 1;
-	struct snd_soc_dobj dobj;
 };
 
 struct snd_soc_dapm_update {
@@ -107908,7 +106724,7 @@ struct nvmem_cell_table {
 	struct list_head node;
 };
 
-struct nvmem_device {
+struct nvmem_device___2 {
 	struct module *owner;
 	struct device dev;
 	int stride;
@@ -107938,7 +106754,7 @@ struct nvmem_cell {
 	int bit_offset;
 	int nbits;
 	struct device_node *np;
-	struct nvmem_device *nvmem;
+	struct nvmem_device___2 *nvmem;
 	struct list_head node;
 };
 
@@ -108918,8 +107734,34 @@ struct tcp_request_sock_ops {
 	int (*send_synack)(const struct sock *, struct dst_entry *, struct flowi *, struct request_sock *, struct tcp_fastopen_cookie *, enum tcp_synack_type, struct sk_buff *);
 };
 
+<<<<<<< HEAD
 struct nf_conntrack {
 	atomic_t use;
+=======
+struct ts_state {
+	unsigned int offset;
+	char cb[40];
+};
+
+struct ts_config;
+
+struct ts_ops {
+	const char *name;
+	struct ts_config * (*init)(const void *, unsigned int, gfp_t, int);
+	unsigned int (*find)(struct ts_config *, struct ts_state *);
+	void (*destroy)(struct ts_config *);
+	void * (*get_pattern)(struct ts_config *);
+	unsigned int (*get_pattern_len)(struct ts_config *);
+	struct module *owner;
+	struct list_head list;
+};
+
+struct ts_config {
+	struct ts_ops *ops;
+	int flags;
+	unsigned int (*get_next_block)(unsigned int, const u8 **, struct ts_config *, struct ts_state *);
+	void (*finish)(struct ts_config *, struct ts_state *);
+>>>>>>> 46b5bac (tweak to Makefile)
 };
 
 enum {
@@ -109211,12 +108053,6 @@ struct rtnl_net_dump_cb {
 	int s_idx;
 };
 
-typedef u16 u_int16_t;
-
-typedef u32 u_int32_t;
-
-typedef u64 u_int64_t;
-
 struct flow_dissector_key_control {
 	u16 thoff;
 	u16 addr_type;
@@ -109342,13 +108178,6 @@ struct flow_dissector_key_meta {
 	u16 ingress_iftype;
 };
 
-struct flow_dissector_key_ct {
-	u16 ct_state;
-	u16 ct_zone;
-	u32 ct_mark;
-	u32 ct_labels[4];
-};
-
 struct flow_dissector_key_hash {
 	u32 hash;
 };
@@ -109378,110 +108207,6 @@ struct flow_keys {
 
 struct flow_keys_digest {
 	u8 data[16];
-};
-
-enum ip_conntrack_info {
-	IP_CT_ESTABLISHED = 0,
-	IP_CT_RELATED = 1,
-	IP_CT_NEW = 2,
-	IP_CT_IS_REPLY = 3,
-	IP_CT_ESTABLISHED_REPLY = 3,
-	IP_CT_RELATED_REPLY = 4,
-	IP_CT_NUMBER = 5,
-	IP_CT_UNTRACKED = 7,
-};
-
-struct xt_table_info;
-
-struct xt_table {
-	struct list_head list;
-	unsigned int valid_hooks;
-	struct xt_table_info *private;
-	struct module *me;
-	u_int8_t af;
-	int priority;
-	int (*table_init)(struct net *);
-	const char name[32];
-};
-
-union nf_inet_addr {
-	__u32 all[4];
-	__be32 ip;
-	__be32 ip6[4];
-	struct in_addr in;
-	struct in6_addr in6;
-};
-
-struct ip_ct_tcp_state {
-	u_int32_t td_end;
-	u_int32_t td_maxend;
-	u_int32_t td_maxwin;
-	u_int32_t td_maxack;
-	u_int8_t td_scale;
-	u_int8_t flags;
-};
-
-struct ip_ct_tcp {
-	struct ip_ct_tcp_state seen[2];
-	u_int8_t state;
-	u_int8_t last_dir;
-	u_int8_t retrans;
-	u_int8_t last_index;
-	u_int32_t last_seq;
-	u_int32_t last_ack;
-	u_int32_t last_end;
-	u_int16_t last_win;
-	u_int8_t last_wscale;
-	u_int8_t last_flags;
-};
-
-union nf_conntrack_man_proto {
-	__be16 all;
-	struct {
-		__be16 port;
-	} tcp;
-	struct {
-		__be16 port;
-	} udp;
-	struct {
-		__be16 id;
-	} icmp;
-	struct {
-		__be16 port;
-	} dccp;
-	struct {
-		__be16 port;
-	} sctp;
-	struct {
-		__be16 key;
-	} gre;
-};
-
-struct nf_ct_dccp {
-	u_int8_t role[2];
-	u_int8_t state;
-	u_int8_t last_pkt;
-	u_int8_t last_dir;
-	u_int64_t handshake_seq;
-};
-
-struct ip_ct_sctp {
-	enum sctp_conntrack state;
-	__be32 vtag[2];
-	u8 last_dir;
-	u8 flags;
-};
-
-struct nf_ct_event;
-
-struct nf_ct_event_notifier {
-	int (*fcn)(unsigned int, struct nf_ct_event *);
-};
-
-struct nf_exp_event;
-
-struct nf_exp_event_notifier {
-	int (*fcn)(unsigned int, struct nf_exp_event *);
 };
 
 enum bpf_ret_code {
@@ -109762,6 +108487,7 @@ struct batadv_unicast_packet {
 	__u8 dest[6];
 };
 
+<<<<<<< HEAD
 struct nf_conntrack_zone {
 	u16 id;
 	u8 flags;
@@ -109920,6 +108646,8 @@ struct nf_conn_labels {
 	long unsigned int bits[2];
 };
 
+=======
+>>>>>>> 46b5bac (tweak to Makefile)
 struct _flow_keys_digest_data {
 	__be16 n_proto;
 	u8 ip_proto;
@@ -111999,6 +110727,22 @@ struct xdp_buff_xsk {
 	struct list_head free_list_node;
 };
 
+<<<<<<< HEAD
+=======
+struct flow_dissector_key_ct {
+	u16 ct_state;
+	u16 ct_zone;
+	u32 ct_mark;
+	u32 ct_labels[4];
+};
+
+struct flow_match {
+	struct flow_dissector *dissector;
+	void *mask;
+	void *key;
+};
+
+>>>>>>> 46b5bac (tweak to Makefile)
 struct flow_match_meta {
 	struct flow_dissector_key_meta *key;
 	struct flow_dissector_key_meta *mask;
@@ -112712,6 +111456,7 @@ typedef void (*btf_trace_qdisc_destroy)(void *, struct Qdisc *);
 
 typedef void (*btf_trace_qdisc_create)(void *, const struct Qdisc_ops *, struct net_device *, u32);
 
+<<<<<<< HEAD
 struct bridge_stp_xstats {
 	__u64 transition_blk;
 	__u64 transition_fwd;
@@ -113059,6 +111804,8 @@ typedef void (*btf_trace_page_pool_state_hold)(void *, const struct page_pool *,
 
 typedef void (*btf_trace_page_pool_update_nid)(void *, const struct page_pool *, int);
 
+=======
+>>>>>>> 46b5bac (tweak to Makefile)
 struct trace_event_raw_neigh_create {
 	struct trace_entry ent;
 	u32 family;
@@ -114907,37 +113654,6 @@ struct tcf_skbedit {
 	struct tcf_skbedit_params *params;
 };
 
-struct nf_nat_range2 {
-	unsigned int flags;
-	union nf_inet_addr min_addr;
-	union nf_inet_addr max_addr;
-	union nf_conntrack_man_proto min_proto;
-	union nf_conntrack_man_proto max_proto;
-	union nf_conntrack_man_proto base_proto;
-};
-
-struct tcf_ct_flow_table;
-
-struct tcf_ct_params {
-	struct nf_conn *tmpl;
-	u16 zone;
-	u32 mark;
-	u32 mark_mask;
-	u32 labels[4];
-	u32 labels_mask[4];
-	struct nf_nat_range2 range;
-	bool ipv4_range;
-	u16 ct_action;
-	struct callback_head rcu;
-	struct tcf_ct_flow_table *ct_ft;
-	struct nf_flowtable *nf_ft;
-};
-
-struct tcf_ct {
-	struct tc_action common;
-	struct tcf_ct_params *params;
-};
-
 struct tcf_mpls_params {
 	int tcfm_action;
 	u32 tcfm_label;
@@ -116321,36 +115037,34 @@ struct ethnl_tunnel_info_dump_ctx {
 	int pos_idx;
 };
 
+typedef u16 u_int16_t;
+
 struct nf_hook_entries_rcu_head {
 	struct callback_head head;
 	void *allocation;
 };
 
-struct nf_conn___2;
+struct nf_conn;
 
-enum nf_nat_manip_type;
+struct nf_conntrack;
 
-struct nf_nat_hook {
-	int (*parse_nat_setup)(struct nf_conn___2 *, enum nf_nat_manip_type, const struct nlattr *);
-	void (*decode_session)(struct sk_buff *, struct flowi *);
-	unsigned int (*manip_pkt)(struct sk_buff *, struct nf_conn___2 *, enum nf_nat_manip_type, enum ip_conntrack_dir);
-};
-
-struct nf_conntrack_tuple___2;
+struct nf_conntrack_tuple;
 
 struct nf_ct_hook {
 	int (*update)(struct net *, struct sk_buff *);
 	void (*destroy)(struct nf_conntrack *);
-	bool (*get_tuple_skb)(struct nf_conntrack_tuple___2 *, const struct sk_buff *);
+	bool (*get_tuple_skb)(struct nf_conntrack_tuple *, const struct sk_buff *);
 };
 
+enum ip_conntrack_info;
+
 struct nfnl_ct_hook {
-	struct nf_conn___2 * (*get_ct)(const struct sk_buff *, enum ip_conntrack_info *);
-	size_t (*build_size)(const struct nf_conn___2 *);
-	int (*build)(struct sk_buff *, struct nf_conn___2 *, enum ip_conntrack_info, u_int16_t, u_int16_t);
-	int (*parse)(const struct nlattr *, struct nf_conn___2 *);
-	int (*attach_expect)(const struct nlattr *, struct nf_conn___2 *, u32, u32);
-	void (*seq_adjust)(struct sk_buff *, struct nf_conn___2 *, enum ip_conntrack_info, s32);
+	struct nf_conn * (*get_ct)(const struct sk_buff *, enum ip_conntrack_info *);
+	size_t (*build_size)(const struct nf_conn *);
+	int (*build)(struct sk_buff *, struct nf_conn *, enum ip_conntrack_info, u_int16_t, u_int16_t);
+	int (*parse)(const struct nlattr *, struct nf_conn *);
+	int (*attach_expect)(const struct nlattr *, struct nf_conn *, u32, u32);
+	void (*seq_adjust)(struct sk_buff *, struct nf_conn *, enum ip_conntrack_info, s32);
 };
 
 struct nf_ipv6_ops {
@@ -116369,6 +115083,8 @@ struct nf_queue_entry {
 	struct nf_hook_state state;
 	u16 size;
 };
+
+typedef u32 u_int32_t;
 
 struct nf_loginfo {
 	u_int8_t type;
@@ -116433,6 +115149,19 @@ struct nf_sockopt_ops {
 	int get_optmax;
 	int (*get)(struct sock *, int, void *, int *);
 	struct module *owner;
+};
+
+struct xt_table_info;
+
+struct xt_table {
+	struct list_head list;
+	unsigned int valid_hooks;
+	struct xt_table_info *private;
+	struct module *me;
+	u_int8_t af;
+	int priority;
+	int (*table_init)(struct net *);
+	const char name[32];
 };
 
 struct xt_action_param;
@@ -116585,6 +115314,17 @@ struct xt_tgdtor_param {
 	const struct xt_target *target;
 	void *targinfo;
 	u_int8_t family;
+};
+
+struct xt_table_info {
+	unsigned int size;
+	unsigned int number;
+	unsigned int initial_entries;
+	unsigned int hook_entry[5];
+	unsigned int underflow[5];
+	unsigned int stacksize;
+	void ***jumpstack;
+	unsigned char entries[0];
 };
 
 struct xt_percpu_counter_alloc_state {
@@ -117551,47 +116291,6 @@ enum {
 	AX25_VALUES_PROTOCOL = 12,
 	AX25_VALUES_DS_TIMEOUT = 13,
 	AX25_MAX_VALUES = 14,
-};
-
-enum ip_conntrack_status {
-	IPS_EXPECTED_BIT = 0,
-	IPS_EXPECTED = 1,
-	IPS_SEEN_REPLY_BIT = 1,
-	IPS_SEEN_REPLY = 2,
-	IPS_ASSURED_BIT = 2,
-	IPS_ASSURED = 4,
-	IPS_CONFIRMED_BIT = 3,
-	IPS_CONFIRMED = 8,
-	IPS_SRC_NAT_BIT = 4,
-	IPS_SRC_NAT = 16,
-	IPS_DST_NAT_BIT = 5,
-	IPS_DST_NAT = 32,
-	IPS_NAT_MASK = 48,
-	IPS_SEQ_ADJUST_BIT = 6,
-	IPS_SEQ_ADJUST = 64,
-	IPS_SRC_NAT_DONE_BIT = 7,
-	IPS_SRC_NAT_DONE = 128,
-	IPS_DST_NAT_DONE_BIT = 8,
-	IPS_DST_NAT_DONE = 256,
-	IPS_NAT_DONE_MASK = 384,
-	IPS_DYING_BIT = 9,
-	IPS_DYING = 512,
-	IPS_FIXED_TIMEOUT_BIT = 10,
-	IPS_FIXED_TIMEOUT = 1024,
-	IPS_TEMPLATE_BIT = 11,
-	IPS_TEMPLATE = 2048,
-	IPS_UNTRACKED_BIT = 12,
-	IPS_UNTRACKED = 4096,
-	IPS_NAT_CLASH_BIT = 12,
-	IPS_NAT_CLASH = 4096,
-	IPS_HELPER_BIT = 13,
-	IPS_HELPER = 8192,
-	IPS_OFFLOAD_BIT = 14,
-	IPS_OFFLOAD = 16384,
-	IPS_HW_OFFLOAD_BIT = 15,
-	IPS_HW_OFFLOAD = 32768,
-	IPS_UNCHANGEABLE_MASK = 56313,
-	__IPS_MAX_BIT = 16,
 };
 
 enum {
@@ -120272,8 +118971,6 @@ struct xfrm6_protocol {
 struct br_input_skb_cb {
 	struct net_device *brdev;
 	u16 frag_max_size;
-	u8 igmp;
-	u8 mrouters_only: 1;
 	u8 proxyarp_replied: 1;
 	u8 src_port_isolated: 1;
 	u8 vlan_filtered: 1;
@@ -120815,6 +119512,7 @@ struct _strp_msg {
 	int accum_len;
 };
 
+<<<<<<< HEAD
 struct vlan_group {
 	unsigned int nr_vlan_devs;
 	struct hlist_node hlist;
@@ -121850,6 +120548,8 @@ struct iw_thrspy {
 	struct iw_quality high;
 };
 
+=======
+>>>>>>> 46b5bac (tweak to Makefile)
 struct netlbl_af4list {
 	__be32 addr;
 	__be32 mask;
@@ -122321,7 +121021,6 @@ enum switchdev_attr_id {
 	SWITCHDEV_ATTR_ID_BRIDGE_VLAN_PROTOCOL = 7,
 	SWITCHDEV_ATTR_ID_BRIDGE_MC_DISABLED = 8,
 	SWITCHDEV_ATTR_ID_BRIDGE_MROUTER = 9,
-	SWITCHDEV_ATTR_ID_MRP_PORT_ROLE = 10,
 };
 
 struct switchdev_attr {
@@ -122338,10 +121037,27 @@ struct switchdev_attr {
 		bool vlan_filtering;
 		u16 vlan_protocol;
 		bool mc_disabled;
-		u8 mrp_port_role;
 	} u;
 };
 
+<<<<<<< HEAD
+=======
+enum switchdev_obj_id {
+	SWITCHDEV_OBJ_ID_UNDEFINED = 0,
+	SWITCHDEV_OBJ_ID_PORT_VLAN = 1,
+	SWITCHDEV_OBJ_ID_PORT_MDB = 2,
+	SWITCHDEV_OBJ_ID_HOST_MDB = 3,
+};
+
+struct switchdev_obj {
+	struct net_device *orig_dev;
+	enum switchdev_obj_id id;
+	u32 flags;
+	void *complete_priv;
+	void (*complete)(struct net_device *, int, void *);
+};
+
+>>>>>>> 46b5bac (tweak to Makefile)
 enum switchdev_notifier_type {
 	SWITCHDEV_FDB_ADD_TO_BRIDGE = 1,
 	SWITCHDEV_FDB_DEL_TO_BRIDGE = 2,

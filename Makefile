@@ -7,8 +7,8 @@ prepare:
 	cd ~/build/provbpf-kernel && $(MAKE) install
 
 delete_dependency:
-	rm -rf ~/libbpf
-	rm -rf ~/linux-stable
+	rm -rf ~/build/linux-stable
+	rm -rf ~/build/provbpf-kernel
 
 btf:
 	bpftool btf dump file /sys/kernel/btf/vmlinux format c > include/kern/vmlinux.h
