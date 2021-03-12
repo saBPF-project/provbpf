@@ -240,7 +240,7 @@ int main(void) {
     syslog(LOG_INFO, "ProvBPF: Searching task_storage_map for current process...");
     search_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "task_storage_map");
     if (search_map_fd < 0) {
-      syslog(LOG_ERR, "ProvBPF: Failed loading task__storage_map (%d).", search_map_fd);
+      syslog(LOG_ERR, "ProvBPF: Failed loading task_storage_map (%d).", search_map_fd);
       goto close_prog;
     }
     
@@ -255,28 +255,25 @@ int main(void) {
     }
     close(search_map_fd);
 
-    syslog(LOG_INFO, "ProvBPF: Searching cred_map for current cred...");
-    search_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "cred_map");
+    syslog(LOG_INFO, "ProvBPF: Searching cred_storage_map for current process...");
+    search_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "cred_storage_map");
     if (search_map_fd < 0) {
-      syslog(LOG_INFO, "ProvBPF: Failed loading cred_map (%d).", search_map_fd);
+      syslog(LOG_ERR, "ProvBPF: Failed loading cred_storage_map (%d).", search_map_fd);
       goto close_prog;
     }
 
-    search_map_key = prev_search_map_key = -1;
-    while (bpf_map_get_next_key(search_map_fd, &prev_search_map_key, &search_map_key) == 0) {
-      res = bpf_map_lookup_elem(search_map_fd, &search_map_key, &search_map_value);
-      if (res > -1) {
-          if (search_map_value.proc_info.tgid == current_pid) {
-            set_opaque(&search_map_value);
-            bpf_map_update_elem(search_map_fd, &search_map_key, &search_map_value, BPF_EXIST);
-            syslog(LOG_INFO, "ProvBPF: Done searching. Current cred tgid: %d has been set opaque...", current_pid);
-            break;
-          }
-      }
-      prev_search_map_key = search_map_key;
+// TODO: avoid code repetition    
+//    bpf_map_update_elem(search_map_fd, &pidfd, &search_map_value, BPF_NOEXIST);
+    res = bpf_map_lookup_elem(search_map_fd, &pidfd, &search_map_value);
+    if (res > -1) {
+        if (search_map_value.task_info.pid == current_pid) {
+          set_opaque(&search_map_value);
+          bpf_map_update_elem(search_map_fd, &pidfd, &search_map_value, BPF_EXIST);
+          syslog(LOG_INFO, "ProvBPF: Done searching. Current cred pid: %d has been set opaque...", current_pid);
+        }
     }
     close(search_map_fd);
-
+    
     ringbuf = ring_buffer__new(map_fd, buf_process_entry, NULL, NULL);
     syslog(LOG_INFO, "ProvBPF: Start polling forever...");
     /* ring_buffer__poll polls for available data and consume records,

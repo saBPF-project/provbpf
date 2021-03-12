@@ -986,7 +986,6 @@ int BPF_PROG(cred_alloc_blank, struct cred *cred, gfp_t gfp) {
 #ifndef PROV_FILTER_CRED_FREE_OFF
 SEC("lsm/cred_free")
 int BPF_PROG(cred_free, struct cred *cred) {
-    uint64_t key;
     union prov_elt *ptr_prov;
 
     ptr_prov = get_or_create_cred_prov(cred);
@@ -994,8 +993,7 @@ int BPF_PROG(cred_free, struct cred *cred) {
       return 0;
     // Record cred freed
     record_terminate(RL_TERMINATE_PROC, ptr_prov);
-    key = get_key(cred);
-    bpf_map_delete_elem(&cred_map, &key);
+    bpf_cred_storage_delete(&cred_storage_map, cred);
     return 0;
 }
 #endif
