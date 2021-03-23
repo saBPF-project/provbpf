@@ -40,3 +40,6 @@ the kernel-space program.
 (i.e. force attach an XDP program to a network device even if an XDP program is
     already attached to it and use socket buffer mode)
 1. Attach XDP program to network device (e.g. `lo`)
+
+### Next steps
+Need to investigate whether XDP can be used to track egress packets
