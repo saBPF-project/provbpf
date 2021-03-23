@@ -77,7 +77,7 @@ struct {
 } task_storage_map SEC(".maps");
 
 struct {
-	__uint(type, BPF_MAP_TYPE_TASK_STORAGE);
+	__uint(type, BPF_MAP_TYPE_CRED_STORAGE);
 	__uint(map_flags, BPF_F_NO_PREALLOC);
 	__type(key, int);
 	__type(value, union prov_elt);
