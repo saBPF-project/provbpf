@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <syslog.h>
+#include <errno.h>
 #include <bpf/bpf.h>
 #include <sys/resource.h>
 #include <sys/types.h>
@@ -148,6 +149,20 @@ static inline int xdp_do_attach(int idx, int fd, const char *name) {
 	int xdp_err;
 
 	xdp_err = bpf_set_link_xdp_fd(idx, fd, xdp_flags);
+
+	// Check if XDP program is already attached to network device and reattach
+	if (xdp_err == -EBUSY) {
+		syslog(LOG_INFO, "Error: XDP Program already attached to %s, reattaching\n", name);
+		__u32 old_flags = xdp_flags;
+
+		xdp_flags &= ~XDP_FLAGS_MODES;
+		xdp_flags |= (old_flags & XDP_FLAGS_SKB_MODE) ? XDP_FLAGS_DRV_MODE : XDP_FLAGS_SKB_MODE;
+		xdp_err = bpf_set_link_xdp_fd(idx, -1, xdp_flags);
+
+		if (!xdp_err) {
+			xdp_err = bpf_set_link_xdp_fd(idx, fd, old_flags);
+		}
+	}
 	if (xdp_err < 0) {
 		syslog(LOG_INFO, "Error: failed to attach program to %s\n", name);
 		return xdp_err;
