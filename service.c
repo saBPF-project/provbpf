@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <syslog.h>
+#include <assert.h>
 #include <errno.h>
 #include <bpf/bpf.h>
 #include <sys/resource.h>
@@ -32,6 +33,7 @@
 #include "usr/provbpf.skel.h"
 #include "usr/record.h"
 #include "usr/configuration.h"
+#include "usr/sock_example.h"
 
 
 #define DM_AGENT                                0x1000000000000000UL
@@ -143,6 +145,21 @@ void sig_handler(int sig) {
     }
 }
 
+static inline int bpf_get_prog_fd_by_sec_name(struct bpf_object *obj, char* name) {
+	struct bpf_program *bpf_prog;
+	int prog_fd = -1;
+
+	bpf_prog = bpf_object__find_program_by_title(obj, name);
+	if (!bpf_prog) {
+		syslog(LOG_INFO, "No prog found for SEC(%s)...\n", name);
+		return -1;
+	}
+
+	prog_fd = bpf_program__fd(bpf_prog);
+
+	return prog_fd;
+}
+
 static inline int xdp_do_attach(int idx, int fd, const char *name) {
 	struct bpf_prog_info info = {};
 	__u32 info_len = sizeof(info);
@@ -179,15 +196,13 @@ static inline int xdp_do_attach(int idx, int fd, const char *name) {
 
 int main(void) {
     struct ring_buffer *ringbuf = NULL;
-    int err, map_fd, pidfd, search_map_fd, res;
+    int err, map_fd, pidfd, search_map_fd, res, if_idx, prog_fd = -1, sock;
     struct rlimit r = {RLIM_INFINITY, RLIM_INFINITY};
     unsigned int key = 0, value;
     uint64_t search_map_key, prev_search_map_key;
     union prov_elt search_map_value;
     pid_t current_pid;
 	char* if_name = INTERFACE_NAME;
-	int if_idx, prog_fd = -1;
-	struct bpf_program *bpf_xdp_prog;
 
     syslog(LOG_INFO, "ProvBPF: Starting...");
 
@@ -276,15 +291,8 @@ int main(void) {
         goto close_prog;
     }
 
-	// Locate XDP Program
-	bpf_xdp_prog = bpf_object__find_program_by_title(skel->obj, "xdp");
-	if (!bpf_xdp_prog) {
-		syslog(LOG_INFO, "No XDP prog found...\n");
-		return 1;
-	}
-
 	// Get XDP Program fd
-	prog_fd = bpf_program__fd(bpf_xdp_prog);
+	prog_fd = bpf_get_prog_fd_by_sec_name(skel->obj, "xdp");
 	if (prog_fd < 1) {
 		syslog(LOG_INFO, "Error: prog_fd not found...\n");
 		return 1;
@@ -301,6 +309,17 @@ int main(void) {
 	if (err)
 		return err;
 
+	// Get socket1 program fd
+	prog_fd = bpf_get_prog_fd_by_sec_name(skel->obj, "socket1");
+	if (prog_fd < 1) {
+		syslog(LOG_INFO, "Error: prog_fd not found...\n");
+		return 1;
+	}
+
+	// Get sock fd for INTERFACE_NAME
+	sock = open_raw_sock(INTERFACE_NAME);
+
+	assert(setsockopt(sock, SOL_SOCKET, SO_ATTACH_BPF, &prog_fd, sizeof(prog_fd)) == 0);
 
     /* Locate ring buffer */
     syslog(LOG_INFO, "ProvBPF: Locating the ring buffer...");

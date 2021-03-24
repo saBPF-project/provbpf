@@ -41,12 +41,22 @@
 #include "kern/iattr.h"
 #include "kern/relation.h"
 #include "kern/net.h"
+#include "kern/if_packet.h"
 
 char _license[] SEC("license") = "GPL";
 
 SEC("xdp")
 int xdp_sample_prog(struct xdp_md *ctx) {
     return XDP_DROP;
+}
+
+SEC("socket1")
+int socket_sample_prog(struct __sk_buff *skb) {
+    if (skb->pkt_type == PACKET_OUTGOING) {
+        return 0;
+    }
+
+    return 0;
 }
 
 /* LSM hooks names can be reference here:
