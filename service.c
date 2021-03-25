@@ -18,14 +18,11 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <syslog.h>
-#include <assert.h>
-#include <errno.h>
 #include <bpf/bpf.h>
 #include <sys/resource.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
 #include <signal.h>
-#include <net/if.h>
 
 #include "shared/prov_struct.h"
 #include "shared/id.h"
@@ -33,27 +30,12 @@
 #include "usr/provbpf.skel.h"
 #include "usr/record.h"
 #include "usr/configuration.h"
-#include "usr/sock_example.h"
 
 
 #define DM_AGENT                                0x1000000000000000UL
 /* NODE IS LONG*/
 #define ND_LONG                                 0x0400000000000000UL
 #define AGT_MACHINE                             (DM_AGENT | ND_LONG | (0x0000000000000001ULL << 4))
-
-/* XDP section */
-
-#define XDP_FLAGS_UPDATE_IF_NOEXIST	(1U << 0)
-#define XDP_FLAGS_SKB_MODE		(1U << 1)
-#define XDP_FLAGS_DRV_MODE		(1U << 2)
-#define XDP_FLAGS_HW_MODE		(1U << 3)
-#define XDP_FLAGS_REPLACE		(1U << 4)
-#define XDP_FLAGS_MODES			(XDP_FLAGS_SKB_MODE | \
-					 XDP_FLAGS_DRV_MODE | \
-					 XDP_FLAGS_HW_MODE)
-#define XDP_FLAGS_MASK			(XDP_FLAGS_UPDATE_IF_NOEXIST | \
-					 XDP_FLAGS_MODES | XDP_FLAGS_REPLACE)
-#define INTERFACE_NAME "lo"
 
 #ifndef __NR_pidfd_open
 #define __NR_pidfd_open 434
@@ -133,7 +115,6 @@ static inline uint64_t djb2_hash(const char *str)
 }
 
 static struct provbpf *skel = NULL;
-static __u32 xdp_flags = XDP_FLAGS_UPDATE_IF_NOEXIST;
 
 void sig_handler(int sig) {
     if (sig == SIGTERM) {
@@ -145,64 +126,14 @@ void sig_handler(int sig) {
     }
 }
 
-static inline int bpf_get_prog_fd_by_sec_name(struct bpf_object *obj, char* name) {
-	struct bpf_program *bpf_prog;
-	int prog_fd = -1;
-
-	bpf_prog = bpf_object__find_program_by_title(obj, name);
-	if (!bpf_prog) {
-		syslog(LOG_INFO, "No prog found for SEC(%s)...\n", name);
-		return -1;
-	}
-
-	prog_fd = bpf_program__fd(bpf_prog);
-
-	return prog_fd;
-}
-
-static inline int xdp_do_attach(int idx, int fd, const char *name) {
-	struct bpf_prog_info info = {};
-	__u32 info_len = sizeof(info);
-	int xdp_err;
-
-	xdp_err = bpf_set_link_xdp_fd(idx, fd, xdp_flags);
-
-	// Check if XDP program is already attached to network device and reattach
-	if (xdp_err == -EBUSY) {
-		syslog(LOG_INFO, "Error: XDP Program already attached to %s, reattaching\n", name);
-		__u32 old_flags = xdp_flags;
-
-		xdp_flags &= ~XDP_FLAGS_MODES;
-		xdp_flags |= (old_flags & XDP_FLAGS_SKB_MODE) ? XDP_FLAGS_DRV_MODE : XDP_FLAGS_SKB_MODE;
-		xdp_err = bpf_set_link_xdp_fd(idx, -1, xdp_flags);
-
-		if (!xdp_err) {
-			xdp_err = bpf_set_link_xdp_fd(idx, fd, old_flags);
-		}
-	}
-	if (xdp_err < 0) {
-		syslog(LOG_INFO, "Error: failed to attach program to %s\n", name);
-		return xdp_err;
-	}
-
-	xdp_err = bpf_obj_get_info_by_fd(fd, &info, &info_len);
-	if (xdp_err ) {
-		syslog(LOG_INFO, "Error: cannot get prog info \n");
-		return xdp_err;
-	}
-
-	return xdp_err;
-}
-
 int main(void) {
     struct ring_buffer *ringbuf = NULL;
-    int err, map_fd, pidfd, search_map_fd, res, if_idx, prog_fd = -1, sock;
+    int err, map_fd, pidfd, search_map_fd, res;
     struct rlimit r = {RLIM_INFINITY, RLIM_INFINITY};
     unsigned int key = 0, value;
     uint64_t search_map_key, prev_search_map_key;
     union prov_elt search_map_value;
     pid_t current_pid;
-	char* if_name = INTERFACE_NAME;
 
     syslog(LOG_INFO, "ProvBPF: Starting...");
 
@@ -291,36 +222,6 @@ int main(void) {
         goto close_prog;
     }
 
-	// Get XDP Program fd
-	prog_fd = bpf_get_prog_fd_by_sec_name(skel->obj, "xdp");
-	if (prog_fd < 1) {
-		syslog(LOG_INFO, "Error: prog_fd not found...\n");
-		return 1;
-	}
-
-	// Get XDP device
-	if_idx = if_nametoindex(INTERFACE_NAME);
-	if (!if_idx) {
-		syslog(LOG_INFO, "Invalid if_name...\n");
-		return 1;
-	}
-
-	err = xdp_do_attach(if_idx, prog_fd, if_name);
-	if (err)
-		return err;
-
-	// Get socket1 program fd
-	prog_fd = bpf_get_prog_fd_by_sec_name(skel->obj, "socket1");
-	if (prog_fd < 1) {
-		syslog(LOG_INFO, "Error: prog_fd not found...\n");
-		return 1;
-	}
-
-	// Get sock fd for INTERFACE_NAME
-	sock = open_raw_sock(INTERFACE_NAME);
-
-	assert(setsockopt(sock, SOL_SOCKET, SO_ATTACH_BPF, &prog_fd, sizeof(prog_fd)) == 0);
-
     /* Locate ring buffer */
     syslog(LOG_INFO, "ProvBPF: Locating the ring buffer...");
     map_fd = bpf_object__find_map_fd_by_name(skel->obj, "r_buf");
@@ -339,10 +240,10 @@ int main(void) {
     syslog(LOG_INFO, "ProvBPF: Searching task_storage_map for current process...");
     search_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "task_storage_map");
     if (search_map_fd < 0) {
-      syslog(LOG_ERR, "ProvBPF: Failed loading task__storage_map (%d).", search_map_fd);
+      syslog(LOG_ERR, "ProvBPF: Failed loading task_storage_map (%d).", search_map_fd);
       goto close_prog;
     }
-
+    
     pidfd = sys_pidfd_open(current_pid, 0);
     res = bpf_map_lookup_elem(search_map_fd, &pidfd, &search_map_value);
     if (res > -1) {
@@ -354,14 +255,14 @@ int main(void) {
     }
     close(search_map_fd);
 
-    syslog(LOG_INFO, "ProvBPF: Searching cred_map for current cred...");
-    search_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "cred_map");
+    syslog(LOG_INFO, "ProvBPF: Searching cred_storage_map for current process...");
+    search_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "cred_storage_map");
     if (search_map_fd < 0) {
-      syslog(LOG_INFO, "ProvBPF: Failed loading cred_map (%d).", search_map_fd);
+      syslog(LOG_ERR, "ProvBPF: Failed loading cred_storage_map (%d).", search_map_fd);
       goto close_prog;
     }
 
-// TODO: avoid code repetition
+// TODO: avoid code repetition    
 //    bpf_map_update_elem(search_map_fd, &pidfd, &search_map_value, BPF_NOEXIST);
     res = bpf_map_lookup_elem(search_map_fd, &pidfd, &search_map_value);
     if (res > -1) {
@@ -372,7 +273,7 @@ int main(void) {
         }
     }
     close(search_map_fd);
-
+    
     ringbuf = ring_buffer__new(map_fd, buf_process_entry, NULL, NULL);
     syslog(LOG_INFO, "ProvBPF: Start polling forever...");
     /* ring_buffer__poll polls for available data and consume records,

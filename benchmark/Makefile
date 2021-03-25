@@ -41,7 +41,7 @@ off:
 run_lmbench:
 	@echo "Running lmbench..."
 	mkdir -p results
-	cd build/lmbench && make results LDFLAGS=-ltirpc
+	cd build/lmbench && make results
 	cd build/lmbench && make rerun
 	cd build/lmbench/results/ && make > ../../../results/lmbench.txt
 

@@ -13,8 +13,6 @@
  * published by the Free Software Foundation; either version 2 of the License,
  * or (at your option) any later version.
  */
-#define _GNU_SOURCE
-
 #include "kern/vmlinux.h"
 
 #include <linux/libc-compat.h>
@@ -41,23 +39,8 @@
 #include "kern/iattr.h"
 #include "kern/relation.h"
 #include "kern/net.h"
-#include "kern/if_packet.h"
 
 char _license[] SEC("license") = "GPL";
-
-SEC("xdp")
-int xdp_sample_prog(struct xdp_md *ctx) {
-    return XDP_DROP;
-}
-
-SEC("socket1")
-int socket_sample_prog(struct __sk_buff *skb) {
-    if (skb->pkt_type == PACKET_OUTGOING) {
-        return 0;
-    }
-
-    return 0;
-}
 
 /* LSM hooks names can be reference here:
  * https://elixir.bootlin.com/linux/v5.8/source/include/linux/lsm_hook_defs.h
@@ -1003,7 +986,6 @@ int BPF_PROG(cred_alloc_blank, struct cred *cred, gfp_t gfp) {
 #ifndef PROV_FILTER_CRED_FREE_OFF
 SEC("lsm/cred_free")
 int BPF_PROG(cred_free, struct cred *cred) {
-    uint64_t key;
     union prov_elt *ptr_prov;
 
     ptr_prov = get_or_create_cred_prov(cred);
@@ -1011,8 +993,7 @@ int BPF_PROG(cred_free, struct cred *cred) {
       return 0;
     // Record cred freed
     record_terminate(RL_TERMINATE_PROC, ptr_prov);
-    key = get_key(cred);
-    bpf_map_delete_elem(&cred_map, &key);
+    bpf_cred_storage_delete(&cred_storage_map, cred);
     return 0;
 }
 #endif
