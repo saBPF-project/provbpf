@@ -339,7 +339,7 @@ int main(void) {
     syslog(LOG_INFO, "ProvBPF: Searching task_storage_map for current process...");
     search_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "task_storage_map");
     if (search_map_fd < 0) {
-      syslog(LOG_ERR, "ProvBPF: Failed loading task_storage_map (%d).", search_map_fd);
+      syslog(LOG_ERR, "ProvBPF: Failed loading task__storage_map (%d).", search_map_fd);
       goto close_prog;
     }
 
@@ -354,10 +354,10 @@ int main(void) {
     }
     close(search_map_fd);
 
-    syslog(LOG_INFO, "ProvBPF: Searching cred_storage_map for current process...");
-    search_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "cred_storage_map");
+    syslog(LOG_INFO, "ProvBPF: Searching cred_map for current cred...");
+    search_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "cred_map");
     if (search_map_fd < 0) {
-      syslog(LOG_ERR, "ProvBPF: Failed loading cred_storage_map (%d).", search_map_fd);
+      syslog(LOG_INFO, "ProvBPF: Failed loading cred_map (%d).", search_map_fd);
       goto close_prog;
     }
 

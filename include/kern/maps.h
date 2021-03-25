@@ -77,11 +77,11 @@ struct {
 } task_storage_map SEC(".maps");
 
 struct {
-	__uint(type, BPF_MAP_TYPE_CRED_STORAGE);
-	__uint(map_flags, BPF_F_NO_PREALLOC);
-	__type(key, int);
+	__uint(type, BPF_MAP_TYPE_HASH);
+	__type(key, uint64_t);
 	__type(value, union prov_elt);
-} cred_storage_map SEC(".maps");
+	__uint(max_entries, 4096); // TODO: set as big as possible; real size is dynamically adjusted
+} cred_map SEC(".maps");
 
 struct bpf_map_def SEC("maps") msg_msg_map = {
     .type = BPF_MAP_TYPE_HASH,
