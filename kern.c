@@ -2403,6 +2403,30 @@ int BPF_PROG(socket_recvmsg, struct socket *sock, struct msghdr *msg, int size, 
 }
 #endif
 
+#ifndef PROV_FILTER_SOCKET_SOCK_RCV_SKB_OFF
+SEC("lsm/socket_sock_rcv_skb")
+int BPF_PROG(socket_sock_rcv_skb, struct sock *sk, struct sk_buff *skb) {
+    union prov_elt *ptr_prov_inode;
+
+    uint16_t family = sk->__sk_common.skc_family;
+
+    if (family != PF_INET)
+        return 0;
+
+    struct socket *sock = sk->sk_socket;
+
+    if (!sock)
+        return 0;
+
+    ptr_prov_inode = get_or_create_inode_prov((struct inode *)bpf_inode_from_sock(sock));
+
+    if (!ptr_prov_inode)
+        return 0;
+
+    return 0;
+}
+#endif
+
 #ifndef PROV_FILTER_SOCKET_SOCKETPAIR_OFF
 SEC("lsm/socket_socketpair")
 int BPF_PROG(socket_socketpair, struct socket *socka, struct socket *sockb) {
