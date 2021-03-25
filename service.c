@@ -23,7 +23,6 @@
 #include <sys/types.h>
 #include <sys/utsname.h>
 #include <signal.h>
-#include <net/if.h>
 
 #include "shared/prov_struct.h"
 #include "shared/id.h"
@@ -37,20 +36,6 @@
 /* NODE IS LONG*/
 #define ND_LONG                                 0x0400000000000000UL
 #define AGT_MACHINE                             (DM_AGENT | ND_LONG | (0x0000000000000001ULL << 4))
-
-/* XDP section */
-
-#define XDP_FLAGS_UPDATE_IF_NOEXIST	(1U << 0)
-#define XDP_FLAGS_SKB_MODE		(1U << 1)
-#define XDP_FLAGS_DRV_MODE		(1U << 2)
-#define XDP_FLAGS_HW_MODE		(1U << 3)
-#define XDP_FLAGS_REPLACE		(1U << 4)
-#define XDP_FLAGS_MODES			(XDP_FLAGS_SKB_MODE | \
-					 XDP_FLAGS_DRV_MODE | \
-					 XDP_FLAGS_HW_MODE)
-#define XDP_FLAGS_MASK			(XDP_FLAGS_UPDATE_IF_NOEXIST | \
-					 XDP_FLAGS_MODES | XDP_FLAGS_REPLACE)
-#define INTERFACE_NAME "lo"
 
 #ifndef __NR_pidfd_open
 #define __NR_pidfd_open 434
@@ -130,7 +115,6 @@ static inline uint64_t djb2_hash(const char *str)
 }
 
 static struct provbpf *skel = NULL;
-static __u32 xdp_flags = XDP_FLAGS_UPDATE_IF_NOEXIST;
 
 void sig_handler(int sig) {
     if (sig == SIGTERM) {
@@ -142,26 +126,6 @@ void sig_handler(int sig) {
     }
 }
 
-static inline int xdp_do_attach(int idx, int fd, const char *name) {
-	struct bpf_prog_info info = {};
-	__u32 info_len = sizeof(info);
-	int xdp_err;
-
-	xdp_err = bpf_set_link_xdp_fd(idx, fd, xdp_flags);
-	if (xdp_err < 0) {
-		syslog(LOG_INFO, "Error: failed to attach program to %s\n", name);
-		return xdp_err;
-	}
-
-	xdp_err = bpf_obj_get_info_by_fd(fd, &info, &info_len);
-	if (xdp_err ) {
-		syslog(LOG_INFO, "Error: cannot get prog info \n");
-		return xdp_err;
-	}
-
-	return xdp_err;
-}
-
 int main(void) {
     struct ring_buffer *ringbuf = NULL;
     int err, map_fd, pidfd, search_map_fd, res;
@@ -170,9 +134,6 @@ int main(void) {
     uint64_t search_map_key, prev_search_map_key;
     union prov_elt search_map_value;
     pid_t current_pid;
-	char* if_name = INTERFACE_NAME;
-	int if_idx, prog_fd = -1;
-	struct bpf_program *bpf_xdp_prog;
 
     syslog(LOG_INFO, "ProvBPF: Starting...");
 
@@ -261,32 +222,6 @@ int main(void) {
         goto close_prog;
     }
 
-	// Locate XDP Program
-	bpf_xdp_prog = bpf_object__find_program_by_title(skel->obj, "xdp");
-	if (!bpf_xdp_prog) {
-		syslog(LOG_INFO, "No XDP prog found...\n");
-		return 1;
-	}
-
-	// Get XDP Program fd
-	prog_fd = bpf_program__fd(bpf_xdp_prog);
-	if (prog_fd < 1) {
-		syslog(LOG_INFO, "Error: prog_fd not found...\n");
-		return 1;
-	}
-
-	// Get XDP device
-	if_idx = if_nametoindex(INTERFACE_NAME);
-	if (!if_idx) {
-		syslog(LOG_INFO, "Invalid if_name...\n");
-		return 1;
-	}
-
-	err = xdp_do_attach(if_idx, prog_fd, if_name);
-	if (err)
-		return err;
-
-
     /* Locate ring buffer */
     syslog(LOG_INFO, "ProvBPF: Locating the ring buffer...");
     map_fd = bpf_object__find_map_fd_by_name(skel->obj, "r_buf");
@@ -308,7 +243,7 @@ int main(void) {
       syslog(LOG_ERR, "ProvBPF: Failed loading task_storage_map (%d).", search_map_fd);
       goto close_prog;
     }
-
+    
     pidfd = sys_pidfd_open(current_pid, 0);
     res = bpf_map_lookup_elem(search_map_fd, &pidfd, &search_map_value);
     if (res > -1) {
@@ -327,7 +262,7 @@ int main(void) {
       goto close_prog;
     }
 
-// TODO: avoid code repetition
+// TODO: avoid code repetition    
 //    bpf_map_update_elem(search_map_fd, &pidfd, &search_map_value, BPF_NOEXIST);
     res = bpf_map_lookup_elem(search_map_fd, &pidfd, &search_map_value);
     if (res > -1) {
@@ -338,7 +273,7 @@ int main(void) {
         }
     }
     close(search_map_fd);
-
+    
     ringbuf = ring_buffer__new(map_fd, buf_process_entry, NULL, NULL);
     syslog(LOG_INFO, "ProvBPF: Start polling forever...");
     /* ring_buffer__poll polls for available data and consume records,

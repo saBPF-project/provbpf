@@ -13,8 +13,6 @@
  * published by the Free Software Foundation; either version 2 of the License,
  * or (at your option) any later version.
  */
-#define _GNU_SOURCE
-
 #include "kern/vmlinux.h"
 
 #include <linux/libc-compat.h>
@@ -43,11 +41,6 @@
 #include "kern/net.h"
 
 char _license[] SEC("license") = "GPL";
-
-SEC("xdp")
-int xdp_sample_prog(struct xdp_md *ctx) {
-    return XDP_DROP;
-}
 
 /* LSM hooks names can be reference here:
  * https://elixir.bootlin.com/linux/v5.8/source/include/linux/lsm_hook_defs.h
@@ -1000,7 +993,7 @@ int BPF_PROG(cred_free, struct cred *cred) {
       return 0;
     // Record cred freed
     record_terminate(RL_TERMINATE_PROC, ptr_prov);
-    // bpf_cred_storage_delete(&cred_storage_map, cred);
+    bpf_cred_storage_delete(&cred_storage_map, cred);
     return 0;
 }
 #endif
