@@ -1135,7 +1135,7 @@ int BPF_PROG(ptrace_traceme, struct task_struct *parent) {
  * from derives function.
  *
  */
-#ifndef PROV_FILTER_MMAP_FILE_OFF
+/*#ifndef PROV_FILTER_MMAP_FILE_OFF
 SEC("lsm/mmap_file")
 int BPF_PROG(mmap_file, struct file *file, unsigned long reqprot, unsigned long prot, unsigned long flags) {
     union prov_elt *ptr_prov_current, *ptr_prov_current_cred, *ptr_prov_file_inode;
@@ -1167,8 +1167,8 @@ int BPF_PROG(mmap_file, struct file *file, unsigned long reqprot, unsigned long 
 
     if (provenance_is_opaque(ptr_prov_current_cred)) {
       return 0;
-    }
-
+    }  
+    
     if ((flags & MAP_TYPE) == MAP_SHARED || (flags & MAP_TYPE) == MAP_SHARED_VALIDATE) {
       if ((prot & PROT_WRITE) != 0) {
         uses(RL_MMAP_WRITE, current_task, ptr_prov_file_inode, ptr_prov_current, ptr_prov_current_cred, file, flags);
@@ -1193,7 +1193,7 @@ int BPF_PROG(mmap_file, struct file *file, unsigned long reqprot, unsigned long 
 
     return 0;
 }
-#endif
+#endif */
 
 #ifdef CONFIG_SECURITY_FLOW_FRIENDLY
 /*!
@@ -1566,7 +1566,7 @@ int BPF_PROG(file_ioctl, struct file *file, unsigned int cmd, unsigned long arg)
 }
 #endif
 
-SEC("lsm/file_send_sigiotask")
+/*SEC("lsm/file_send_sigiotask")
 int BPF_PROG(file_send_sigiotask, struct task_struct *task, struct fown_struct *fown, int signum) {
     struct file *file = container_of(fown, struct file, f_owner);
 
@@ -1579,10 +1579,12 @@ int BPF_PROG(file_send_sigiotask, struct task_struct *task, struct fown_struct *
     if (!ptr_prov_task) {
       return 0;
     }
+    
     ptr_prov_cred = get_or_create_cred_prov(task->cred);
     if (!ptr_prov_cred) {
       return 0;
     }
+    
     ptr_prov_inode = get_or_create_inode_prov(inode);
     if (!ptr_prov_inode) {
       return 0;
@@ -1595,7 +1597,7 @@ int BPF_PROG(file_send_sigiotask, struct task_struct *task, struct fown_struct *
     uses(RL_FILE_SIGIO, current_task, ptr_prov_inode, ptr_prov_task, ptr_prov_cred, file, signum);
 
     return 0;
-}
+}*/
 
 /*!
  * @brief Record provenance when msg_msg_alloc_security hook is triggered.

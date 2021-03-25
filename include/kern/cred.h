@@ -26,30 +26,26 @@
 }*/
 
 /* Create a provenance entry for a cred if it does not exist
- * and insert it into the @cred_map; otherwise, updates its
+ * and insert it into the @cred_storage_map; otherwise, updates its
  * existing provenance. Return either the new provenance entry
  * pointer or the updated provenance entry pointer. */
 static __always_inline union prov_elt* get_or_create_cred_prov(const struct cred *cred) {
-    /*if (!cred) {
-      return NULL;
-    }
+    if (!cred) 
+        return NULL; 
 
     union prov_elt prov_tmp;
-    uint64_t key = get_key(cred);
-    union prov_elt *prov_on_map = bpf_map_lookup_elem(&cred_map, &key);
+    union prov_elt *prov_on_map = bpf_cred_storage_get(&cred_storage_map, (struct cred *)cred, 0, 0);
     // provenance is already tracked
     if (prov_on_map) {
-      // update the cred's provenance since it may have changed
-      //prov_update_cred(current_task, prov_on_map);
-    } else {
-      // a new cred
-      __builtin_memset(&prov_tmp, 0, sizeof(union prov_elt));
-      prov_init_node(&prov_tmp, ENT_PROC);
-      //prov_update_cred(current_task, &prov_tmp);
-      bpf_map_update_elem(&cred_map, &key, &prov_tmp, BPF_NOEXIST);
-      prov_on_map = bpf_map_lookup_elem(&cred_map, &key);
-  }*/
-    return NULL;
+        // update the cred's provenance since it may have changed
+        // prov_update_cred(current_task, prov_on_map);
+    } else { // a new cred
+        __builtin_memset(&prov_tmp, 0, sizeof(union prov_elt));
+        prov_init_node(&prov_tmp, ENT_PROC);
+        //prov_update_cred(current_task, &prov_tmp);
+        prov_on_map = bpf_cred_storage_get(&cred_storage_map, (struct cred *)cred, &prov_tmp, BPF_NOEXIST | BPF_LOCAL_STORAGE_GET_F_CREATE);
+    }
+    return prov_on_map;
 }
 
 static __always_inline struct cred* get_task_cred(struct task_struct *task) {
