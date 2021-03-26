@@ -38684,7 +38684,8 @@ enum bpf_func_id {
 	BPF_FUNC_inode_from_sock = 163,
 	BPF_FUNC_cred_storage_get = 164,
 	BPF_FUNC_cred_storage_delete = 165,
-	__BPF_FUNC_MAX_ID = 166,
+	BPF_FUNC_inode_from_fown = 166,
+	__BPF_FUNC_MAX_ID = 167,
 };
 
 enum {
@@ -43528,6 +43529,8 @@ typedef u64 (*btf_bpf_bprm_opts_set)(struct linux_binprm *, u64);
 typedef u64 (*btf_bpf_ima_inode_hash)(struct inode *, void *, u32);
 
 typedef u64 (*btf_bpf_inode_from_sock)(struct socket *);
+
+typedef u64 (*btf_bpf_inode_from_fown)(struct fown_struct *);
 
 enum perf_event_read_format {
 	PERF_FORMAT_TOTAL_TIME_ENABLED = 1,

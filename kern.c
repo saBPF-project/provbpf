@@ -1566,11 +1566,11 @@ int BPF_PROG(file_ioctl, struct file *file, unsigned int cmd, unsigned long arg)
 }
 #endif
 
-/*SEC("lsm/file_send_sigiotask")
+SEC("lsm/file_send_sigiotask")
 int BPF_PROG(file_send_sigiotask, struct task_struct *task, struct fown_struct *fown, int signum) {
-    struct file *file = container_of(fown, struct file, f_owner);
+    //struct file *file = container_of(fown, struct file, f_owner);
 
-    struct inode *inode = file->f_inode;
+    struct inode *inode = (struct inode *)bpf_inode_from_fown(fown);
 
     union prov_elt *ptr_prov_task, *ptr_prov_cred, *ptr_prov_inode;
     struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
@@ -1594,10 +1594,10 @@ int BPF_PROG(file_send_sigiotask, struct task_struct *task, struct fown_struct *
       signum = SIGIO;
     }
 
-    uses(RL_FILE_SIGIO, current_task, ptr_prov_inode, ptr_prov_task, ptr_prov_cred, file, signum);
+    //uses(RL_FILE_SIGIO, current_task, ptr_prov_inode, ptr_prov_task, ptr_prov_cred, file, signum);
 
     return 0;
-}*/
+}
 
 /*!
  * @brief Record provenance when msg_msg_alloc_security hook is triggered.
