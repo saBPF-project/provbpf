@@ -13,22 +13,18 @@
  * published by the Free Software Foundation; either version 2 of the License,
  * or (at your option) any later version.
  */
-#ifndef __KERN_BPF_POLICY_H
-#define __KERN_BPF_POLICY_H
+#ifndef __KERN_BPF_TC_TYPES_H
+#define __KERN_BPF_TC_TYPES_H
 
-/*!
- * @brief provenance capture policy defined by the user.
- *
- */
-struct capture_policy {
-	// Whether nodes should be compressed into one if possible.
-	bool should_compress_node;
-	// Whether edges should be compressed into one if possible.
-	bool should_compress_edge;
-	// every time a relation is recorded the two end nodes will be recorded
-	// again if set to true.
-	bool should_duplicate; // will probably still be needed by spade
-	bool prov_all;
-};
+#define TC_ACT_UNSPEC	(-1)
+#define TC_ACT_OK		0
+#define TC_ACT_RECLASSIFY	1
+#define TC_ACT_SHOT		2
+#define TC_ACT_PIPE		3
+#define TC_ACT_STOLEN		4
+#define TC_ACT_QUEUED		5
+#define TC_ACT_REPEAT		6
+#define TC_ACT_REDIRECT		7
+#define TC_ACT_JUMP		0x10000000
 
 #endif

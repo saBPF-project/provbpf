@@ -39,6 +39,8 @@
 #include "kern/iattr.h"
 #include "kern/relation.h"
 #include "kern/net.h"
+#include "kern/tc_types.h"
+#include "kern/provenance_filter.h"
 
 char _license[] SEC("license") = "GPL";
 
@@ -46,6 +48,13 @@ char _license[] SEC("license") = "GPL";
  * https://elixir.bootlin.com/linux/v5.8/source/include/linux/lsm_hook_defs.h
  * Template is: SEC("lsm/HOOK_NAMES")
  */
+
+ #ifndef PROV_FILTER_EGRESS_OFF
+ SEC("classifier")
+ int cls_main(struct __sk_buff *skb) {
+     return -1;
+ }
+ #endif
 
 /*!
  * @brief Record provenance when task_alloc is triggered.
@@ -2406,7 +2415,7 @@ int BPF_PROG(socket_recvmsg, struct socket *sock, struct msghdr *msg, int size, 
 #ifndef PROV_FILTER_SOCKET_SOCK_RCV_SKB_OFF
 SEC("lsm/socket_sock_rcv_skb")
 int BPF_PROG(socket_sock_rcv_skb, struct sock *sk, struct sk_buff *skb) {
-    union prov_elt *ptr_prov_inode;
+    union prov_elt *ptr_prov_inode, prov_pck;
 
     uint16_t family = sk->__sk_common.skc_family;
 
@@ -2419,9 +2428,14 @@ int BPF_PROG(socket_sock_rcv_skb, struct sock *sk, struct sk_buff *skb) {
         return 0;
 
     ptr_prov_inode = get_or_create_inode_prov((struct inode *)bpf_inode_from_sock(sock));
-
     if (!ptr_prov_inode)
         return 0;
+
+    if (should_record_packet(ptr_prov_inode)) {
+        provenance_alloc_with_ipv4_skb(&prov_pck, skb);
+
+
+    }
 
     return 0;
 }

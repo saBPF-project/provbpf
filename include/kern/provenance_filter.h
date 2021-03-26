@@ -13,22 +13,18 @@
  * published by the Free Software Foundation; either version 2 of the License,
  * or (at your option) any later version.
  */
-#ifndef __KERN_BPF_POLICY_H
-#define __KERN_BPF_POLICY_H
+#ifndef __KERN_BPF_PROVENANCE_FILTER_H
+#define __KERN_BPF_PROVENANCE_FILTER_H
 
-/*!
- * @brief provenance capture policy defined by the user.
- *
- */
-struct capture_policy {
-	// Whether nodes should be compressed into one if possible.
-	bool should_compress_node;
-	// Whether edges should be compressed into one if possible.
-	bool should_compress_edge;
-	// every time a relation is recorded the two end nodes will be recorded
-	// again if set to true.
-	bool should_duplicate; // will probably still be needed by spade
-	bool prov_all;
-};
+static __always_inline bool should_record_packet(union prov_elt *prov) {
+    uint32_t policy_key = 0;
+    struct capture_policy *prov_policy = bpf_map_lookup_elem(&policy_map, &policy_key);
+
+    if (prov_policy && prov_policy->prov_all)
+        return true;
+    if (provenance_is_tracked(prov))
+        return true;
+    return false;
+}
 
 #endif

@@ -16,6 +16,7 @@
 #ifndef __KERN_BPF_PROVENANCE_NET_H
 #define __KERN_BPF_PROVENANCE_NET_H
 
+#define ihlen(ih)    (ih->ihl * 4)
 /*!
  * @brief Record the address provenance node that binds to the socket node.
  *
@@ -51,6 +52,66 @@ static __always_inline int record_address(struct sockaddr *address, int addrlen,
   record_relation(RL_ADDRESSED, ptr_prov_addr, true, prov, false, NULL, 0);
 
 	return 0;
+}
+
+static __always_inline unsigned int skb_headlen(const struct sk_buff *skb)
+{
+	return skb->len - skb->data_len;
+}
+
+static __always_inline unsigned char *skb_network_header(const struct sk_buff *skb)
+{
+	return skb->head + skb->network_header;
+}
+
+static __always_inline int skb_network_offset(const struct sk_buff *skb)
+{
+	return skb_network_header(skb) - skb->data;
+}
+
+static __always_inline void *__skb_header_pointer(const struct sk_buff *skb, int offset,
+		     int len, void *data, int hlen, void *buffer)
+{
+	if (hlen - offset >= len)
+		return data + offset;
+
+	if (!skb ||
+	    bpf_skb_load_bytes(skb, offset, buffer, len) < 0)
+		return NULL;
+
+	return buffer;
+}
+
+static __always_inline void *skb_header_pointer(const struct sk_buff *skb, int offset, int len, void *buffer)
+{
+	return __skb_header_pointer(skb, offset, len, skb->data,
+				    skb_headlen(skb), buffer);
+}
+
+static __always_inline void provenance_alloc_with_ipv4_skb(union prov_elt *ptr_prov_pck, struct sk_buff *skb) {
+	int offset;
+	struct iphdr _iph, *ih;
+
+	offset = skb_network_offset(skb);
+	ih = skb_header_pointer(skb, offset, sizeof(_iph), &_iph);
+	if (!ih)
+		return;
+
+	// if (ihlen(ih) < sizeof(_iph))
+	// 	return;
+	//
+	// __builtin_memset(ptr_prov_pck, 0, sizeof(union prov_elt));
+    // prov_init_node(ptr_prov_pck, ENT_PACKET);
+	//
+	// // Collect IP element of prov identifier.
+	// // force parse endian casting
+	// packet_identifier(ptr_prov_pck).id = (uint16_t)ih->id;
+	// packet_identifier(ptr_prov_pck).snd_ip = (uint32_t)ih->saddr;
+	// packet_identifier(ptr_prov_pck).rcv_ip = (uint32_t)ih->daddr;
+	// packet_identifier(ptr_prov_pck).protocol = ih->protocol;
+	// packet_info(ptr_prov_pck).len = (size_t)ih->tot_len;
+
+	return;
 }
 
 #endif
