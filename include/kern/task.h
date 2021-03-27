@@ -76,17 +76,13 @@ static __always_inline void prov_update_task(struct task_struct *task,
     if (!task)
         return NULL;
 
-    union prov_elt prov_tmp;
-    union prov_elt *prov_on_map = bpf_task_storage_get(&task_storage_map, task, 0, 0);
-    // provenance is already tracked
-    if (prov_on_map) {
-        // update the task's provenance since it may have changed
-        prov_update_task(task, prov_on_map);
-    } else { // a new task
-        prov_init_node(&prov_tmp, ACT_TASK);
-        prov_update_task(task, &prov_tmp);
-        prov_on_map = bpf_task_storage_get(&task_storage_map, task, &prov_tmp, BPF_NOEXIST | BPF_LOCAL_STORAGE_GET_F_CREATE);
-    }
-    return prov_on_map;
+    // create if does not exist
+    union prov_elt *storage = bpf_task_storage_get(&task_storage_map, task, 0, BPF_LOCAL_STORAGE_GET_F_CREATE);
+    if (!storage)
+        return NULL;
+    if (!provenance_is_initialized(storage))
+        prov_init_node(storage, ACT_TASK);
+    prov_update_task(task, storage);
+    return storage;
  }
 #endif
