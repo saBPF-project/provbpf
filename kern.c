@@ -1135,40 +1135,33 @@ int BPF_PROG(ptrace_traceme, struct task_struct *parent) {
  * from derives function.
  *
  */
-/*#ifndef PROV_FILTER_MMAP_FILE_OFF
+#ifndef PROV_FILTER_MMAP_FILE_OFF
 SEC("lsm/mmap_file")
 int BPF_PROG(mmap_file, struct file *file, unsigned long reqprot, unsigned long prot, unsigned long flags) {
     union prov_elt *ptr_prov_current, *ptr_prov_current_cred, *ptr_prov_file_inode;
     struct task_struct *current_task;
     struct cred *current_cred;
 
+    if (!file)
+        return 0;
     if (is_inode_dir(file->f_inode))
+        return 0;
+    ptr_prov_file_inode = get_or_create_inode_prov(file->f_inode);
+    if (!ptr_prov_file_inode)
         return 0;
 
     current_task = (struct task_struct *)bpf_get_current_task_btf();
-    current_cred = get_task_cred(current_task);
-
-    if (__builtin_expect(!file, 0)) {
-      return 0;
-    }
-
     ptr_prov_current = get_task_provenance(current_task, true);
-    if (!ptr_prov_current) {
-      return 0;
-    }
-    ptr_prov_current_cred = get_or_create_cred_prov(current_cred);
-    if (!ptr_prov_current_cred) {
-      return 0;
-    }
-    ptr_prov_file_inode = get_or_create_inode_prov(file->f_inode);
-    if (!ptr_prov_file_inode) {
-      return 0;
-    }
+    if (!ptr_prov_current)
+        return 0;
 
-    if (provenance_is_opaque(ptr_prov_current_cred)) {
+    current_cred = get_task_cred(current_task);
+    ptr_prov_current_cred = get_or_create_cred_prov(current_cred);
+    if (!ptr_prov_current_cred)
       return 0;
-    }  
-    
+    if (provenance_is_opaque(ptr_prov_current_cred))
+      return 0;
+
     if ((flags & MAP_TYPE) == MAP_SHARED || (flags & MAP_TYPE) == MAP_SHARED_VALIDATE) {
       if ((prot & PROT_WRITE) != 0) {
         uses(RL_MMAP_WRITE, current_task, ptr_prov_file_inode, ptr_prov_current, ptr_prov_current_cred, file, flags);
@@ -1193,7 +1186,7 @@ int BPF_PROG(mmap_file, struct file *file, unsigned long reqprot, unsigned long 
 
     return 0;
 }
-#endif */
+#endif
 
 #ifdef CONFIG_SECURITY_FLOW_FRIENDLY
 /*!
@@ -1568,10 +1561,10 @@ int BPF_PROG(file_ioctl, struct file *file, unsigned int cmd, unsigned long arg)
 
 SEC("lsm/file_send_sigiotask")
 int BPF_PROG(file_send_sigiotask, struct task_struct *task, struct fown_struct *fown, int signum) {
-    struct file *file = (struct file *)bpf_file_from_fown(fown); 
+    struct file *file = (struct file *)bpf_file_from_fown(fown);
 
-    struct inode *inode = file->f_inode; 
-    
+    struct inode *inode = file->f_inode;
+
     union prov_elt *ptr_prov_task, *ptr_prov_cred, *ptr_prov_inode;
     struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
 
@@ -1579,12 +1572,12 @@ int BPF_PROG(file_send_sigiotask, struct task_struct *task, struct fown_struct *
     if (!ptr_prov_task) {
       return 0;
     }
-    
+
     ptr_prov_cred = get_or_create_cred_prov(task->cred);
     if (!ptr_prov_cred) {
       return 0;
     }
-    
+
     ptr_prov_inode = get_or_create_inode_prov(inode);
     if (!ptr_prov_inode) {
       return 0;
