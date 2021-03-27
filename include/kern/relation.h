@@ -135,7 +135,6 @@ static __always_inline void update_version(const uint64_t type,
     if (!provenance_has_outgoing(prov) && prov_policy && prov_policy->should_compress_node)
         return;
 
-    __builtin_memset(&old_prov, 0, sizeof(union prov_elt));
     __builtin_memcpy(&old_prov, prov, sizeof(union prov_elt));
 
     // Update the version of prov to the newer version
