@@ -1141,6 +1141,7 @@ int BPF_PROG(mmap_file, struct file *file, unsigned long reqprot, unsigned long 
     union prov_elt *ptr_prov_current, *ptr_prov_current_cred, *ptr_prov_file_inode;
     struct task_struct *current_task;
     struct cred *current_cred;
+    uint64_t type = 0;
 
     if (!file)
         return 0;
@@ -1164,25 +1165,27 @@ int BPF_PROG(mmap_file, struct file *file, unsigned long reqprot, unsigned long 
 
     if ((flags & MAP_TYPE) == MAP_SHARED || (flags & MAP_TYPE) == MAP_SHARED_VALIDATE) {
       if ((prot & PROT_WRITE) != 0) {
-        uses(RL_MMAP_WRITE, current_task, ptr_prov_file_inode, ptr_prov_current, ptr_prov_current_cred, file, flags);
+        type = RL_MMAP_WRITE;
       }
-      if ((prot & PROT_READ) != 0) {
-        uses(RL_MMAP_READ, current_task, ptr_prov_file_inode, ptr_prov_current, ptr_prov_current_cred, file, flags);
+      else if ((prot & PROT_EXEC) != 0) {
+        type = RL_MMAP_EXEC;
       }
-      if ((prot & PROT_EXEC) != 0) {
-        uses(RL_MMAP_EXEC, current_task, ptr_prov_file_inode, ptr_prov_current, ptr_prov_current_cred, file, flags);
+      else if ((prot & PROT_READ) != 0) {
+        type = RL_MMAP_READ;
       }
     } else {
       if ((prot & PROT_WRITE) != 0) {
-        uses(RL_MMAP_WRITE_PRIVATE, current_task, ptr_prov_file_inode, ptr_prov_current, ptr_prov_current_cred, file, flags);
+        type = RL_MMAP_WRITE_PRIVATE;
       }
-      if ((prot & PROT_READ) != 0) {
-        uses(RL_MMAP_READ_PRIVATE, current_task, ptr_prov_file_inode, ptr_prov_current, ptr_prov_current_cred, file, flags);
+      else if ((prot & PROT_EXEC) != 0) {
+        type = RL_MMAP_EXEC_PRIVATE;
       }
-      if ((prot & PROT_EXEC) != 0) {
-        uses(RL_MMAP_EXEC_PRIVATE, current_task, ptr_prov_file_inode, ptr_prov_current, ptr_prov_current_cred, file, flags);
+      else if ((prot & PROT_READ) != 0) {
+        type = RL_MMAP_READ_PRIVATE;
       }
     }
+    if(type)
+        uses(type, current_task, ptr_prov_file_inode, ptr_prov_current, ptr_prov_current_cred, file, flags);
 
     return 0;
 }
