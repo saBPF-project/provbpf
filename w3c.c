@@ -415,16 +415,7 @@ char* proc_to_json(struct proc_prov_struct* n){
   char tmp[33];
   NODE_PREP_IDs(n);
   __node_start(id, &(n->identifier.node_id), n->taint, n->jiffies, n->epoch);
-  __add_uint32_attribute("cf:uid", n->uid, true);
-  __add_uint32_attribute("cf:gid", n->gid, true);
-  __add_uint32_attribute("cf:tgid", n->tgid, true);
-  __add_uint32_attribute("cf:utsns", n->utsns, true);
-  __add_uint32_attribute("cf:ipcns", n->ipcns, true);
-  __add_uint32_attribute("cf:mntns", n->mntns, true);
-  __add_uint32_attribute("cf:pidns", n->pidns, true);
-  __add_uint32_attribute("cf:netns", n->netns, true);
-  __add_uint32_attribute("cf:cgroupns", n->cgroupns, true);
-  __add_uint32_attribute("cf:secid", n->secid, true);
+   /* TODO: what to record */
   __add_label_attribute("process", utoa(n->identifier.node_id.version, tmp, DECIMAL), true);
   __close_json_entry(buffer);
   return buffer;

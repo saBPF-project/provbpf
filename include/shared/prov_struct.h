@@ -169,13 +169,7 @@ struct node_struct {
 struct proc_prov_struct {
 	basic_elements;
 	shared_node_elements;
-	uint32_t tgid;
-	uint32_t utsns;
-	uint32_t ipcns;
-	uint32_t mntns;
-	uint32_t pidns;
-	uint32_t netns;
-	uint32_t cgroupns;
+     /* TODO: what to record */
 };
 
 struct task_prov_struct {

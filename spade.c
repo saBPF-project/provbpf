@@ -161,16 +161,7 @@ char* derived_to_spade_json(struct relation_struct* e) {
 
 char* proc_to_spade_json(struct proc_prov_struct* n) {
   NODE_START("Entity");
-  __add_uint32_attribute("uid", n->uid, true);
-  __add_uint32_attribute("gid", n->gid, true);
-  __add_uint32_attribute("tgid", n->tgid, true);
-  __add_uint32_attribute("utsns", n->utsns, true);
-  __add_uint32_attribute("ipcns", n->ipcns, true);
-  __add_uint32_attribute("mntns", n->mntns, true);
-  __add_uint32_attribute("pidns", n->pidns, true);
-  __add_uint32_attribute("netns", n->netns, true);
-  __add_uint32_attribute("cgroupns", n->cgroupns, true);
-  __add_uint32_attribute("secid", n->secid, true);
+  /* TODO: what to record */
   NODE_END();
   return buffer;
 }
