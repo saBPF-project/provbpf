@@ -27,25 +27,13 @@
 
 #include "shared/prov_struct.h"
 #include "shared/id.h"
+#include "shared/prov_types.h"
 
 #include "usr/provbpf.skel.h"
 #include "usr/record.h"
 #include "usr/configuration.h"
 
-
-#define DM_AGENT                                0x1000000000000000UL
-/* NODE IS LONG*/
-#define ND_LONG                                 0x0400000000000000UL
-#define AGT_MACHINE                             (DM_AGENT | ND_LONG | (0x0000000000000001ULL << 4))
-
-#ifndef __NR_pidfd_open
-#define __NR_pidfd_open 434
-#endif
-
-static inline int sys_pidfd_open(pid_t pid, unsigned int flags)
-{
-	return syscall(__NR_pidfd_open, pid, flags);
-}
+static struct provbpf *skel = NULL;
 
 /* Callback function called whenever a new ring
  * buffer entry is polled from the buffer. */
@@ -62,7 +50,7 @@ static int buf_process_entry(void *ctx, void *data, size_t len) {
     return 0;
 }
 
-void set_id(struct provbpf *skel, uint32_t index, uint64_t value) {
+static void set_id(struct provbpf *skel, uint32_t index, uint64_t value) {
     int map_fd;
     struct id_elem id;
     map_fd = bpf_object__find_map_fd_by_name(skel->obj, "ids_map");
@@ -88,22 +76,8 @@ static uint64_t prov_next_id(uint32_t key, struct provbpf *skel)	{
     return val.id;
 }
 
-static uint64_t prov_get_id(uint32_t key, struct provbpf *skel) {
-    int map_fd = bpf_object__find_map_fd_by_name(skel->obj, "ids_map");
-    if (map_fd < 0) {
-      syslog(LOG_ERR, "ProvBPF: Failed loading ids_map (%d).", map_fd);
-      return 0;
-    }
-
-    struct id_elem val;
-    int res = bpf_map_lookup_elem(map_fd, &key, &val);
-    if (res == -1)
-        return 0;
-    return val.id;
-}
-
 /* djb2 hash implementation by Dan Bernstein */
-static inline uint64_t djb2_hash(const char *str)
+static uint64_t djb2_hash(const char *str)
 {
 	uint64_t hash = 5381;
 	int c = *str;
@@ -114,8 +88,6 @@ static inline uint64_t djb2_hash(const char *str)
 	}
 	return hash;
 }
-
-static struct provbpf *skel = NULL;
 
 static void sig_handler(int sig) {
     if (sig == SIGTERM) {
