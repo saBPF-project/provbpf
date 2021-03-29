@@ -233,7 +233,7 @@ int main(void) {
     /* Create a new ring buffer handle in the userspace.
      * buf_process_entry is the callback function that
      * process the entry in the ring buffer. */
-    prov_init();
+    prov_record_init();
 
     ringbuf = ring_buffer__new(map_fd, buf_process_entry, NULL, NULL);
     syslog(LOG_INFO, "ProvBPF: Start polling forever...");

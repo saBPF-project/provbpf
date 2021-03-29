@@ -394,7 +394,7 @@ static inline void log_to_terminal(char* json){
     printf("%s\n", json);
 }
 
-void prov_init() {
+void prov_record_init() {
     if (__config.output == CF_BPF_LOG) {
         /* setup log file */
         syslog(LOG_INFO, "ProvBPF: Log file %s.", __config.log_path);
