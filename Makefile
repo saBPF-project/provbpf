@@ -34,14 +34,14 @@ skel:
 	bpftool gen skeleton provbpf.o > include/usr/provbpf.skel.h
 
 usr:
-	clang utils.c -o utils.o -Iinclude -c
-	clang types.c -o types.o -Iinclude -c
-	clang spade.c -o spade.o -Iinclude -c
-	clang w3c.c -o w3c.o -Iinclude -c
-	clang record.c -o record.o -Iinclude -c
-	clang configuration.c -o configuration.o -Iinclude -c
-	clang id.c -o id.o -Iinclude -c
-	clang service.c -o service.o -Iinclude -c
+	clang -Wall utils.c -o utils.o -Iinclude -c
+	clang -Wall types.c -o types.o -Iinclude -c
+	clang -Wall spade.c -o spade.o -Iinclude -c
+	clang -Wall w3c.c -o w3c.o -Iinclude -c
+	clang -Wall record.c -o record.o -Iinclude -c
+	clang -Wall configuration.c -o configuration.o -Iinclude -c
+	clang -Wall id.c -o id.o -Iinclude -c
+	clang -Wall service.c -o service.o -Iinclude -c
 	clang -o provbpfd \
 	service.o \
 	record.o \
