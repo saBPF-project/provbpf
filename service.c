@@ -159,13 +159,11 @@ int main(void) {
     syslog(LOG_INFO, "ProvBPF: Open and loading...");
     skel = provbpf__open_and_load();
     if (!skel) {
-        syslog(LOG_ERR, "ProvBPF: Failed loading ...");
-        syslog(LOG_ERR, "ProvBPF: Kernel doesn't support this program type.");
+        syslog(LOG_ERR, "ProvBPF: Failed loading bpf skeleton.");
         goto close_prog;
     }
 
     /* we set parameters before attaching programs */
-    // TODO copy existing CamFlow code to get those values.
     set_id(skel, BOOT_ID_INDEX, get_boot_id());
     set_id(skel, MACHINE_ID_INDEX, get_machine_id());
 
