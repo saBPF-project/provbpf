@@ -126,14 +126,21 @@ void sig_handler(int sig) {
     }
 }
 
+void update_rlimit(void) {
+    int err;
+    struct rlimit r = {RLIM_INFINITY, RLIM_INFINITY};
+
+    err = setrlimit(RLIMIT_MEMLOCK, &r);
+    if (err) {
+        syslog(LOG_ERR, "ProvBPF: Error while setting rlimit %d.", err);
+        exit(err);
+    }
+}
+
 int main(void) {
     struct ring_buffer *ringbuf = NULL;
-    int err, map_fd, pidfd, search_map_fd, res;
-    struct rlimit r = {RLIM_INFINITY, RLIM_INFINITY};
-    unsigned int key = 0, value;
-    uint64_t search_map_key, prev_search_map_key;
-    union prov_elt search_map_value;
-    pid_t current_pid;
+    int err, map_fd;
+    unsigned int key = 0;
 
     syslog(LOG_INFO, "ProvBPF: Starting...");
 
@@ -147,11 +154,7 @@ int main(void) {
     read_config();
 
     syslog(LOG_INFO, "ProvBPF: Setting rlimit...");
-    err = setrlimit(RLIMIT_MEMLOCK, &r);
-    if (err) {
-        syslog(LOG_ERR, "ProvBPF: Error while setting rlimit %d.", err);
-        return err;
-    }
+    update_rlimit();
 
     syslog(LOG_INFO, "ProvBPF: Open and loading...");
     skel = provbpf__open_and_load();
