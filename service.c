@@ -235,45 +235,6 @@ int main(void) {
      * process the entry in the ring buffer. */
     prov_init();
 
-    current_pid = getpid();
-
-    syslog(LOG_INFO, "ProvBPF: Searching task_storage_map for current process...");
-    search_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "task_storage_map");
-    if (search_map_fd < 0) {
-      syslog(LOG_ERR, "ProvBPF: Failed loading task_storage_map (%d).", search_map_fd);
-      goto close_prog;
-    }
-    
-    pidfd = sys_pidfd_open(current_pid, 0);
-    res = bpf_map_lookup_elem(search_map_fd, &pidfd, &search_map_value);
-    if (res > -1) {
-        if (search_map_value.task_info.pid == current_pid) {
-          set_opaque(&search_map_value);
-          bpf_map_update_elem(search_map_fd, &pidfd, &search_map_value, BPF_EXIST);
-          syslog(LOG_INFO, "ProvBPF: Done searching. Current process pid: %d has been set opaque...", current_pid);
-        }
-    }
-    close(search_map_fd);
-
-    syslog(LOG_INFO, "ProvBPF: Searching cred_storage_map for current process...");
-    search_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "cred_storage_map");
-    if (search_map_fd < 0) {
-      syslog(LOG_ERR, "ProvBPF: Failed loading cred_storage_map (%d).", search_map_fd);
-      goto close_prog;
-    }
-
-// TODO: avoid code repetition    
-//    bpf_map_update_elem(search_map_fd, &pidfd, &search_map_value, BPF_NOEXIST);
-    res = bpf_map_lookup_elem(search_map_fd, &pidfd, &search_map_value);
-    if (res > -1) {
-        if (search_map_value.task_info.pid == current_pid) {
-          set_opaque(&search_map_value);
-          bpf_map_update_elem(search_map_fd, &pidfd, &search_map_value, BPF_EXIST);
-          syslog(LOG_INFO, "ProvBPF: Done searching. Current cred pid: %d has been set opaque...", current_pid);
-        }
-    }
-    close(search_map_fd);
-    
     ringbuf = ring_buffer__new(map_fd, buf_process_entry, NULL, NULL);
     syslog(LOG_INFO, "ProvBPF: Start polling forever...");
     /* ring_buffer__poll polls for available data and consume records,
