@@ -23,6 +23,7 @@
 #include <sys/types.h>
 #include <sys/utsname.h>
 #include <signal.h>
+#include <errno.h>
 
 #include "shared/prov_struct.h"
 #include "shared/id.h"
@@ -69,7 +70,7 @@ void set_id(struct provbpf *skel, uint32_t index, uint64_t value) {
     bpf_map_update_elem(map_fd, &index, &id, BPF_ANY);
 }
 
-static __always_inline uint64_t prov_next_id(uint32_t key, struct provbpf *skel)	{
+static uint64_t prov_next_id(uint32_t key, struct provbpf *skel)	{
     int map_fd = bpf_object__find_map_fd_by_name(skel->obj, "ids_map");
     if (map_fd < 0) {
       syslog(LOG_ERR, "ProvBPF: Failed loading ids_map (%d).", map_fd);
@@ -87,7 +88,7 @@ static __always_inline uint64_t prov_next_id(uint32_t key, struct provbpf *skel)
     return val.id;
 }
 
-static __always_inline uint64_t prov_get_id(uint32_t key, struct provbpf *skel) {
+static uint64_t prov_get_id(uint32_t key, struct provbpf *skel) {
     int map_fd = bpf_object__find_map_fd_by_name(skel->obj, "ids_map");
     if (map_fd < 0) {
       syslog(LOG_ERR, "ProvBPF: Failed loading ids_map (%d).", map_fd);
@@ -116,7 +117,7 @@ static inline uint64_t djb2_hash(const char *str)
 
 static struct provbpf *skel = NULL;
 
-void sig_handler(int sig) {
+static void sig_handler(int sig) {
     if (sig == SIGTERM) {
         syslog(LOG_INFO, "ProvBPF: Received termination signal...");
         provbpf__destroy(skel);
@@ -126,7 +127,7 @@ void sig_handler(int sig) {
     }
 }
 
-void update_rlimit(void) {
+static void update_rlimit(void) {
     int err;
     struct rlimit r = {RLIM_INFINITY, RLIM_INFINITY};
 
@@ -137,10 +138,68 @@ void update_rlimit(void) {
     }
 }
 
+static int init_machine_info(void) {
+    int err, map_fd;
+    struct utsname buffer;
+    union long_prov_elt prov_machine;
+    unsigned int key = 0;
+
+    memset(&prov_machine, 0, sizeof(union long_prov_elt));
+
+    /* we set parameters before attaching programs */
+    set_id(skel, BOOT_ID_INDEX, get_boot_id());
+    set_id(skel, MACHINE_ID_INDEX, get_machine_id());
+
+    // set provenance metadata
+    prov_machine.node_info.identifier.node_id.type = AGT_MACHINE;
+    prov_machine.node_info.identifier.node_id.id = prov_next_id(NODE_ID_INDEX, skel);
+    prov_machine.node_info.identifier.node_id.id = djb2_hash(PROVBPF_COMMIT);
+    prov_machine.node_info.identifier.node_id.boot_id = get_boot_id();
+    prov_machine.node_info.identifier.node_id.machine_id = get_machine_id();
+    prov_machine.node_info.identifier.node_id.version = 0;
+
+    // set release version
+    prov_machine.machine_info.cam_major = PROVBPF_VERSION_MAJOR;
+    prov_machine.machine_info.cam_minor = PROVBPF_VERSION_MINOR;
+    prov_machine.machine_info.cam_patch = PROVBPF_VERSION_PATCH;
+
+    // set git commit hash
+    memcpy(&(prov_machine.machine_info.commit), PROVBPF_COMMIT, PROV_COMMIT_MAX_LENGTH);
+
+    // retrieve and set utsname
+    err = uname(&buffer);
+    if (err<0) {
+        syslog(LOG_ERR, "ProvBPF: Error while calling uname %d.", errno);
+        return err;
+    }
+    memcpy(&(prov_machine.machine_info.utsname), &buffer, sizeof(struct new_utsname));
+
+    map_fd = bpf_object__find_map_fd_by_name(skel->obj, "prov_machine_map");
+    bpf_map_update_elem(map_fd, &key, &prov_machine, BPF_ANY);
+
+    return 0;
+}
+
+static int init_policy(void) {
+    int map_fd;
+    struct capture_policy prov_policy;
+    unsigned int key = 0;
+
+    memset(&prov_policy, 0, sizeof(struct capture_policy));
+
+  	prov_policy.should_duplicate = false;
+  	prov_policy.should_compress_node = true;
+  	prov_policy.should_compress_edge = true;
+
+    map_fd = bpf_object__find_map_fd_by_name(skel->obj, "policy_map");
+    bpf_map_update_elem(map_fd, &key, &prov_policy, BPF_ANY);
+
+    return 0;
+}
+
 int main(void) {
     struct ring_buffer *ringbuf = NULL;
     int err, map_fd;
-    unsigned int key = 0;
 
     syslog(LOG_INFO, "ProvBPF: Starting...");
 
@@ -163,58 +222,19 @@ int main(void) {
         goto close_prog;
     }
 
-    /* we set parameters before attaching programs */
-    set_id(skel, BOOT_ID_INDEX, get_boot_id());
-    set_id(skel, MACHINE_ID_INDEX, get_machine_id());
-
-    // Initialize provenance policy
-    struct capture_policy prov_policy;
-    memset(&prov_policy, 0, sizeof(struct capture_policy));
-
-    syslog(LOG_INFO, "ProvBPF: policy initialization started...");
-  	prov_policy.should_duplicate = false;
-  	prov_policy.should_compress_node = true;
-  	prov_policy.should_compress_edge = true;
-
-    map_fd = bpf_object__find_map_fd_by_name(skel->obj, "policy_map");
-    bpf_map_update_elem(map_fd, &key, &prov_policy, BPF_ANY);
-    syslog(LOG_INFO, "ProvBPF: policy initialization finished.");
-
-    syslog(LOG_INFO, "ProvBPF: prov_machine initialization started...");
-    union long_prov_elt prov_machine;
-    memset(&prov_machine, 0, sizeof(union long_prov_elt));
-
-    prov_machine.machine_info.cam_major = PROVBPF_VERSION_MAJOR;
-    prov_machine.machine_info.cam_minor = PROVBPF_VERSION_MINOR;
-    prov_machine.machine_info.cam_patch = PROVBPF_VERSION_PATCH;
-
-    __builtin_memcpy(&(prov_machine.machine_info.commit), PROVBPF_COMMIT, PROV_COMMIT_MAX_LENGTH);
-
-    prov_machine.node_info.identifier.node_id.type = AGT_MACHINE;
-    prov_machine.node_info.identifier.node_id.id = prov_next_id(NODE_ID_INDEX, skel);
-    prov_machine.node_info.identifier.node_id.boot_id = prov_get_id(BOOT_ID_INDEX, skel);
-    prov_machine.node_info.identifier.node_id.machine_id = prov_get_id(MACHINE_ID_INDEX, skel);
-    prov_machine.node_info.identifier.node_id.version = 1;
-
-    struct utsname buffer;
-
-    int result = uname(&buffer);
-
-    if (result == -1) {
-        syslog(LOG_ERR, "ProvBPF: Something went wrong..."); // TODO improve error description
-        return 0;
+    syslog(LOG_INFO, "ProvBPF: initializing machine information...");
+    err = init_machine_info();
+    if(err) {
+        syslog(LOG_ERR, "ProvBPF: Failed initializing machine information.");
+        goto close_prog;
     }
 
-    __builtin_memcpy(&(prov_machine.machine_info.utsname), &buffer, sizeof(struct new_utsname));
-
-    prov_machine.node_info.identifier.node_id.id = djb2_hash(PROVBPF_COMMIT);
-    prov_machine.node_info.identifier.node_id.boot_id = get_boot_id();
-    prov_machine.node_info.identifier.node_id.machine_id = get_machine_id();
-
-    map_fd = bpf_object__find_map_fd_by_name(skel->obj, "prov_machine_map");
-    bpf_map_update_elem(map_fd, &key, &prov_machine, BPF_ANY);
-
-    syslog(LOG_INFO, "ProvBPF: prov_machine initialization ended.");
+    syslog(LOG_INFO, "ProvBPF: initializing policy...");
+    err = init_policy();
+    if(err) {
+        syslog(LOG_ERR, "ProvBPF: Failed initializing policy.");
+        goto close_prog;
+    }
 
     syslog(LOG_INFO, "ProvBPF: Attaching BPF programs...");
     err = provbpf__attach(skel);
