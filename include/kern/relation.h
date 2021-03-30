@@ -559,20 +559,4 @@ static __always_inline int record_kernel_link(union prov_elt *ptr_prov) {
     record_relation(RL_RAN_ON, ptr_prov_machine, true, ptr_prov, false, NULL, 0);
     return 0;
 }
-
-static __always_inline union prov_elt *get_task_provenance(struct task_struct *current_task, bool link) {
-    union prov_elt *ptr_prov_current;
-
-    ptr_prov_current = get_or_create_task_prov(current_task);
-    if (!ptr_prov_current) {
-      return NULL;
-    }
-
-    if (!provenance_is_opaque(ptr_prov_current) && link) {
-      record_kernel_link(ptr_prov_current);
-    }
-
-    return ptr_prov_current;
-}
-
 #endif

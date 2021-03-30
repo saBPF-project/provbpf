@@ -29,27 +29,16 @@
  * and insert it into the @cred_storage_map; otherwise, updates its
  * existing provenance. Return either the new provenance entry
  * pointer or the updated provenance entry pointer. */
-static __always_inline union prov_elt* get_or_create_cred_prov(const struct cred *cred) {
-    if (!cred) 
-        return NULL; 
+static __always_inline union prov_elt* update_cred_prov(
+                                                const struct cred *cred,
+                                                union prov_elt* prov) {
+    if (!prov)
+        return NULL;
 
-    union prov_elt prov_tmp;
-    union prov_elt *prov_on_map = bpf_cred_storage_get(&cred_storage_map, (struct cred *)cred, 0, 0);
-    // provenance is already tracked
-    if (prov_on_map) {
-        // update the cred's provenance since it may have changed
-        // prov_update_cred(current_task, prov_on_map);
-    } else { // a new cred
-        __builtin_memset(&prov_tmp, 0, sizeof(union prov_elt));
-        prov_init_node(&prov_tmp, ENT_PROC);
-        //prov_update_cred(current_task, &prov_tmp);
-        prov_on_map = bpf_cred_storage_get(&cred_storage_map, (struct cred *)cred, &prov_tmp, BPF_NOEXIST | BPF_LOCAL_STORAGE_GET_F_CREATE);
-    }
-    return prov_on_map;
-}
-
-static __always_inline struct cred* get_task_cred(struct task_struct *task) {
-    return (struct cred*)task->cred;
+    if (!provenance_is_initialized(prov))
+        prov_init_node(prov, ENT_PROC);
+    node_identifier(prov).version++;
+    return prov;
 }
 
 #endif

@@ -43,28 +43,28 @@
 
 /* Update fields in a task's provenance detected by an LSM hook */
 // TODO: further refactor this function.
-static __always_inline void prov_update_task(struct task_struct *task,
-                                             union prov_elt *ptr_prov) {
-    ptr_prov->task_info.pid = task->pid;
-  	ptr_prov->task_info.vpid = task->tgid;
-  	ptr_prov->task_info.utime = task->utime;
-  	ptr_prov->task_info.stime = task->stime;
-  	ptr_prov->task_info.vm = task->mm->total_vm;
-  	// ptr_prov->task_info.rss = (task->mm->rss_stat.count[MM_FILEPAGES].counter +
+static __always_inline void __update_task(const struct task_struct *task,
+                                             union prov_elt *prov) {
+    prov->task_info.pid = task->pid;
+  	prov->task_info.vpid = task->tgid;
+  	prov->task_info.utime = task->utime;
+  	prov->task_info.stime = task->stime;
+  	prov->task_info.vm = task->mm->total_vm;
+  	// prov->task_info.rss = (task->mm->rss_stat.count[MM_FILEPAGES].counter +
   	//                           task->mm->rss_stat.count[MM_ANONPAGES].counter +
   	//                           task->mm->rss_stat.count[MM_SHMEMPAGES].counter) * IOC_PAGE_SIZE / KB;
-  	ptr_prov->task_info.rss = 0; // TODO: eBPF Verifier error output: "Type 'atomic_long_t' is not a struct". Need to find a fix
-  	ptr_prov->task_info.hw_vm = (task->mm->hiwater_vm > ptr_prov->task_info.vm) ? (task->mm->hiwater_vm * IOC_PAGE_SIZE / KB) : (ptr_prov->task_info.vm * IOC_PAGE_SIZE / KB);
-  	ptr_prov->task_info.hw_rss = (task->mm->hiwater_rss > ptr_prov->task_info.rss) ? (task->mm->hiwater_rss * IOC_PAGE_SIZE / KB) : (ptr_prov->task_info.rss * IOC_PAGE_SIZE / KB);
+  	prov->task_info.rss = 0; // TODO: eBPF Verifier error output: "Type 'atomic_long_t' is not a struct". Need to find a fix
+  	prov->task_info.hw_vm = (task->mm->hiwater_vm > prov->task_info.vm) ? (task->mm->hiwater_vm * IOC_PAGE_SIZE / KB) : (prov->task_info.vm * IOC_PAGE_SIZE / KB);
+  	prov->task_info.hw_rss = (task->mm->hiwater_rss > prov->task_info.rss) ? (task->mm->hiwater_rss * IOC_PAGE_SIZE / KB) : (prov->task_info.rss * IOC_PAGE_SIZE / KB);
 
 	// old proc_prov_struct entries
-	ptr_prov->task_info.tgid = task->tgid;
-	ptr_prov->task_info.utsns = task->nsproxy->uts_ns->ns.inum;
-	ptr_prov->task_info.ipcns = task->nsproxy->ipc_ns->ns.inum;
-	ptr_prov->task_info.mntns = task->nsproxy->mnt_ns->ns.inum;
-	ptr_prov->task_info.pidns = task->thread_pid->numbers[0].ns->ns.inum;
-	ptr_prov->task_info.netns = task->nsproxy->net_ns->ns.inum;
-	ptr_prov->task_info.cgroupns = task->nsproxy->cgroup_ns->ns.inum;
+	prov->task_info.tgid = task->tgid;
+	prov->task_info.utsns = task->nsproxy->uts_ns->ns.inum;
+	prov->task_info.ipcns = task->nsproxy->ipc_ns->ns.inum;
+	prov->task_info.mntns = task->nsproxy->mnt_ns->ns.inum;
+	prov->task_info.pidns = task->thread_pid->numbers[0].ns->ns.inum;
+	prov->task_info.netns = task->nsproxy->net_ns->ns.inum;
+	prov->task_info.cgroupns = task->nsproxy->cgroup_ns->ns.inum;
 
 }
 
@@ -72,17 +72,16 @@ static __always_inline void prov_update_task(struct task_struct *task,
  * and insert it into the @task_storage_map; otherwise, updates its
  * existing provenance. Return either the new provenance entry
  * pointer or the updated provenance entry pointer. */
- static __always_inline union prov_elt* get_or_create_task_prov(struct task_struct *task) {
-    if (!task)
+ static __always_inline union prov_elt* update_task_prov(
+                                                const struct task_struct * task,
+                                                union prov_elt* prov) {
+    if (!prov)
         return NULL;
 
-    // create if does not exist
-    union prov_elt *storage = bpf_task_storage_get(&task_storage_map, task, 0, BPF_LOCAL_STORAGE_GET_F_CREATE);
-    if (!storage)
-        return NULL;
-    if (!provenance_is_initialized(storage))
-        prov_init_node(storage, ACT_TASK);
-    prov_update_task(task, storage);
-    return storage;
+    if (!provenance_is_initialized(prov))
+        prov_init_node(prov, ACT_TASK);
+    __update_task(task, prov);
+    node_identifier(prov).version++;
+    return prov;
  }
 #endif
