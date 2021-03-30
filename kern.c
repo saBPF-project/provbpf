@@ -70,6 +70,22 @@ int BPF_PROG(task_free, struct task_struct *task) {
     return 0;
 }
 
+SEC("lsm/inode_free_security")
+int BPF_PROG(inode_free_security, struct inode *inode) {
+    union prov_elt *iprov;
+
+    if (is_inode_dir(inode))
+        return 0;
+
+    iprov = get_inode_prov(inode);
+    if(!iprov) // something is wrong
+        return 0;
+
+    /* Record inode freed */
+    record_terminate(RL_FREED, iprov);
+    return 0;
+}
+
 
 SEC("lsm/file_permission")
 int BPF_PROG(file_permission, struct file *file, int mask) {

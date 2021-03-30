@@ -90,7 +90,7 @@ static __always_inline bool filter_update_node(const uint64_t relation_type)
 }
 
 static __always_inline void __update_version(const uint64_t type,
-					    prov_entry_t *prov)
+					       union prov_elt *prov)
 {
     union prov_elt old_prov;
 
