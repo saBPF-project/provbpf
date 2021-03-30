@@ -46,11 +46,8 @@ char _license[] SEC("license") = "GPL";
 SEC("lsm/file_permission")
 int BPF_PROG(file_permission, struct file *file, int mask) {
     struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
-    struct cred *current_cred = (struct cred *)current_task->cred;
-    union prov_elt *ptask = bpf_task_storage_get(&task_storage_map, current_task, 0, BPF_LOCAL_STORAGE_GET_F_CREATE);
-    union prov_elt *pcred = bpf_cred_storage_get(&cred_storage_map, current_cred, 0, BPF_LOCAL_STORAGE_GET_F_CREATE);
-    ptask = update_task_prov(current_task, ptask);
-    pcred = update_cred_prov(current_task, pcred);
+    union prov_elt *ptask =retrieve_task_prov(current_task);
+    union prov_elt *pcred = retrieve_cred_prov(current_task);
     write_to_rb(ptask);
     write_to_rb(pcred);
     return 0;
@@ -59,12 +56,11 @@ int BPF_PROG(file_permission, struct file *file, int mask) {
 SEC("lsm/task_alloc")
 int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
     struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
-    struct cred *current_cred = (struct cred *)current_task->cred;
-    union prov_elt *ptask = bpf_task_storage_get(&task_storage_map, current_task, 0, BPF_LOCAL_STORAGE_GET_F_CREATE);
-    union prov_elt *pcred = bpf_cred_storage_get(&cred_storage_map, current_cred, 0, BPF_LOCAL_STORAGE_GET_F_CREATE);
-    ptask = update_task_prov(current_task, ptask);
-    pcred = update_cred_prov(current_task, pcred);
+    union prov_elt *ptask =retrieve_task_prov(current_task);
+    union prov_elt *potask =retrieve_task_prov(task);
+    union prov_elt *pcred = retrieve_cred_prov(current_task);
     write_to_rb(ptask);
+    write_to_rb(potask);
     write_to_rb(pcred);
     return 0;
 }

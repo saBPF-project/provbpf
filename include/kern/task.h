@@ -71,9 +71,11 @@ static __always_inline void __update_task(const struct task_struct *task,
  * and insert it into the @task_storage_map; otherwise, updates its
  * existing provenance. Return either the new provenance entry
  * pointer or the updated provenance entry pointer. */
- static __always_inline union prov_elt* update_task_prov(
-                                                const struct task_struct * task,
-                                                union prov_elt* prov) {
+ static __always_inline union prov_elt* retrieve_task_prov(struct task_struct * task) {
+    union prov_elt *prov;
+    if(!task)
+        return NULL;
+    prov = bpf_task_storage_get(&task_storage_map, task, 0, BPF_LOCAL_STORAGE_GET_F_CREATE);
     if (!prov)
         return NULL;
 
