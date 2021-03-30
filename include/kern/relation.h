@@ -123,6 +123,12 @@ static __always_inline void __record_relation(const uint64_t type,
                                              const struct file *file,
                                              const uint64_t flags)
 {
+    // do not repeat redundant edges
+	if (node_previous_id(to) == node_identifier(from).id && node_previous_type(to) == type)
+		return;
+
+	node_previous_id(to) = node_identifier(from).id;
+	node_previous_type(to) = type;
     // we update the destination node
     __update_version(type, to);
     // the source has an outgoing edge

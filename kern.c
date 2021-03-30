@@ -60,12 +60,14 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
 
 SEC("lsm/file_permission")
 int BPF_PROG(file_permission, struct file *file, int mask) {
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
-    union prov_elt *ptask, *pcred, *pinode = get_inode_prov(file->f_inode);
+    struct task_struct *current_task;
+    union prov_elt *ptask, *pcred, *pinode;
     uint32_t perms;
-    if (!pinode)
+
+    if (is_inode_dir(file->f_inode))
         return 0;
 
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
     ptask = get_task_prov(current_task);
     if (!ptask)
         return 0;
@@ -74,6 +76,10 @@ int BPF_PROG(file_permission, struct file *file, int mask) {
     if (!pcred)
         return 0;
     if (provenance_is_opaque(pcred))
+      return 0;
+
+    pinode = get_inode_prov(file->f_inode);
+    if (!pinode)
       return 0;
 
     perms = file_mask_to_perms((file->f_inode)->i_mode, mask);
