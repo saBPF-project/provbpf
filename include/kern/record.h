@@ -136,6 +136,19 @@ static __always_inline void __record_relation(const uint64_t type,
     __write_relation(type, from, to, file, flags);
 }
 
+static __always_inline void record_terminate(const uint64_t type,
+					   union prov_elt *prov)
+{
+    union prov_elt old_prov;
+
+    __builtin_memcpy(&old_prov, prov, sizeof(union prov_elt));
+    // Update the version of prov to the newer version
+    node_identifier(prov).version++;
+    clear_prov_recorded(prov);
+    __write_relation(type, &old_prov, prov, NULL, 0);
+}
+
+
 static __always_inline void uses(const uint64_t type,
                                  struct task_struct *current,
                                  void *entity,

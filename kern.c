@@ -37,7 +37,7 @@
 #include "kern/msg_msg.h"
 #include "kern/ipc_perm.h"
 #include "kern/iattr.h"
-#include "kern/relation.h"
+#include "kern/record.h"
 #include "kern/net.h"
 
 char _license[] SEC("license") = "GPL";
@@ -54,6 +54,19 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
         return 0;
 
     informs(RL_CLONE, ptask, pntask, NULL, clone_flags);
+    return 0;
+}
+
+SEC("lsm/task_free")
+int BPF_PROG(task_free, struct task_struct *task) {
+    union prov_elt *tprov;
+
+    tprov = get_task_prov(task);
+    if (!tprov) // something is wrong
+        return 0;
+
+    /* Record task terminate */
+    record_terminate(RL_TERMINATE_TASK, tprov);
     return 0;
 }
 
