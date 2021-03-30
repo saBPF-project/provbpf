@@ -54,22 +54,22 @@ static __always_inline int record_address(struct sockaddr *address, int addrlen,
 	return 0;
 }
 
-static __always_inline unsigned int skb_headlen(const struct sk_buff *skb)
+static __always_inline unsigned int skb_headlen(struct sk_buff *skb)
 {
 	return skb->len - skb->data_len;
 }
 
-static __always_inline unsigned char *skb_network_header(const struct sk_buff *skb)
+static __always_inline unsigned char *skb_network_header(struct sk_buff *skb)
 {
 	return skb->head + skb->network_header;
 }
 
-static __always_inline int skb_network_offset(const struct sk_buff *skb)
+static __always_inline int skb_network_offset(struct sk_buff *skb)
 {
 	return skb_network_header(skb) - skb->data;
 }
 
-static __always_inline void *__skb_header_pointer(const struct sk_buff *skb, int offset,
+static __always_inline void *__skb_header_pointer(struct sk_buff *skb, int offset,
 		     int len, void *data, int hlen, void *buffer)
 {
 	if (hlen - offset >= len)
@@ -77,12 +77,12 @@ static __always_inline void *__skb_header_pointer(const struct sk_buff *skb, int
 
 	if (!skb ||
 	    bpf_skb_load_bytes(skb, offset, buffer, len) < 0)
-		return NULL;
+		return 0;
 
 	return buffer;
 }
 
-static __always_inline void *skb_header_pointer(const struct sk_buff *skb, int offset, int len, void *buffer)
+static __always_inline void *skb_header_pointer(struct sk_buff *skb, int offset, int len, void *buffer)
 {
 	return __skb_header_pointer(skb, offset, len, skb->data,
 				    skb_headlen(skb), buffer);
@@ -97,9 +97,9 @@ static __always_inline void provenance_alloc_with_ipv4_skb(union prov_elt *ptr_p
 	if (!ih)
 		return;
 
-	// if (ihlen(ih) < sizeof(_iph))
-	// 	return;
-	//
+	if (ihlen(ih) < sizeof(_iph))
+		return;
+
 	// __builtin_memset(ptr_prov_pck, 0, sizeof(union prov_elt));
     // prov_init_node(ptr_prov_pck, ENT_PACKET);
 	//
@@ -113,5 +113,4 @@ static __always_inline void provenance_alloc_with_ipv4_skb(union prov_elt *ptr_p
 
 	return;
 }
-
 #endif

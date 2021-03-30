@@ -20,9 +20,9 @@
 static __always_inline void prov_init_node(union prov_elt *prov, uint64_t type) {
     __builtin_memset(prov, 0, sizeof(union prov_elt));
     node_identifier(prov).type=type;
-    node_identifier(prov).id = prov_next_id(NODE_ID_INDEX);
-    node_identifier(prov).boot_id = prov_get_id(BOOT_ID_INDEX);
-    node_identifier(prov).machine_id = prov_get_id(MACHINE_ID_INDEX);
+    // node_identifier(prov).id = prov_next_id(NODE_ID_INDEX);
+    // node_identifier(prov).boot_id = prov_get_id(BOOT_ID_INDEX);
+    // node_identifier(prov).machine_id = prov_get_id(MACHINE_ID_INDEX);
 }
 
 #endif
