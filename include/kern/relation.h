@@ -21,12 +21,16 @@
 static __always_inline void write_to_rb(union prov_elt *prov) {
     if (!prov)
         return;
-    if(provenance_is_opaque(prov))
-        return;
-    if (provenance_is_recorded(prov))
-		return;
     bpf_ringbuf_output(&r_buf, prov, sizeof(union prov_elt), 0);
-    set_prov_recorded(prov);
+}
+
+static __always_inline void write_node(union prov_elt *node){
+    if(provenance_is_opaque(node))
+        return;
+    if (provenance_is_recorded(node))
+		return;
+    write_to_rb(node);
+    set_prov_recorded(node);
 }
 
 /* Initialize common fields of a node's provenance */
@@ -68,8 +72,8 @@ static __always_inline void __write_relation(const uint64_t type,
     // set rcv node
     __builtin_memcpy(&(relation->relation_info.rcv), &node_identifier(to), sizeof(union prov_identifier));
 
-    write_to_rb(from);
-    write_to_rb(to);
+    write_node(from);
+    write_node(to);
     // record relation provenance
     write_to_rb(relation);
 }
