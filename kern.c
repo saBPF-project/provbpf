@@ -45,15 +45,20 @@ char _license[] SEC("license") = "GPL";
 SEC("lsm/task_alloc")
 int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
     struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
-    union prov_elt *ptask = get_task_prov(current_task);
-    if (!ptask)
+    union prov_elt *tprov, *tnprov;
+
+    if (!current_task)
         return 0;
 
-    union prov_elt *pntask = get_task_prov(task);
-    if(!pntask)
+    tprov = get_task_prov(current_task);
+    if (!tprov)
         return 0;
 
-    informs(RL_CLONE, ptask, pntask, NULL, clone_flags);
+    tnprov = get_task_prov(task);
+    if(!tnprov)
+        return 0;
+
+    informs(RL_CLONE, tprov, tnprov, NULL, clone_flags);
     return 0;
 }
 
@@ -86,48 +91,60 @@ int BPF_PROG(inode_free_security, struct inode *inode) {
     return 0;
 }
 
+SEC("lsm/cred_free")
+int BPF_PROG(cred_free, struct cred *cred) {
+    union prov_elt *cprov;
+
+    cprov = get_cred_prov(cred);
+    if (!cprov)
+      return 0;
+    // Record cred freed
+    record_terminate(RL_TERMINATE_PROC, cprov);
+    return 0;
+}
+
 
 SEC("lsm/file_permission")
 int BPF_PROG(file_permission, struct file *file, int mask) {
     struct task_struct *current_task;
-    union prov_elt *ptask, *pcred, *pinode;
+    union prov_elt *tprov, *cprov, *iprov;
     uint32_t perms;
 
     if (is_inode_dir(file->f_inode))
         return 0;
 
     current_task = (struct task_struct *)bpf_get_current_task_btf();
-    ptask = get_task_prov(current_task);
-    if (!ptask)
+    tprov = get_task_prov(current_task);
+    if (!tprov)
         return 0;
 
-    pcred = get_cred_prov(current_task);
-    if (!pcred)
+    cprov = get_cred_prov_from_task(current_task);
+    if (!cprov)
         return 0;
-    if (provenance_is_opaque(pcred))
+    if (provenance_is_opaque(cprov))
       return 0;
 
-    pinode = get_inode_prov(file->f_inode);
-    if (!pinode)
+    iprov = get_inode_prov(file->f_inode);
+    if (!iprov)
       return 0;
 
     perms = file_mask_to_perms((file->f_inode)->i_mode, mask);
 
     if (is_inode_socket(file->f_inode)) {
         if ((perms & (FILE__WRITE | FILE__APPEND)) != 0)
-            generates(RL_SND, current_task, pcred, ptask, pinode, file, mask);
+            generates(RL_SND, current_task, cprov, tprov, iprov, file, mask);
         if ((perms & (FILE__READ)) != 0)
-            uses(RL_RCV, current_task, pinode, ptask, pcred, file, mask);
+            uses(RL_RCV, current_task, iprov, tprov, cprov, file, mask);
     } else {
         if ((perms & (FILE__WRITE | FILE__APPEND)) != 0)
-            generates(RL_WRITE, current_task, pcred, ptask, pinode, file, mask);
+            generates(RL_WRITE, current_task, cprov, tprov, iprov, file, mask);
         if ((perms & (FILE__READ)) != 0)
-            uses(RL_READ, current_task, pinode, ptask, pcred, file, mask);
+            uses(RL_READ, current_task, iprov, tprov, cprov, file, mask);
         if ((perms & (FILE__EXECUTE)) != 0) {
-            if (provenance_is_opaque(pinode)) {
-                set_opaque(pcred);
+            if (provenance_is_opaque(iprov)) {
+                set_opaque(cprov);
             } else {
-                derives(RL_EXEC, pinode, pcred, file, mask);
+                derives(RL_EXEC, iprov, cprov, file, mask);
             }
         }
     }
