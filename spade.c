@@ -161,15 +161,15 @@ char* derived_to_spade_json(struct relation_struct* e) {
 
 char* proc_to_spade_json(struct proc_prov_struct* n) {
   NODE_START("Entity");
-  /* TODO: what to record */
+  __add_uint32_attribute("pid", n->pid, true);
   NODE_END();
   return buffer;
 }
 
 char* task_to_spade_json(struct task_prov_struct* n) {
   NODE_START("Activity");
+  __add_uint32_attribute("tid", n->tid, true);
   __add_uint32_attribute("pid", n->pid, true);
-  __add_uint32_attribute("vpid", n->vpid, true);
   __add_uint64_attribute("utime", n->utime, true);
   __add_uint64_attribute("stime", n->stime, true);
   __add_uint64_attribute("vm", n->vm, true);

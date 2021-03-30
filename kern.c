@@ -50,7 +50,7 @@ int BPF_PROG(file_permission, struct file *file, int mask) {
     union prov_elt *ptask = bpf_task_storage_get(&task_storage_map, current_task, 0, BPF_LOCAL_STORAGE_GET_F_CREATE);
     union prov_elt *pcred = bpf_cred_storage_get(&cred_storage_map, current_cred, 0, BPF_LOCAL_STORAGE_GET_F_CREATE);
     ptask = update_task_prov(current_task, ptask);
-    pcred = update_cred_prov(current_cred, pcred);
+    pcred = update_cred_prov(current_task, pcred);
     write_to_rb(ptask);
     write_to_rb(pcred);
     return 0;
@@ -63,7 +63,7 @@ int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
     union prov_elt *ptask = bpf_task_storage_get(&task_storage_map, current_task, 0, BPF_LOCAL_STORAGE_GET_F_CREATE);
     union prov_elt *pcred = bpf_cred_storage_get(&cred_storage_map, current_cred, 0, BPF_LOCAL_STORAGE_GET_F_CREATE);
     ptask = update_task_prov(current_task, ptask);
-    pcred = update_cred_prov(current_cred, pcred);
+    pcred = update_cred_prov(current_task, pcred);
     write_to_rb(ptask);
     write_to_rb(pcred);
     return 0;

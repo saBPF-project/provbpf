@@ -414,7 +414,7 @@ char* proc_to_json(struct proc_prov_struct* n){
   char tmp[33];
   NODE_PREP_IDs(n);
   __node_start(id, &(n->identifier.node_id), n->taint, n->jiffies, n->epoch);
-   /* TODO: what to record */
+  __add_uint32_attribute("cf:pid", n->pid, true);
   __add_label_attribute("process", utoa(n->identifier.node_id.version, tmp, DECIMAL), true);
   __close_json_entry(buffer);
   return buffer;
@@ -424,8 +424,8 @@ char* task_to_json(struct task_prov_struct* n){
   char tmp[33];
   NODE_PREP_IDs(n);
   __node_start(id, &(n->identifier.node_id), n->taint, n->jiffies, n->epoch);
+  __add_uint32_attribute("cf:tid", n->tid, true);
   __add_uint32_attribute("cf:pid", n->pid, true);
-  __add_uint32_attribute("cf:vpid", n->vpid, true);
   __add_uint64_attribute("cf:utime", n->utime, true);
   __add_uint64_attribute("cf:stime", n->stime, true);
   __add_uint64_attribute("cf:vm", n->vm, true);

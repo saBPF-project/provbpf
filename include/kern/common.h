@@ -117,6 +117,8 @@ static __always_inline void record_provenance(bool is_long_prov, void* prov){
 static __always_inline void write_to_rb(union prov_elt *prov) {
     if (!prov)
         return;
+    if(provenance_is_opaque(prov))
+        return;
     bpf_ringbuf_output(&r_buf, prov, sizeof(union prov_elt), 0);
 }
 

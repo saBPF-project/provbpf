@@ -19,24 +19,24 @@
 #include "kern/node.h"
 
 // Update fields in a cred's provenance
-/*static __always_inline void prov_update_cred(struct task_struct *current_task,
+static __always_inline void __update_cred(const struct task_struct *task,
                                              union prov_elt *prov) {
-    // no more namespace tracking for now.
-    // it looks we are copying data into pointer with no data
-}*/
+    prov->proc_info.pid = task->tgid;
+}
 
 /* Create a provenance entry for a cred if it does not exist
  * and insert it into the @cred_storage_map; otherwise, updates its
  * existing provenance. Return either the new provenance entry
  * pointer or the updated provenance entry pointer. */
 static __always_inline union prov_elt* update_cred_prov(
-                                                const struct cred *cred,
+                                                const struct task_struct * task,
                                                 union prov_elt* prov) {
     if (!prov)
         return NULL;
 
     if (!provenance_is_initialized(prov))
         prov_init_node(prov, ENT_PROC);
+    __update_cred(task, prov);
     node_identifier(prov).version++;
     return prov;
 }

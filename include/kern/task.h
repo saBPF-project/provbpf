@@ -45,8 +45,8 @@
 // TODO: further refactor this function.
 static __always_inline void __update_task(const struct task_struct *task,
                                              union prov_elt *prov) {
-    prov->task_info.pid = task->pid;
-  	prov->task_info.vpid = task->tgid;
+    prov->task_info.tid = task->pid;
+	prov->task_info.pid = task->tgid;
   	prov->task_info.utime = task->utime;
   	prov->task_info.stime = task->stime;
   	prov->task_info.vm = task->mm->total_vm;
@@ -57,8 +57,7 @@ static __always_inline void __update_task(const struct task_struct *task,
   	prov->task_info.hw_vm = (task->mm->hiwater_vm > prov->task_info.vm) ? (task->mm->hiwater_vm * IOC_PAGE_SIZE / KB) : (prov->task_info.vm * IOC_PAGE_SIZE / KB);
   	prov->task_info.hw_rss = (task->mm->hiwater_rss > prov->task_info.rss) ? (task->mm->hiwater_rss * IOC_PAGE_SIZE / KB) : (prov->task_info.rss * IOC_PAGE_SIZE / KB);
 
-	// old proc_prov_struct entries
-	prov->task_info.tgid = task->tgid;
+	// namespaces
 	prov->task_info.utsns = task->nsproxy->uts_ns->ns.inum;
 	prov->task_info.ipcns = task->nsproxy->ipc_ns->ns.inum;
 	prov->task_info.mntns = task->nsproxy->mnt_ns->ns.inum;

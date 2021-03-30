@@ -21,6 +21,7 @@
 #include <bpf/bpf.h>
 #include <sys/resource.h>
 #include <sys/types.h>
+#include <sys/syscall.h>
 #include <sys/utsname.h>
 #include <signal.h>
 #include <errno.h>
@@ -169,6 +170,54 @@ static int init_policy(void) {
     return 0;
 }
 
+static int opaque_service(void) {
+    pid_t current_pid = getpid();
+    int pidfd = syscall(__NR_pidfd_open, current_pid, 0);
+    union prov_elt prov;
+    int search_map_fd, err;
+
+    printf("Current pid %d\n", current_pid);
+
+    // load the map for tasks
+    syslog(LOG_INFO, "ProvBPF: Searching task_storage_map for current process...");
+    search_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "task_storage_map");
+    if (search_map_fd < 0) {
+        syslog(LOG_ERR, "ProvBPF: Failed loading task_storage_map (%d).", search_map_fd);
+        return search_map_fd;
+    }
+
+    // search the current process thread
+    err = bpf_map_lookup_elem(search_map_fd, &pidfd, &prov);
+    if (err > -1) {
+        if (prov.task_info.pid == current_pid) {
+            set_opaque(&prov);
+            bpf_map_update_elem(search_map_fd, &pidfd, &prov, BPF_EXIST);
+            syslog(LOG_INFO, "ProvBPF: Done searching. Current process pid: %d has been set opaque.", current_pid);
+        }
+    }
+    close(search_map_fd);
+
+    // load the map for creds
+    syslog(LOG_INFO, "ProvBPF: Searching cred_storage_map for current process...");
+    search_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "cred_storage_map");
+    if (search_map_fd < 0) {
+      syslog(LOG_ERR, "ProvBPF: Failed loading cred_storage_map (%d).", search_map_fd);
+      return search_map_fd;
+    }
+
+    err = bpf_map_lookup_elem(search_map_fd, &pidfd, &prov);
+    if (err > -1) {
+        if (prov.proc_info.pid == current_pid) {
+            set_opaque(&prov);
+            bpf_map_update_elem(search_map_fd, &pidfd, &prov, BPF_EXIST);
+            syslog(LOG_INFO, "ProvBPF: Done searching. Current cred pid: %d has been set opaque...", current_pid);
+        }
+    }
+    close(search_map_fd);
+
+    return 0;
+}
+
 int main(void) {
     struct ring_buffer *ringbuf = NULL;
     int err, map_fd;
@@ -212,6 +261,13 @@ int main(void) {
     err = provbpf__attach(skel);
     if (err) {
         syslog(LOG_ERR, "ProvBPF: Failed attaching %d.", err);
+        goto close_prog;
+    }
+
+    syslog(LOG_INFO, "ProvBPF: masking service...");
+    err = opaque_service();
+    if(err) {
+        syslog(LOG_ERR, "ProvBPF: Failed masking service.");
         goto close_prog;
     }
 

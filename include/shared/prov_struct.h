@@ -169,14 +169,14 @@ struct node_struct {
 struct proc_prov_struct {
 	basic_elements;
 	shared_node_elements;
-     /* TODO: what to record */
+	uint32_t pid;
 };
 
 struct task_prov_struct {
 	basic_elements;
 	shared_node_elements;
+	uint32_t tid;
 	uint32_t pid;
-	uint32_t vpid;
 	/* usec */
 	uint64_t utime;
 	uint64_t stime;
@@ -185,7 +185,6 @@ struct task_prov_struct {
 	uint64_t rss;
 	uint64_t hw_vm;
 	uint64_t hw_rss;
-	uint32_t tgid;
 	uint32_t utsns;
 	uint32_t ipcns;
 	uint32_t mntns;
