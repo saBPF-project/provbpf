@@ -91,6 +91,37 @@ int BPF_PROG(inode_free_security, struct inode *inode) {
     return 0;
 }
 
+SEC("lsm/inode_permission")
+int BPF_PROG(inode_permission, struct inode *inode, int mask) {
+    struct task_struct *current_task;
+    union prov_elt *cprov, *tprov, *iprov;
+
+    if (is_inode_dir(inode))
+        return 0;
+
+    if (!mask)
+      return 0;
+
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
+    if (!current_task)
+        return 0;
+
+    tprov = get_task_prov(current_task);
+    if (!tprov)
+      return 0;
+
+    cprov = get_cred_prov_from_task(current_task);
+    if (!cprov)
+      return 0;
+
+    iprov = get_inode_prov(inode);
+    if (!iprov)
+      return 0;
+
+    uses(RL_PERM, current_task, iprov, tprov, cprov, NULL, mask);
+    return 0;
+}
+
 SEC("lsm/cred_free")
 int BPF_PROG(cred_free, struct cred *cred) {
     union prov_elt *cprov;
