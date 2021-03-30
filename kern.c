@@ -181,3 +181,31 @@ int BPF_PROG(file_permission, struct file *file, int mask) {
     }
     return 0;
 }
+
+SEC("lsm/file_open")
+int BPF_PROG(file_open, struct file *file) {
+    union prov_elt *tprov, *cprov, *iprov;
+    struct task_struct *current_task;
+
+    if (is_inode_dir(file->f_inode))
+        return 0;
+
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
+    tprov = get_task_prov(current_task);
+    if (!tprov)
+        return 0;
+
+    cprov = get_cred_prov_from_task(current_task);
+    if (!cprov)
+        return 0;
+    if (provenance_is_opaque(cprov))
+      return 0;
+
+    iprov = get_inode_prov(file->f_inode);
+    if (!iprov)
+      return 0;
+
+    uses(RL_OPEN, current_task, iprov, tprov, cprov, file, 0);
+
+    return 0;
+}
