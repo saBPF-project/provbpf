@@ -18,12 +18,10 @@
 
 /* Initialize common fields of a node's provenance */
 static __always_inline void prov_init_node(union prov_elt *node, uint64_t type) {
-    __builtin_memset(node, 0, sizeof(union prov_elt));
     node_identifier(node).type=type;
     node_identifier(node).id = prov_next_id(NODE_ID_INDEX);
     node_identifier(node).boot_id = prov_get_id(BOOT_ID_INDEX);
     node_identifier(node).machine_id = prov_get_id(MACHINE_ID_INDEX);
-    set_initialized(node);
 }
 
 #endif

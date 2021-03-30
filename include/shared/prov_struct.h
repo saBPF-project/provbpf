@@ -25,6 +25,7 @@
 #include <sys/socket.h>
 #include <linux/limits.h>
 #include <linux/utsname.h>
+#include <bpf/bpf.h>
 #endif
 
 #define xstr(s)         str(s)
@@ -49,7 +50,8 @@
 #define relation_identifier(relation)           ((relation)->relation_info.identifier.relation_id)
 #define get_prov_identifier(node)               ((node)->node_info.identifier)
 #define packet_identifier(packet)               ((packet)->pck_info.identifier.packet_id)
-#define packet_info(packet)                                                                                     ((packet)->pck_info)
+#define packet_info(packet)                     ((packet)->pck_info)
+#define node_lock(node)                        ((node)->node_info.lock)
 #define node_secid(node)                        ((node)->node_info.secid)
 #define node_uid(node)                          ((node)->node_info.uid)
 #define node_gid(node)                          ((node)->node_info.gid)
@@ -89,7 +91,10 @@ struct packet_identifier {
 	uint32_t seq;
 };
 
-#define PROV_IDENTIFIER_BUFFER_LENGTH    sizeof(struct node_identifier)
+#define MAX2(a,b) ((a>b)?(a):(b))
+#define MAX3(a,b,c) MAX2(MAX2(a,b),c)
+
+#define PROV_IDENTIFIER_BUFFER_LENGTH    MAX3(sizeof(struct node_identifier), sizeof(struct relation_identifier), sizeof(struct packet_identifier))
 
 union prov_identifier {
 	struct node_identifier node_id;
@@ -321,6 +326,11 @@ union long_prov_elt {
 	struct pckcnt_struct pckcnt_info;
 	struct xattr_prov_struct xattr_info;
 	struct machine_struct machine_info;
+};
+
+struct provenance_holder {
+    union prov_elt prov;
+    struct bpf_spin_lock lock;
 };
 
 typedef union long_prov_elt prov_entry_t;

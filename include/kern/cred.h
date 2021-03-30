@@ -28,20 +28,26 @@ static __always_inline void __update_cred(const struct task_struct *task,
  * and insert it into the @cred_storage_map; otherwise, updates its
  * existing provenance. Return either the new provenance entry
  * pointer or the updated provenance entry pointer. */
-static __always_inline union prov_elt* retrieve_cred_prov(struct task_struct * task) {
+static __always_inline union prov_elt* get_cred_prov(struct task_struct * task) {
     struct cred *cred;
-    union prov_elt *prov;
+    struct provenance_holder *prov_holder;
+    union prov_elt* prov;
     if(!task)
         return NULL;
-    cred = (struct cred *)task->cred;
-    prov = bpf_cred_storage_get(&cred_storage_map, cred, 0, BPF_LOCAL_STORAGE_GET_F_CREATE);
-    if (!prov)
+    cred = (struct cred *)task->real_cred;
+    prov_holder = bpf_cred_storage_get(&cred_storage_map, cred, 0, BPF_LOCAL_STORAGE_GET_F_CREATE);
+    if (!prov_holder)
         return NULL;
-
-    if (!provenance_is_initialized(prov))
+    prov = &prov_holder->prov;
+    bpf_spin_lock(prov_lock(prov));
+    if (!provenance_is_initialized(prov)) {
+        set_initialized(prov);
+        bpf_spin_unlock(prov_lock(prov));
         prov_init_node(prov, ENT_PROC);
+    } else {  // it was initialized, just release the lock
+        bpf_spin_unlock(prov_lock(prov));
+    }
     __update_cred(task, prov);
-    node_identifier(prov).version++;
     return prov;
 }
 

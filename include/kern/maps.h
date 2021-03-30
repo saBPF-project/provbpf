@@ -66,21 +66,21 @@ struct {
 	__uint(type, BPF_MAP_TYPE_INODE_STORAGE);
 	__uint(map_flags, BPF_F_NO_PREALLOC);
 	__type(key, int);
-	__type(value, union prov_elt);
+	__type(value, struct provenance_holder);
 } inode_storage_map SEC(".maps");
 
 struct {
 	__uint(type, BPF_MAP_TYPE_TASK_STORAGE);
 	__uint(map_flags, BPF_F_NO_PREALLOC);
 	__type(key, int);
-	__type(value, union prov_elt);
+	__type(value, struct provenance_holder);
 } task_storage_map SEC(".maps");
 
 struct {
 	__uint(type, BPF_MAP_TYPE_CRED_STORAGE);
 	__uint(map_flags, BPF_F_NO_PREALLOC);
 	__type(key, int);
-	__type(value, union prov_elt);
+	__type(value, struct provenance_holder);
 } cred_storage_map SEC(".maps");
 
 struct bpf_map_def SEC("maps") msg_msg_map = {
