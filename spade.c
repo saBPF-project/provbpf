@@ -364,7 +364,6 @@ char* arg_to_spade_json(struct arg_struct* n) {
 }
 
 char* machine_to_spade_json(struct machine_struct* n){
-  char tmp[256];
   NODE_START("Entity");
   __add_string_attribute("u_sysname", n->utsname.sysname, true);
   __add_string_attribute("u_nodename", n->utsname.nodename, true);
@@ -418,7 +417,6 @@ static pthread_mutex_t l_flush =  PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 
 void flush_spade_json(){
   bool should_flush=false;
-  char* tmp;
 
   pthread_mutex_lock(&l_flush);
   if(!writing_out){

@@ -284,7 +284,6 @@ void append_derived(char* json_element){
 static __thread char id[PROV_ID_STR_LEN];
 static __thread char sender[PROV_ID_STR_LEN];
 static __thread char receiver[PROV_ID_STR_LEN];
-static __thread char parent_id[PROV_ID_STR_LEN];
 
 #define RELATION_PREP_IDs(e) ID_ENCODE(e->identifier.buffer, PROV_IDENTIFIER_BUFFER_LENGTH, id, PROV_ID_STR_LEN);\
                         ID_ENCODE(e->snd.buffer, PROV_IDENTIFIER_BUFFER_LENGTH, sender, PROV_ID_STR_LEN);\
@@ -438,15 +437,6 @@ char* task_to_json(struct task_prov_struct* n){
   __close_json_entry(buffer);
   return buffer;
 }
-
-static const char STR_UNKNOWN[]= "unknown";
-static const char STR_BLOCK_SPECIAL[]= "block special";
-static const char STR_CHAR_SPECIAL[]= "char special";
-static const char STR_DIRECTORY[]= "directory";
-static const char STR_FIFO[]= "fifo";
-static const char STR_LINK[]= "link";
-static const char STR_FILE[]= "file";
-static const char STR_SOCKET[]= "socket";
 
 char* inode_to_json(struct inode_prov_struct* n){
   char uuid[UUID_STR_SIZE];
@@ -678,7 +668,6 @@ char* arg_to_json(struct arg_struct* n){
 }
 
 char* machine_to_json(struct machine_struct* m){
-  char tmp[256];
   NODE_PREP_IDs(m);
   __node_start(id, &(m->identifier.node_id), m->taint, m->jiffies, m->epoch);
   __add_string_attribute("cf:u_sysname", m->utsname.sysname, true);
