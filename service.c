@@ -128,48 +128,6 @@ void sig_handler(int sig) {
     }
 }
 
-/*
- * TC require attaching the bpf-object via the TC cmdline tool.
-*/
-static inline int tc_attach_bpf(const char* dev, const char* bpf_obj_name) {
-	char cmd[CMD_MAX];
-	int ret = 0;
-
-	/* Step 1: Delete clsact */
-	memset(&cmd, 0, CMD_MAX);
-	sprintf(cmd, "sudo tc qdisc del dev %s clsact 2> /dev/null", dev);
-	ret = system(cmd);
-
-	if (!WIFEXITED(ret)) {
-		printf("ERROR: cannot exec tc command\n");
-		exit(EXIT_FAILURE);
-	} else if (WEXITSTATUS(ret) == 2) {
-		printf("Warning: cannot delete clsact from %s, first time loading\n", dev);
-	}
-
-	/* Step 2: Attach a new clasct qdisc */
-	memset(&cmd, 0, CMD_MAX);
-	sprintf(cmd, "tc qdisc add dev %s clsact", dev);
-
-	ret = system(cmd);
-	if (ret) {
-		printf("ERROR: tc cannot attach qdisc hook on %s\n", dev);
-		exit(EXIT_FAILURE);
-	}
-
-	/* Step 3: Attach BPF program as egress filter */
-	memset(&cmd, 0, CMD_MAX);
-	sprintf(cmd, "tc filter add dev %s egress bpf da obj %s sec classifier", dev, bpf_obj_name);
-	ret = system(cmd);
-
-	if (ret) {
-		printf("ERROR: tc cannot attach filter to %s", dev);
-		exit(EXIT_FAILURE);
-	}
-
-	return ret;
-}
-
 int main(void) {
     struct ring_buffer *ringbuf = NULL;
     int err, map_fd, pidfd, search_map_fd, res;
@@ -259,11 +217,6 @@ int main(void) {
     bpf_map_update_elem(map_fd, &key, &prov_machine, BPF_ANY);
 
     syslog(LOG_INFO, "ProvBPF: prov_machine initialization ended.");
-
-	// Attach egress filter on device `eth0`
-	tc_attach_bpf("eth0", "provbpf.o");
-
-	sleep(30);
 
     syslog(LOG_INFO, "ProvBPF: Attaching BPF programs...");
     err = provbpf__attach(skel);
