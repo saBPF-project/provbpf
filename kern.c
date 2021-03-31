@@ -153,8 +153,6 @@ int BPF_PROG(file_permission, struct file *file, int mask) {
     cprov = get_cred_prov_from_task(current_task);
     if (!cprov)
         return 0;
-    if (provenance_is_opaque(cprov))
-      return 0;
 
     iprov = get_inode_prov(file->f_inode);
     if (!iprov)
@@ -199,8 +197,6 @@ int BPF_PROG(file_open, struct file *file) {
     cprov = get_cred_prov_from_task(current_task);
     if (!cprov)
         return 0;
-    if (provenance_is_opaque(cprov))
-      return 0;
 
     iprov = get_inode_prov(file->f_inode);
     if (!iprov)
@@ -234,8 +230,6 @@ int BPF_PROG(mmap_file, struct file *file, unsigned long reqprot, unsigned long 
 
     cprov = get_cred_prov_from_task(current_task);
     if (!cprov)
-      return 0;
-    if (provenance_is_opaque(cprov))
       return 0;
 
     if ((flags & MAP_TYPE) == MAP_SHARED || (flags & MAP_TYPE) == MAP_SHARED_VALIDATE) {

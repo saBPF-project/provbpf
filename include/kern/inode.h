@@ -153,6 +153,8 @@ static union prov_elt* get_inode_prov(struct inode *inode) {
         prov_init_inode(inode, prov);
     }else { // it was initialized, just release the lock
         bpf_spin_unlock(prov_lock(prov));
+        if (provenance_is_opaque(prov))
+            return NULL;
     }
 
     prov_update_inode(inode, prov);
