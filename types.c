@@ -74,12 +74,8 @@ static const char RL_STR_GETXATTR[] = "getxattr";                               
 static const char RL_STR_GETXATTR_INODE[] = "getxattr_inode";                                           // getxattr operation (inode -> xattr)
 static const char RL_STR_LSTXATTR[] = "listxattr";                                                      // listxattr operation
 static const char RL_STR_READ_LINK[] = "read_link";                                                     // readlink operation
-static const char RL_STR_MMAP_READ[] = "mmap_r";                                                     // mmap mounting with read perm
-static const char RL_STR_MMAP_EXEC[] = "mmap_re";                                                     // mmap mounting with exec perm
-static const char RL_STR_MMAP_WRITE[] = "mmap_rw";                                                   // mmap mounting with write perm
-static const char RL_STR_MMAP_READ_PRIVATE[] = "mmap_r_private";                                     // mmap private mounting with read perm
-static const char RL_STR_MMAP_EXEC_PRIVATE[] = "mmap_re_private";                                     // mmap private mounting with exec perm
-static const char RL_STR_MMAP_WRITE_PRIVATE[] = "mmap_rw_private";                                   // mmap private  mounting with write perm
+static const char RL_STR_MMAP[] = "mmap";                                                               // mmap mounting with read perm
+static const char RL_STR_MMAP_PRIVATE[] = "mmap_private";                                               // mmap private mounting with read perm
 static const char RL_STR_SH_READ[] = "sh_read";                                                         // sh_read operation
 static const char RL_STR_PROC_READ[] = "memory_read";                                                   // read from process memory
 static const char RL_STR_SND[] = "send";                                                                // send over socket
@@ -253,18 +249,10 @@ const char *relation_id_to_str(uint64_t type)
 		return RL_STR_LSTXATTR;
 	case RL_READ_LINK:
 		return RL_STR_READ_LINK;
-	case RL_MMAP_READ:
-		return RL_STR_MMAP_READ;
-	case RL_MMAP_EXEC:
-		return RL_STR_MMAP_EXEC;
-	case RL_MMAP_WRITE:
-		return RL_STR_MMAP_WRITE;
-	case RL_MMAP_READ_PRIVATE:
-		return RL_STR_MMAP_READ_PRIVATE;
-	case RL_MMAP_EXEC_PRIVATE:
-		return RL_STR_MMAP_EXEC_PRIVATE;
-	case RL_MMAP_WRITE_PRIVATE:
-		return RL_STR_MMAP_WRITE_PRIVATE;
+	case RL_MMAP:
+		return RL_STR_MMAP;
+	case RL_MMAP_PRIVATE:
+		return RL_STR_MMAP_PRIVATE;
 	case RL_SND:
 		return RL_STR_SND;
 	case RL_SND_PACKET:
@@ -407,12 +395,8 @@ uint64_t relation_id(const char *str)
 	MATCH_AND_RETURN(str, RL_STR_GETXATTR, RL_GETXATTR);
 	MATCH_AND_RETURN(str, RL_STR_GETXATTR_INODE, RL_GETXATTR_INODE);
 	MATCH_AND_RETURN(str, RL_STR_LSTXATTR, RL_LSTXATTR);
-	MATCH_AND_RETURN(str, RL_STR_MMAP_READ, RL_MMAP_READ);
-	MATCH_AND_RETURN(str, RL_STR_MMAP_EXEC, RL_MMAP_EXEC);
-	MATCH_AND_RETURN(str, RL_STR_MMAP_WRITE, RL_MMAP_WRITE);
-	MATCH_AND_RETURN(str, RL_STR_MMAP_READ_PRIVATE, RL_MMAP_READ_PRIVATE);
-	MATCH_AND_RETURN(str, RL_STR_MMAP_EXEC_PRIVATE, RL_MMAP_EXEC_PRIVATE);
-	MATCH_AND_RETURN(str, RL_STR_MMAP_WRITE_PRIVATE, RL_MMAP_WRITE_PRIVATE);
+	MATCH_AND_RETURN(str, RL_STR_MMAP, RL_MMAP);
+	MATCH_AND_RETURN(str, RL_STR_MMAP_PRIVATE, RL_MMAP_PRIVATE);
 	MATCH_AND_RETURN(str, RL_STR_SND, RL_SND);
 	MATCH_AND_RETURN(str, RL_STR_SND_PACKET, RL_SND_PACKET);
 	MATCH_AND_RETURN(str, RL_STR_SND_UNIX, RL_SND_UNIX);
