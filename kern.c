@@ -203,7 +203,6 @@ int BPF_PROG(file_open, struct file *file) {
       return 0;
 
     uses(RL_OPEN, current_task, iprov, tprov, cprov, file, 0);
-
     return 0;
 }
 
@@ -238,7 +237,6 @@ int BPF_PROG(mmap_file, struct file *file, unsigned long reqprot, unsigned long 
       type = RL_MMAP;
     }
     uses(type, current_task, iprov, tprov, cprov, file, prot);
-
     return 0;
 }
 
@@ -277,5 +275,30 @@ int BPF_PROG(socket_post_create, struct socket *sock, int family, int type, int 
     flags.values.protocol = protocol;
 
     generates(RL_SOCKET_CREATE, current_task, cprov, tprov, iprov, NULL, flags.flags);
+    return 0;
+}
+
+SEC("lsm/socket_bind")
+int BPF_PROG(socket_bind, struct socket *sock, struct sockaddr *address, int addrlen) {
+    union prov_elt *tprov, *cprov, *iprov;
+    struct task_struct *current_task;
+
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
+    if (!current_task)
+        return 0;
+    tprov = get_task_prov(current_task);
+    if (!tprov)
+      return 0;
+
+    cprov = get_cred_prov_from_task(current_task);
+    if (!cprov)
+      return 0;
+
+    iprov = get_inode_prov((struct inode *)bpf_inode_from_sock(sock));
+    if (!iprov)
+      return 0;
+
+    //record_address(address, addrlen, ptr_prov_sock_inode);
+    generates(RL_BIND, current_task, cprov, tprov, iprov, NULL, 0);
     return 0;
 }
