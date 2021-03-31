@@ -351,3 +351,32 @@ int BPF_PROG(socket_listen, struct socket *sock, int backlog) {
     generates(RL_LISTEN, current_task, cprov, tprov, iprov, NULL, backlog);
     return 0;
 }
+
+SEC("lsm/socket_accept")
+int BPF_PROG(socket_accept, struct socket *sock, struct socket *newsock) {
+    union prov_elt *tprov, *cprov, *iprov, *niprov;
+    struct task_struct *current_task;
+
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
+    if (!current_task)
+        return 0;
+    tprov = get_task_prov(current_task);
+    if (!tprov)
+      return 0;
+
+    cprov = get_cred_prov_from_task(current_task);
+    if (!cprov)
+      return 0;
+
+    iprov = get_inode_prov((struct inode *)bpf_inode_from_sock(sock));
+    if (!iprov)
+      return 0;
+
+    niprov = get_inode_prov((struct inode *)bpf_inode_from_sock(sock));
+    if (!niprov)
+      return 0;
+
+    derives(RL_ACCEPT_SOCKET, iprov, niprov, NULL, 0);
+    uses(RL_ACCEPT, current_task, niprov, tprov, cprov, NULL, 0);
+    return 0;
+}
