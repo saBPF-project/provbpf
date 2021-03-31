@@ -1,6 +1,5 @@
 prepare:
 	mkdir -p ~/build
-	cd ~/build && git clone https://github.com/tfjmp/provbpf-kernel.git
 	cd ~/build/provbpf-kernel && git checkout skb_load_bytes
 	cd ~/build/provbpf-kernel && $(MAKE) prepare
 	cd ~/build/provbpf-kernel && $(MAKE) config
@@ -20,6 +19,10 @@ btf_circle:
 
 kern:
 	clang -O2 -Wall \
+	-DPROV_FILTER_INODE_FREE_SECURITY_OFF \
+	-DPROV_FILTER_SOCKET_SOCK_RCV_SKB_OFF \
+	-DPROV_FILTER_UNIX_MAY_SEND_OFF \
+	-DPROV_FILTER_KERNEL_READ_FILE_OFF \
 	-DPROV_FILTER_FILE_PERMISSION_OFF \
 	-DPROV_FILTER_SOCKET_SENDMSG_OFF \
 	-D__KERNEL__ -D__ASM_SYSREG_H \
@@ -102,6 +105,10 @@ uninstall:
 	sudo rm -f /etc/provbpf.ini
 	sudo rm -f /usr/bin/provbpfd
 	sudo rm -f /etc/systemd/system/provbpfd.service
+
+tc:
+	sudo tc filter del dev eth0 egress
+	sudo tc filter add dev eth0 egress bpf da obj provbpf.o sec classifier
 
 run:
 	rm -rf audit.log
