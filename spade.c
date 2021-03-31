@@ -239,7 +239,7 @@ char* addr_to_spade_json(struct address_struct* n) {
   char host[NI_MAXHOST];
   char serv[NI_MAXSERV];
   int err;
-  struct sockaddr *ad = (struct sockaddr*)&(n->addr);
+  struct sockaddr *ad = (struct sockaddr*)(n->addr);
 
   NODE_START("Entity");
   if(ad->sa_family == AF_INET){
@@ -268,7 +268,7 @@ char* addr_to_spade_json(struct address_struct* n) {
     __add_string_attribute("type", "AF_UNIX", true);
     __add_string_attribute("path", ((struct sockaddr_un*)ad)->sun_path, true);
   }else{
-    err = getnameinfo(ad, n->length, host, NI_MAXHOST, serv, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
+    err = getnameinfo(ad, sizeof(struct sockaddr), host, NI_MAXHOST, serv, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
     __add_int32_attribute("type", ad->sa_family, true);
     if (err < 0) {
       __add_string_attribute("host", "could not resolve", true);

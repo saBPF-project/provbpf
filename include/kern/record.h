@@ -71,9 +71,6 @@ static __always_inline void __write_relation(const uint64_t type,
     __builtin_memcpy(&(relation->relation_info.snd), &node_identifier(from), sizeof(union prov_identifier));
     // set rcv node
     __builtin_memcpy(&(relation->relation_info.rcv), &node_identifier(to), sizeof(union prov_identifier));
-
-    write_node(from);
-    write_node(to);
     // record relation provenance
     write_to_rb(relation);
 }
@@ -133,7 +130,30 @@ static __always_inline void __record_relation(const uint64_t type,
     __update_version(type, to);
     // the source has an outgoing edge
     set_has_outgoing(from);
+    write_node(from);
+    write_node(to);
     __write_relation(type, from, to, file, flags);
+}
+
+// record a graph relation
+static __always_inline void __record_relation_ls(const uint64_t type,
+                                             union long_prov_elt *from,
+                                             union prov_elt *to,
+                                             const struct file *file,
+                                             const uint64_t flags)
+{
+    // do not repeat redundant edges
+	if (node_previous_id(to) == node_identifier(from).id && node_previous_type(to) == type)
+		return;
+
+	node_previous_id(to) = node_identifier(from).id;
+	node_previous_type(to) = type;
+    // we update the destination node
+    __update_version(type, to);
+
+    bpf_ringbuf_output(&r_buf, from, sizeof(union long_prov_elt), 0);
+    write_node(to);
+    __write_relation(type, (union prov_elt *)from, to, file, flags);
 }
 
 static __always_inline void record_terminate(const uint64_t type,

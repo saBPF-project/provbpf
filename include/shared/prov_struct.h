@@ -266,8 +266,8 @@ struct file_name_struct {
 struct address_struct {
 	basic_elements;
 	shared_node_elements;
+	uint8_t addr[PATH_MAX*2];
 	size_t length;
-	struct sockaddr_storage addr;
 };
 
 #define PROV_TRUNCATED    1

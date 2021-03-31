@@ -22,8 +22,6 @@
 
 #include <linux/limits.h>
 
-#include "kern/sockaddr.h"
-
 #include "shared/prov_struct.h"
 #include "shared/prov_types.h"
 #include "shared/id.h"
@@ -298,7 +296,7 @@ int BPF_PROG(socket_bind, struct socket *sock, struct sockaddr *address, int add
     if (!iprov)
       return 0;
 
-    //record_address(address, addrlen, ptr_prov_sock_inode);
+    record_address(address, addrlen, iprov);
     generates(RL_BIND, current_task, cprov, tprov, iprov, NULL, 0);
     return 0;
 }
@@ -323,7 +321,7 @@ int BPF_PROG(socket_connect, struct socket *sock, struct sockaddr *address, int 
     if (!iprov)
       return 0;
 
-    //record_address(address, addrlen, ptr_prov_sock_inode);
+    record_address(address, addrlen, iprov);
     generates(RL_CONNECT, current_task, cprov, tprov, iprov, NULL, 0);
     return 0;
 }

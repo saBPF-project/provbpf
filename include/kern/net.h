@@ -37,18 +37,30 @@
  * record_relation function.
  *
  */
+#define AF_UNIX 1
+#define AF_INET 2
+#define AF_INET6 10
+
 static __always_inline int record_address(struct sockaddr *address, int addrlen, union prov_elt *prov) {
 	int map_id = ADDRESS_PERCPU_LONG_TMP;
-	union long_prov_elt *ptr_prov_addr = bpf_map_lookup_elem(&long_tmp_prov_map, &map_id);
-	if (!ptr_prov_addr) {
+	union long_prov_elt *aprov = bpf_map_lookup_elem(&long_tmp_prov_map, &map_id);
+	if (!aprov)
 		return 0;
-	}
-	prov_init_node((union prov_elt *)ptr_prov_addr, ENT_ADDR);
 
-	ptr_prov_addr->address_info.length = addrlen;
-	__builtin_memcpy(&(ptr_prov_addr->address_info.addr), &address, sizeof(struct sockaddr_storage));
+	prov_init_node((union prov_elt *)aprov, ENT_ADDR);
 
-  record_relation(RL_ADDRESSED, ptr_prov_addr, true, prov, false, NULL, 0);
+    // copy each type of address
+    // TODO expand to more types
+	if (address->sa_family == AF_INET)
+        bpf_probe_read_kernel(aprov->address_info.addr, sizeof(struct sockaddr_in), address);
+    else if (address->sa_family == AF_INET)
+        bpf_probe_read_kernel(aprov->address_info.addr, sizeof(struct sockaddr_in6), address);
+    else if (address->sa_family == AF_UNIX)
+        bpf_probe_read_kernel(aprov->address_info.addr, sizeof(struct sockaddr_un), address);
+    else
+        bpf_probe_read_kernel(aprov->address_info.addr, sizeof(struct sockaddr), address);
+
+    __record_relation_ls(RL_ADDRESSED, aprov, prov, NULL, 0);
 
 	return 0;
 }
