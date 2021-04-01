@@ -156,6 +156,18 @@ static __always_inline void __record_relation_ls(const uint64_t type,
     __write_relation(type, (union prov_elt *)from, to, file, flags);
 }
 
+// record a graph relation
+static __always_inline void __record_relation_sl(const uint64_t type,
+                                             union prov_elt *from,
+                                             union long_prov_elt *to,
+                                             const struct file *file,
+                                             const uint64_t flags)
+{
+    write_node(from);
+    bpf_ringbuf_output(&r_buf, to, sizeof(union long_prov_elt), 0);
+    __write_relation(type, from, (union prov_elt *)to, file, flags);
+}
+
 static __always_inline void record_terminate(const uint64_t type,
 					   union prov_elt *prov)
 {
@@ -208,6 +220,31 @@ static __always_inline void informs(uint64_t type,
                                      const struct file *file,
                                      const uint64_t flags) {
     __record_relation(type, from, to, file, flags);
+}
+
+static __always_inline void record_write_xattr(uint64_t type,
+                            void *cprov,
+                            void *tprov,
+                            void *xprov,
+                            void *iprov,
+                            const uint64_t flags){
+    __record_relation(RL_PROC_READ, cprov, tprov, NULL, 0);
+    __record_relation_sl(type, tprov, xprov, NULL, flags);
+    if (type == RL_SETXATTR) {
+        __record_relation_ls(RL_SETXATTR_INODE, xprov, iprov, NULL, flags);
+    } else {
+        __record_relation_ls(RL_RMVXATTR_INODE, xprov, iprov, NULL, flags);
+    }
+}
+
+static __always_inline void record_read_xattr(uint64_t type,
+                            void *iprov,
+                            void *xprov,
+                            void *tprov,
+                            void *cprov){
+    __record_relation_sl(RL_GETXATTR_INODE, iprov, xprov, NULL, 0);
+    __record_relation_ls(type, xprov, tprov, NULL, 0);
+    __record_relation(RL_PROC_WRITE, tprov, cprov, NULL, 0);
 }
 
 #endif

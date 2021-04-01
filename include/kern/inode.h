@@ -161,4 +161,16 @@ static union prov_elt* get_inode_prov(struct inode *inode) {
     return prov;
 }
 
+static union long_prov_elt* get_xattr_prov(const char *name, const void *value, size_t size) {
+    int map_id = XATTR_PERCPU_LONG_TMP;
+    union long_prov_elt *xprov = bpf_map_lookup_elem(&long_tmp_prov_map, &map_id);
+    if (!xprov)
+      return NULL;
+
+    prov_init_node((union prov_elt *)xprov, ENT_XATTR);
+    bpf_probe_read_kernel_str(xprov->xattr_info.name, PROV_XATTR_NAME_SIZE, name);
+    xprov->xattr_info.size = size;
+    return xprov;
+}
+
 #endif

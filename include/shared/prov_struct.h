@@ -281,7 +281,6 @@ struct xattr_prov_struct {
 	basic_elements;
 	shared_node_elements;
 	char name[PROV_XATTR_NAME_SIZE];
-	uint8_t value[PROV_XATTR_VALUE_SIZE];
 	size_t size;
 };
 

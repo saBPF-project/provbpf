@@ -194,6 +194,77 @@ int BPF_PROG(inode_getattr, const struct path *path) {
     return 0;
 }
 
+SEC("lsm/inode_post_setxattr")
+int BPF_PROG(inode_post_setxattr, struct dentry *dentry, const char *name,const void *value, size_t size, int flags) {
+    struct task_struct *current_task;
+    union prov_elt *cprov, *tprov, *iprov;
+    static union long_prov_elt* xprov;
+
+    if(!dentry)
+        return 0;
+
+    if (is_inode_dir(dentry->d_inode))
+        return 0;
+
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
+    if (!current_task)
+        return 0;
+
+    tprov = get_task_prov(current_task);
+    if (!tprov)
+        return 0;
+
+    cprov = get_cred_prov_from_task(current_task);
+    if (!cprov)
+        return 0;
+
+    iprov = get_inode_prov(dentry->d_inode);
+    if (!iprov)
+        return 0;
+
+    xprov = get_xattr_prov(name, value, size);
+    if (!xprov)
+        return 0;
+
+    record_write_xattr(RL_SETXATTR, cprov, tprov, xprov, iprov, flags);
+    return 0;
+}
+
+SEC("lsm/inode_getxattr")
+int BPF_PROG(inode_getxattr, struct dentry *dentry, const char *name) {
+    struct task_struct *current_task;
+    union prov_elt *cprov, *tprov, *iprov;
+    static union long_prov_elt* xprov;
+
+    if(!dentry)
+        return 0;
+
+    if (is_inode_dir(dentry->d_inode))
+        return 0;
+
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
+    if (!current_task)
+        return 0;
+
+    tprov = get_task_prov(current_task);
+    if (!tprov)
+        return 0;
+
+    cprov = get_cred_prov_from_task(current_task);
+    if (!cprov)
+        return 0;
+
+    iprov = get_inode_prov(dentry->d_inode);
+    if (!iprov)
+        return 0;
+
+    xprov = get_xattr_prov(name, NULL, 0);
+    if (!xprov)
+        return 0;
+
+    record_read_xattr(RL_GETXATTR, iprov, xprov, tprov, cprov);
+    return 0;
+}
 
 SEC("lsm/file_permission")
 int BPF_PROG(file_permission, struct file *file, int mask) {
