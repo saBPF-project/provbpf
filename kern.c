@@ -74,6 +74,18 @@ int BPF_PROG(task_free, struct task_struct *task) {
     return 0;
 }
 
+SEC("lsm/cred_free")
+int BPF_PROG(cred_free, struct cred *cred) {
+    union prov_elt *cprov;
+
+    cprov = get_cred_prov(cred);
+    if (!cprov)
+      return 0;
+    // Record cred freed
+    record_terminate(RL_TERMINATE_PROC, cprov);
+    return 0;
+}
+
 SEC("lsm/inode_free_security")
 int BPF_PROG(inode_free_security, struct inode *inode) {
     union prov_elt *iprov;
@@ -118,18 +130,6 @@ int BPF_PROG(inode_permission, struct inode *inode, int mask) {
       return 0;
 
     uses(RL_PERM, current_task, iprov, tprov, cprov, NULL, mask);
-    return 0;
-}
-
-SEC("lsm/cred_free")
-int BPF_PROG(cred_free, struct cred *cred) {
-    union prov_elt *cprov;
-
-    cprov = get_cred_prov(cred);
-    if (!cprov)
-      return 0;
-    // Record cred freed
-    record_terminate(RL_TERMINATE_PROC, cprov);
     return 0;
 }
 
