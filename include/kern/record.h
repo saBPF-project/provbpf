@@ -183,9 +183,9 @@ static __always_inline void record_terminate(const uint64_t type,
 
 static __always_inline void uses(const uint64_t type,
                                  struct task_struct *current,
-                                 void *entity,
-                                 void *activity,
-                                 void *activity_mem,
+                                 union prov_elt *entity,
+                                 union prov_elt *activity,
+                                 union prov_elt *activity_mem,
                                  const struct file *file,
                                  const uint64_t flags) {
     __record_relation(type, entity, activity, file, flags);
@@ -195,9 +195,9 @@ static __always_inline void uses(const uint64_t type,
 
 static __always_inline void generates(const uint64_t type,
                                       struct task_struct *current,
-                                      void *activity_mem,
-                                      void *activity,
-                                      void *entity,
+                                      union prov_elt *activity_mem,
+                                      union prov_elt *activity,
+                                      union prov_elt *entity,
                                       const struct file *file,
                                       const uint64_t flags)
 {
@@ -207,26 +207,26 @@ static __always_inline void generates(const uint64_t type,
 }
 
 static __always_inline void derives(uint64_t type,
-                                     void *from,
-                                     void *to,
+                                     union prov_elt *from,
+                                     union prov_elt *to,
                                      const struct file *file,
                                      const uint64_t flags) {
     __record_relation(type, from, to, file, flags);
 }
 
 static __always_inline void informs(uint64_t type,
-                                     void *from,
-                                     void *to,
+                                     union prov_elt *from,
+                                     union prov_elt *to,
                                      const struct file *file,
                                      const uint64_t flags) {
     __record_relation(type, from, to, file, flags);
 }
 
 static __always_inline void record_write_xattr(uint64_t type,
-                            void *cprov,
-                            void *tprov,
-                            void *xprov,
-                            void *iprov,
+                            union prov_elt *cprov,
+                            union prov_elt *tprov,
+                            union long_prov_elt *xprov,
+                            union prov_elt *iprov,
                             const uint64_t flags){
     __record_relation(RL_PROC_READ, cprov, tprov, NULL, 0);
     __record_relation_sl(type, tprov, xprov, NULL, flags);
@@ -238,10 +238,10 @@ static __always_inline void record_write_xattr(uint64_t type,
 }
 
 static __always_inline void record_read_xattr(uint64_t type,
-                            void *iprov,
-                            void *xprov,
-                            void *tprov,
-                            void *cprov){
+                            union prov_elt *iprov,
+                            union long_prov_elt *xprov,
+                            union prov_elt *tprov,
+                            union prov_elt *cprov){
     __record_relation_sl(RL_GETXATTR_INODE, iprov, xprov, NULL, 0);
     __record_relation_ls(type, xprov, tprov, NULL, 0);
     __record_relation(RL_PROC_WRITE, tprov, cprov, NULL, 0);
