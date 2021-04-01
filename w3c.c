@@ -454,23 +454,6 @@ char* inode_to_json(struct inode_prov_struct* n){
   return buffer;
 }
 
-char* iattr_to_json(struct iattr_prov_struct* n){
-  char tmp[65];
-  NODE_PREP_IDs(n);
-  __node_start(id, &(n->identifier.node_id), n->taint, n->jiffies, n->epoch);
-  __add_uint32hex_attribute("cf:valid", n->valid, true);
-  __add_uint32hex_attribute("cf:mode", n->mode, true);
-  __add_uint32_attribute("cf:uid", n->uid, true);
-  __add_uint32_attribute("cf:gid", n->gid, true);
-  __add_int64_attribute("cf:size", n->size, true);
-  __add_int64_attribute("cf:atime", n->atime, true);
-  __add_int64_attribute("cf:ctime", n->ctime, true);
-  __add_int64_attribute("cf:mtime", n->mtime, true);
-  __add_label_attribute("iattr", utoa(n->identifier.node_id.id, tmp, DECIMAL), true);
-  __close_json_entry(buffer);
-  return buffer;
-}
-
 char* xattr_to_json(struct xattr_prov_struct* n){
   NODE_PREP_IDs(n);
   __node_start(id, &(n->identifier.node_id), n->taint, n->jiffies, n->epoch);

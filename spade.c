@@ -296,20 +296,6 @@ char* pathname_to_spade_json(struct file_name_struct* n) {
   return buffer;
 }
 
-char* iattr_to_spade_json(struct iattr_prov_struct* n) {
-  NODE_START("Entity");
-  __add_uint32hex_attribute("valid", n->valid, true);
-  __add_uint32hex_attribute("mode", n->mode, true);
-  __add_uint32_attribute("uid", n->uid, true);
-  __add_uint32_attribute("gid", n->gid, true);
-  __add_int64_attribute("size", n->size, true);
-  __add_int64_attribute("atime", n->atime, true);
-  __add_int64_attribute("ctime", n->ctime, true);
-  __add_int64_attribute("mtime", n->mtime, true);
-  NODE_END();
-  return buffer;
-}
-
 char* xattr_to_spade_json(struct xattr_prov_struct* n) {
   NODE_START("Entity");
   __add_string_attribute("name", n->name, true);

@@ -207,17 +207,6 @@ struct inode_prov_struct {
 	uint8_t sb_uuid[PROV_SBUUID_LEN];
 };
 
-struct iattr_prov_struct {
-	basic_elements;
-	shared_node_elements;
-	uint32_t valid;
-	uint16_t mode;
-	int64_t size;
-	int64_t atime;
-	int64_t ctime;
-	int64_t mtime;
-};
-
 struct msg_msg_struct {
 	basic_elements;
 	shared_node_elements;
@@ -253,7 +242,6 @@ union prov_elt {
 	struct shm_struct shm_info;
 	struct sb_struct sb_info;
 	struct pck_struct pck_info;
-	struct iattr_prov_struct iattr_info;
 };
 
 struct file_name_struct {
@@ -319,7 +307,6 @@ union long_prov_elt {
 	struct shm_struct shm_info;
 	struct sb_struct sb_info;
 	struct pck_struct pck_info;
-	struct iattr_prov_struct iattr_info;
 	struct file_name_struct file_name_info;
 	struct arg_struct arg_info;
 	struct address_struct address_info;

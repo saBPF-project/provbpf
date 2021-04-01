@@ -35,7 +35,6 @@
 #include "kern/cred.h"
 #include "kern/msg_msg.h"
 #include "kern/ipc_perm.h"
-#include "kern/iattr.h"
 #include "kern/record.h"
 #include "kern/net.h"
 
@@ -130,6 +129,68 @@ int BPF_PROG(inode_permission, struct inode *inode, int mask) {
       return 0;
 
     uses(RL_PERM, current_task, iprov, tprov, cprov, NULL, mask);
+    return 0;
+}
+
+SEC("lsm/inode_setattr")
+int BPF_PROG(inode_setattr, struct dentry *dentry, struct iattr *attr) {
+    struct task_struct *current_task;
+    union prov_elt *cprov, *tprov, *iprov;
+
+    if(!dentry)
+        return 0;
+
+    if (is_inode_dir(dentry->d_inode))
+        return 0;
+
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
+    if (!current_task)
+        return 0;
+
+    tprov = get_task_prov(current_task);
+    if (!tprov)
+      return 0;
+
+    cprov = get_cred_prov_from_task(current_task);
+    if (!cprov)
+      return 0;
+
+    iprov = get_inode_prov(dentry->d_inode);
+    if (!iprov)
+      return 0;
+
+    generates(RL_SETATTR, current_task, cprov, tprov, iprov, NULL, 0);
+    return 0;
+}
+
+SEC("lsm/inode_getattr")
+int BPF_PROG(inode_getattr, const struct path *path) {
+    struct task_struct *current_task;
+    union prov_elt *cprov, *tprov, *iprov;
+
+    if(!path)
+        return 0;
+
+    if (is_inode_dir(path->dentry->d_inode))
+        return 0;
+
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
+    if (!current_task)
+        return 0;
+
+    tprov = get_task_prov(current_task);
+    if (!tprov)
+      return 0;
+
+    cprov = get_cred_prov_from_task(current_task);
+    if (!cprov)
+      return 0;
+
+    iprov = get_inode_prov(path->dentry->d_inode);
+    if (!iprov)
+      return 0;
+
+    uses(RL_GETATTR, current_task, iprov, tprov, cprov, NULL, 0);
     return 0;
 }
 

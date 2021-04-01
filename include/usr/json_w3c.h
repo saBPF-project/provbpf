@@ -47,7 +47,6 @@ char* packet_to_json(struct pck_struct* n);
 char* addr_to_json(struct address_struct* n);
 char* pathname_to_json(struct file_name_struct* n);
 char* machine_to_json(struct machine_struct *m);
-char* iattr_to_json(struct iattr_prov_struct* n);
 char* xattr_to_json(struct xattr_prov_struct* n);
 char* pckcnt_to_json(struct pckcnt_struct* n);
 char* arg_to_json(struct arg_struct* n);

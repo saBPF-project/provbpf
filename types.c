@@ -55,7 +55,6 @@ static const char RL_STR_SYMLINK[] = "symlink";                                 
 static const char RL_STR_SPLICE_IN[] = "splice_in";                                                     // pipe splice operation from in file
 static const char RL_STR_SPLICE_OUT[] = "splice_out";                                                   // pipe splice operation to out file
 static const char RL_STR_SETATTR[] = "setattr";                                                         // setattr operation (task -> iattr)
-static const char RL_STR_SETATTR_INODE[] = "setattr_inode";                                             // setattr operation (iattr -> inode)
 static const char RL_STR_ACCEPT_SOCKET[] = "accept_socket";                                             // accept operation (parent -> child socket)
 static const char RL_STR_SETXATTR[] = "setxattr";                                                       // setxattr operation (task -> xattr)
 static const char RL_STR_SETXATTR_INODE[] = "setxattr_inode";                                           // setxattr operation (xattr -> inode)
@@ -136,7 +135,6 @@ static const char ND_STR_SB[] = "sb";                                           
 static const char ND_STR_PATH[] = "path";                                       // path associated with a file
 static const char ND_STR_MACHINE[] = "machine";                                 // machine representing an agent
 static const char ND_STR_PACKET[] = "packet";                                   // network packet
-static const char ND_STR_IATTR[] = "iattr";                                     // inode attributes value
 static const char ND_STR_XATTR[] = "xattr";                                     // extended attributes value
 static const char ND_STR_PCKCNT[] = "packet_content";                           // the content of network packet
 static const char ND_STR_ARG[] = "argv";                                        // argument passed to a process
@@ -211,8 +209,6 @@ const char *relation_id_to_str(uint64_t type)
 		return RL_STR_SPLICE_IN;
 	case RL_SETATTR:
 		return RL_STR_SETATTR;
-	case RL_SETATTR_INODE:
-		return RL_STR_SETATTR_INODE;
 	case RL_ACCEPT_SOCKET:
 		return RL_STR_ACCEPT_SOCKET;
 	case RL_SETXATTR:
@@ -376,7 +372,6 @@ uint64_t relation_id(const char *str)
 	MATCH_AND_RETURN(str, RL_STR_SPLICE_IN, RL_SPLICE_IN);
 	MATCH_AND_RETURN(str, RL_STR_SPLICE_OUT, RL_SPLICE_OUT);
 	MATCH_AND_RETURN(str, RL_STR_SETATTR, RL_SETATTR);
-	MATCH_AND_RETURN(str, RL_STR_SETATTR_INODE, RL_SETATTR_INODE);
 	MATCH_AND_RETURN(str, RL_STR_ACCEPT_SOCKET, RL_ACCEPT_SOCKET);
 	MATCH_AND_RETURN(str, RL_STR_SETXATTR, RL_SETXATTR);
 	MATCH_AND_RETURN(str, RL_STR_SETXATTR_INODE, RL_SETXATTR_INODE);
@@ -482,8 +477,6 @@ const char *node_id_to_str(uint64_t type)
 		return ND_STR_MACHINE;
 	case ENT_PACKET:
 		return ND_STR_PACKET;
-	case ENT_IATTR:
-		return ND_STR_IATTR;
 	case ENT_XATTR:
 		return ND_STR_XATTR;
 	case ENT_PCKCNT:
@@ -518,7 +511,6 @@ uint64_t node_id(const char *str)
 	MATCH_AND_RETURN(str, ND_STR_PATH, ENT_PATH);
 	MATCH_AND_RETURN(str, ND_STR_MACHINE, AGT_MACHINE);
 	MATCH_AND_RETURN(str, ND_STR_PACKET, ENT_PACKET);
-	MATCH_AND_RETURN(str, ND_STR_IATTR, ENT_IATTR);
 	MATCH_AND_RETURN(str, ND_STR_XATTR, ENT_XATTR);
 	MATCH_AND_RETURN(str, ND_STR_PCKCNT, ENT_PCKCNT);
 	MATCH_AND_RETURN(str, ND_STR_ARG, ENT_ARG);
