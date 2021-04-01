@@ -302,6 +302,37 @@ int BPF_PROG(inode_removexattr, struct dentry *dentry, const char *name) {
     return 0;
 }
 
+SEC("lsm/inode_listxattr")
+int BPF_PROG(inode_listxattr, struct dentry *dentry) {
+    struct task_struct *current_task;
+    union prov_elt *cprov, *tprov, *iprov;
+
+    if(!dentry)
+        return 0;
+
+    if (is_inode_dir(dentry->d_inode))
+        return 0;
+
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
+    if (!current_task)
+        return 0;
+
+    tprov = get_task_prov(current_task);
+    if (!tprov)
+        return 0;
+
+    cprov = get_cred_prov_from_task(current_task);
+    if (!cprov)
+        return 0;
+
+    iprov = get_inode_prov(dentry->d_inode);
+    if (!iprov)
+        return 0;
+
+    uses(RL_LSTXATTR, current_task, iprov, tprov, cprov, NULL, 0);
+    return 0;
+}
+
 SEC("lsm/file_permission")
 int BPF_PROG(file_permission, struct file *file, int mask) {
     struct task_struct *current_task;
