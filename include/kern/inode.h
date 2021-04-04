@@ -118,8 +118,9 @@ static union long_prov_elt* get_path_prov(struct inode *inode) {
     // it may not be the rightway to do things
     // maybe use the dentry_path_raw within the helper using some allocated Helper
     // and then copying the results here?
-    // the kernel error is not too clear about the problem 
+    // the kernel error is not too clear about the problem
     //bpf_dentry_path(dentry, pprov->file_name_info.name, PATH_MAX);
+    bpf_probe_read_kernel_str(pprov->file_name_info.name, PATH_MAX, dentry->d_iname);
 out:
     bpf_dentry_put(dentry);
     return pprov;
