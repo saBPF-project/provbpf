@@ -33,26 +33,23 @@ struct {
 	__uint(max_entries, 1);
 } policy_map SEC(".maps");
 
-#define INODE_PERCPU_TMP 0
-#define RELATION_PERCPU_TMP 1
-#define IATTR_PERCPU_TMP 2
+#define RELATION_PERCPU_TMP 0
 
 struct bpf_map_def SEC("maps") tmp_prov_elt_map = {
     .type = BPF_MAP_TYPE_PERCPU_ARRAY,
     .key_size = sizeof(uint32_t),
     .value_size = sizeof(union prov_elt),
-    .max_entries = 3,
+    .max_entries = 1,
 };
 
 #define ADDRESS_PERCPU_LONG_TMP 0
 #define XATTR_PERCPU_LONG_TMP 1
-#define UPDATE_PERCPU_LONG_TMP 2
 
 struct bpf_map_def SEC("maps") long_tmp_prov_map = {
     .type = BPF_MAP_TYPE_PERCPU_ARRAY,
     .key_size = sizeof(uint32_t),
     .value_size = sizeof(union long_prov_elt),
-    .max_entries = 3,
+    .max_entries = 2,
 };
 
 struct bpf_map_def SEC("maps") prov_machine_map = {
