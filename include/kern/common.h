@@ -57,4 +57,14 @@ static __always_inline bool __set_initalized(union prov_elt* prov) {
     bpf_spin_unlock(prov_lock(prov));
     return is_initialized;
 }
+
+static __always_inline bool __set_name(union prov_elt* prov) {
+    bool is_named;
+    bpf_spin_lock(prov_lock(prov));
+    is_named = provenance_is_named(prov);
+    if (!is_named)
+        set_named(prov);
+    bpf_spin_unlock(prov_lock(prov));
+    return is_named;
+}
 #endif

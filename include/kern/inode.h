@@ -28,8 +28,9 @@
 #undef statx_timestamp
 #undef statx
 
-#include "kern/node.h"
 #include "kern/common.h"
+#include "kern/node.h"
+#include "kern/record.h"
 
 #define MAY_EXEC		0x00000001
 #define MAY_WRITE		0x00000002
@@ -101,11 +102,35 @@ static __always_inline void prov_init_inode(struct inode *inode, union prov_elt 
     prov->inode_info.ino = inode->i_ino;
 }
 
+static union long_prov_elt* get_path_prov(struct inode *inode) {
+    int map_id = PATH_PERCPU_LONG_TMP;
+    union long_prov_elt *pprov;
+    struct dentry *dentry = bpf_dentry_get(inode);
+    if(!dentry)
+        return NULL;
+
+    pprov = bpf_map_lookup_elem(&long_tmp_prov_map, &map_id);
+    if (!pprov)
+      goto out;
+    prov_init_node((union prov_elt *)pprov, ENT_PATH);
+
+    // the function bellow crash (check error in kernel)
+    // it may not be the rightway to do things
+    // maybe use the dentry_path_raw within the helper using some allocated Helper
+    // and then copying the results here?
+    // the kernel error is not too clear about the problem 
+    //bpf_dentry_path(dentry, pprov->file_name_info.name, PATH_MAX);
+out:
+    bpf_dentry_put(dentry);
+    return pprov;
+}
+
 static union prov_elt* get_inode_prov(struct inode *inode) {
     umode_t imode;
     uint64_t type;
     struct provenance_holder *prov_holder;
     union prov_elt *prov;
+    union long_prov_elt *pprov;
 
     if (!inode)
         return NULL;
@@ -152,6 +177,13 @@ static union prov_elt* get_inode_prov(struct inode *inode) {
     if (provenance_is_opaque(prov))
         return NULL;
     prov_update_inode(inode, prov);
+    if (!__set_name(prov) && is_inode_file(inode)) {
+        pprov = get_path_prov(inode);
+        if(!pprov)
+            goto out;
+        __record_relation_ls(RL_NAMED, pprov, prov, NULL, 0);
+    }
+out:
     return prov;
 }
 
@@ -166,5 +198,4 @@ static union long_prov_elt* get_xattr_prov(const char *name, const void *value, 
     xprov->xattr_info.size = size;
     return xprov;
 }
-
 #endif

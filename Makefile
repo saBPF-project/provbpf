@@ -1,6 +1,7 @@
 prepare:
 	mkdir -p ~/build
 	cd ~/build && git clone https://github.com/tfjmp/provbpf-kernel.git
+	cd ~/build/provbpf-kernel && git checkout dentry_path
 	cd ~/build/provbpf-kernel && $(MAKE) prepare
 	cd ~/build/provbpf-kernel && $(MAKE) config
 	cd ~/build/provbpf-kernel && $(MAKE) build

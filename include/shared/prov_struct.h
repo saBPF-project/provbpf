@@ -117,10 +117,10 @@ union prov_identifier {
 #define clear_opaque(node)                      prov_clear_flag(node, OPAQUE_BIT)
 #define provenance_is_opaque(node)              prov_check_flag(node, OPAQUE_BIT)
 
-#define PROPAGATE_BIT           2
-#define set_propagate(node)                     prov_set_flag(node, PROPAGATE_BIT)
-#define clear_propagate(node)                   prov_clear_flag(node, PROPAGATE_BIT)
-#define provenance_does_propagate(node)         prov_check_flag(node, PROPAGATE_BIT)
+#define NAMED_BIT           2
+#define set_named(node)                     prov_set_flag(node, NAMED_BIT)
+#define clear_named(node)                   prov_clear_flag(node, NAMED_BIT)
+#define provenance_is_named(node)           prov_check_flag(node, NAMED_BIT)
 
 #define RECORD_PACKET_BIT       3
 #define set_record_packet(node)                 prov_set_flag(node, RECORD_PACKET_BIT)
