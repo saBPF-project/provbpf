@@ -10191,6 +10191,9 @@ enum bpf_map_type {
 	BPF_MAP_TYPE_INODE_STORAGE = 28,
 	BPF_MAP_TYPE_TASK_STORAGE = 29,
 	BPF_MAP_TYPE_CRED_STORAGE = 30,
+	BPF_MAP_TYPE_MSG_STORAGE = 31,
+	BPF_MAP_TYPE_IPC_STORAGE = 32,
+	BPF_MAP_TYPE_FILE_STORAGE = 33,
 };
 
 enum bpf_prog_type {
@@ -37705,7 +37708,16 @@ enum bpf_func_id {
 	BPF_FUNC_cred_storage_get = 164,
 	BPF_FUNC_cred_storage_delete = 165,
 	BPF_FUNC_file_from_fown = 166,
-	__BPF_FUNC_MAX_ID = 167,
+	BPF_FUNC_msg_storage_get = 167,
+	BPF_FUNC_msg_storage_delete = 168,
+	BPF_FUNC_ipc_storage_get = 169,
+	BPF_FUNC_ipc_storage_delete = 170,
+	BPF_FUNC_dentry_get = 171,
+	BPF_FUNC_dentry_put = 172,
+	BPF_FUNC_file_storage_get = 173,
+	BPF_FUNC_file_storage_delete = 174,
+	BPF_FUNC_dentry_path = 175,
+	__BPF_FUNC_MAX_ID = 176,
 };
 
 enum {
@@ -41256,6 +41268,28 @@ typedef u64 (*btf_bpf_cred_storage_get)(struct bpf_map *, struct cred *, void *,
 
 typedef u64 (*btf_bpf_cred_storage_delete)(struct bpf_map *, struct cred *);
 
+struct msg_msgseg;
+
+struct msg_msg {
+	struct list_head m_list;
+	long int m_type;
+	size_t m_ts;
+	struct msg_msgseg *next;
+	void *security;
+};
+
+typedef u64 (*btf_bpf_msg_storage_get)(struct bpf_map *, struct msg_msg *, void *, u64);
+
+typedef u64 (*btf_bpf_msg_storage_delete)(struct bpf_map *, struct msg_msg *);
+
+typedef u64 (*btf_bpf_ipc_storage_get)(struct bpf_map *, struct kern_ipc_perm *, void *, u64);
+
+typedef u64 (*btf_bpf_ipc_storage_delete)(struct bpf_map *, struct kern_ipc_perm *);
+
+typedef u64 (*btf_bpf_file_storage_get)(struct bpf_map *, struct file *, void *, u64);
+
+typedef u64 (*btf_bpf_file_storage_delete)(struct bpf_map *, struct file *);
+
 struct btf_enum {
 	__u32 name_off;
 	__s32 val;
@@ -42550,6 +42584,12 @@ typedef u64 (*btf_bpf_ima_inode_hash)(struct inode *, void *, u32);
 typedef u64 (*btf_bpf_inode_from_sock)(struct socket *);
 
 typedef u64 (*btf_bpf_file_from_fown)(struct fown_struct *);
+
+typedef u64 (*btf_bpf_dentry_get)(struct inode *);
+
+typedef u64 (*btf_bpf_dentry_put)(struct dentry *);
+
+typedef u64 (*btf_bpf_dentry_path)(struct dentry *, char *, int);
 
 enum perf_event_read_format {
 	PERF_FORMAT_TOTAL_TIME_ENABLED = 1,
@@ -58736,16 +58776,6 @@ struct ipc_proc_iter {
 	struct ipc_namespace *ns;
 	struct pid_namespace *pid_ns;
 	struct ipc_proc_iface *iface;
-};
-
-struct msg_msgseg;
-
-struct msg_msg {
-	struct list_head m_list;
-	long int m_type;
-	size_t m_ts;
-	struct msg_msgseg *next;
-	void *security;
 };
 
 struct msg_msgseg {

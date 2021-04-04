@@ -47,4 +47,14 @@ static __always_inline uint64_t prov_get_id(uint32_t key) {
 static __always_inline struct bpf_spin_lock* prov_lock(union prov_elt* ptr) {
     return &(container_of(ptr, struct provenance_holder, prov)->lock);
 }
+
+static __always_inline bool __set_initalized(union prov_elt* prov) {
+    bool is_initialized;
+    bpf_spin_lock(prov_lock(prov));
+    is_initialized = provenance_is_initialized(prov);
+    if (!is_initialized)
+        set_initialized(prov);
+    bpf_spin_unlock(prov_lock(prov));
+    return is_initialized;
+}
 #endif

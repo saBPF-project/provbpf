@@ -81,16 +81,10 @@ static __always_inline void __update_task(const struct task_struct *task,
     if (!prov_holder)
         return NULL;
     prov = &prov_holder->prov;
-    bpf_spin_lock(prov_lock(prov));
-    if (!provenance_is_initialized(prov)) {
-        set_initialized(prov);
-        bpf_spin_unlock(prov_lock(prov));
+    if (!__set_initalized(prov))
         prov_init_node(prov, ACT_TASK);
-    } else {  // it was initialized, just release the lock
-        bpf_spin_unlock(prov_lock(prov));
-        if (provenance_is_opaque(prov))
-            return NULL;
-    }
+    if (provenance_is_opaque(prov))
+        return NULL;
     __update_task(task, prov);
     return prov;
  }

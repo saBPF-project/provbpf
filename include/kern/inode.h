@@ -119,10 +119,7 @@ static union prov_elt* get_inode_prov(struct inode *inode) {
         return NULL;
     prov = &prov_holder->prov;
 
-    bpf_spin_lock(prov_lock(prov));
-    if (!provenance_is_initialized(prov)) {
-        set_initialized(prov);
-        bpf_spin_unlock(prov_lock(prov));
+    if (!__set_initalized(prov)) {
         imode = inode->i_mode;
         if (S_ISREG(imode)) {
             // inode mode is regular file
@@ -151,12 +148,9 @@ static union prov_elt* get_inode_prov(struct inode *inode) {
         }
         prov_init_node(prov, type);
         prov_init_inode(inode, prov);
-    }else { // it was initialized, just release the lock
-        bpf_spin_unlock(prov_lock(prov));
-        if (provenance_is_opaque(prov))
-            return NULL;
     }
-
+    if (provenance_is_opaque(prov))
+        return NULL;
     prov_update_inode(inode, prov);
     return prov;
 }

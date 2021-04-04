@@ -39,16 +39,11 @@ static __always_inline union prov_elt* __get_cred_prov(struct cred *cred, struct
     if (!prov_holder)
         return NULL;
     prov = &prov_holder->prov;
-    bpf_spin_lock(prov_lock(prov));
-    if (!provenance_is_initialized(prov)) {
-        set_initialized(prov);
-        bpf_spin_unlock(prov_lock(prov));
+    if (!__set_initalized(prov)) {
         prov_init_node(prov, ENT_PROC);
-    } else {  // it was initialized, just release the lock
-        bpf_spin_unlock(prov_lock(prov));
-        if (provenance_is_opaque(prov))
-            return NULL;
     }
+    if (provenance_is_opaque(prov))
+        return NULL;
     if(task)
         __update_cred(task, prov);
     return prov;
