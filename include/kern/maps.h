@@ -81,12 +81,12 @@ struct {
 	__type(value, struct provenance_holder);
 } cred_storage_map SEC(".maps");
 
-struct bpf_map_def SEC("maps") msg_msg_map = {
-    .type = BPF_MAP_TYPE_HASH,
-    .key_size = sizeof(uint64_t),
-    .value_size = sizeof(union prov_elt),
-    .max_entries = 4096, // TODO: set as big as possible; real size is dynamically adjusted
-};
+struct {
+	__uint(type, BPF_MAP_TYPE_MSG_STORAGE);
+	__uint(map_flags, BPF_F_NO_PREALLOC);
+	__type(key, int);
+	__type(value, struct provenance_holder);
+} msg_storage_map SEC(".maps");
 
 struct bpf_map_def SEC("maps") kern_ipc_perm_map = {
     .type = BPF_MAP_TYPE_HASH,

@@ -18,26 +18,21 @@
 
 #include "kern/node.h"
 
-static __always_inline union prov_elt* get_or_create_msg_msg_prov(struct msg_msg *msg) {
-    if (!msg) {
-      return NULL;
-    }
+static __always_inline union prov_elt* get_msg_prov(struct msg_msg *msg) {
+    struct provenance_holder *prov_holder;
+    union prov_elt* prov;
 
-    union prov_elt prov_tmp;
-    uint64_t key = get_key(msg);
-    union prov_elt *prov_on_map = bpf_map_lookup_elem(&msg_msg_map, &key);
-    // provenance is already tracked
-    if (prov_on_map) {
-      // update the msg_msg's provenance since it may have changed
-      prov_on_map->msg_msg_info.type = msg->m_type;
-    } else {
-      // a new msg_msg
-      prov_init_node(&prov_tmp, ENT_MSG);
-      prov_tmp.msg_msg_info.type = msg->m_type;
-      bpf_map_update_elem(&msg_msg_map, &key, &prov_tmp, BPF_NOEXIST);
-      prov_on_map = bpf_map_lookup_elem(&msg_msg_map, &key);
+    if(!msg)
+        return NULL;
+
+    prov_holder = bpf_msg_storage_get(&msg_storage_map, msg, 0, BPF_LOCAL_STORAGE_GET_F_CREATE);
+    if (!prov_holder)
+        return NULL;
+    prov = &prov_holder->prov;
+    if (!__set_initalized(prov)) {
+        prov_init_node(prov, ENT_MSG);
+        prov->msg_msg_info.type = msg->m_type;
     }
-    return prov_on_map;
+    return prov;
 }
-
 #endif

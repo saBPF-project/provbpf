@@ -577,3 +577,87 @@ int BPF_PROG(socket_accept, struct socket *sock, struct socket *newsock) {
     uses(RL_ACCEPT, current_task, niprov, tprov, cprov, NULL, 0);
     return 0;
 }
+
+SEC("lsm/msg_msg_alloc_security")
+int BPF_PROG(msg_msg_alloc_security, struct msg_msg *msg) {
+    union prov_elt *tprov, *cprov, *mprov;
+    struct task_struct *current_task;
+
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
+    if (!current_task)
+        return 0;
+    tprov = get_task_prov(current_task);
+    if (!tprov)
+      return 0;
+
+    cprov = get_cred_prov_from_task(current_task);
+    if (!cprov)
+      return 0;
+
+    mprov = get_msg_prov(msg);
+    if (!mprov)
+        return 0;
+
+    generates(RL_MSG_CREATE, current_task, cprov, tprov, mprov, NULL, 0);
+    return 0;
+}
+
+SEC("lsm/msg_msg_free_security")
+int BPF_PROG(msg_msg_free_security, struct msg_msg *msg) {
+    union prov_elt *mprov;
+
+    mprov = get_msg_prov(msg);
+    if (!mprov)
+        return 0;
+
+    record_terminate(RL_FREED, mprov);
+    return 0;
+}
+
+SEC("lsm/msg_queue_msgsnd")
+int BPF_PROG(msg_queue_msgsnd, struct kern_ipc_perm *msq, struct msg_msg *msg, int msqflg) {
+    union prov_elt *tprov, *cprov, *mprov;
+    struct task_struct *current_task;
+
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
+    if (!current_task)
+        return 0;
+    tprov = get_task_prov(current_task);
+    if (!tprov)
+      return 0;
+
+    cprov = get_cred_prov_from_task(current_task);
+    if (!cprov)
+      return 0;
+
+    mprov = get_msg_prov(msg);
+    if (!mprov)
+        return 0;
+
+    generates(RL_SND_MSG_Q, current_task, cprov, tprov, mprov, NULL, msqflg);
+    return 0;
+}
+
+SEC("lsm/msg_queue_msgrcv")
+int BPF_PROG(msg_queue_msgrcv, struct kern_ipc_perm *msq, struct msg_msg *msg, struct task_struct *target, long type, int mode) {
+    union prov_elt *tprov, *cprov, *mprov;
+    struct task_struct *current_task;
+
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
+    if (!current_task)
+        return 0;
+    tprov = get_task_prov(current_task);
+    if (!tprov)
+      return 0;
+
+    cprov = get_cred_prov_from_task(current_task);
+    if (!cprov)
+      return 0;
+
+    mprov = get_msg_prov(msg);
+    if (!mprov)
+        return 0;
+
+    uses(RL_RCV_MSG_Q, current_task, mprov, tprov, cprov, NULL, mode);
+    return 0;
+}
