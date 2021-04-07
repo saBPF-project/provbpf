@@ -95,15 +95,14 @@
 #define RL_SETUID                               (RL_GENERATED | (0x0000000000000001ULL << 23))
 #define RL_SETGID                               (RL_GENERATED | (0x0000000000000001ULL << 24))
 #define RL_SH_ATTACH_WRITE                      (RL_GENERATED | (0x0000000000000001ULL << 25))
-#define RL_SH_CREATE_READ                       (RL_GENERATED | (0x0000000000000001ULL << 26))
-#define RL_SH_CREATE_WRITE                      (RL_GENERATED | (0x0000000000000001ULL << 27))
-#define RL_FILE_LOCK                            (RL_GENERATED | (0x0000000000000001ULL << 28))
-#define RL_MUNMAP                               (RL_GENERATED | (0x0000000000000001ULL << 29))
-#define RL_SPLICE_OUT                           (RL_GENERATED | (0x0000000000000001ULL << 30))
-#define RL_EXEC_TASK                            (RL_GENERATED | (0x0000000000000001ULL << 31))
-#define RL_PTRACE_ATTACH                        (RL_GENERATED | (0x0000000000000001ULL << 32))
-#define RL_COPY_UP_NEW_CRED                     (RL_GENERATED | (0x0000000000000001ULL << 34))
-#define RL_COPY_UP_INODE                        (RL_GENERATED | (0x0000000000000001ULL << 35))
+#define RL_SH_CREATE                            (RL_GENERATED | (0x0000000000000001ULL << 26))
+#define RL_FILE_LOCK                            (RL_GENERATED | (0x0000000000000001ULL << 27))
+#define RL_MUNMAP                               (RL_GENERATED | (0x0000000000000001ULL << 28))
+#define RL_SPLICE_OUT                           (RL_GENERATED | (0x0000000000000001ULL << 29))
+#define RL_EXEC_TASK                            (RL_GENERATED | (0x0000000000000001ULL << 30))
+#define RL_PTRACE_ATTACH                        (RL_GENERATED | (0x0000000000000001ULL << 31))
+#define RL_COPY_UP_NEW_CRED                     (RL_GENERATED | (0x0000000000000001ULL << 32))
+#define RL_COPY_UP_INODE                        (RL_GENERATED | (0x0000000000000001ULL << 33))
 /* no more than 51!!!! */
 
 /* USED SUBTYPES */

@@ -21,11 +21,6 @@
 
 #define NULL ((void *)0)
 
-// TODO at some point we could get rid of this
-static __always_inline uint64_t get_key(const void *obj) {
-    return (uint64_t)obj;
-}
-
 static __always_inline uint64_t prov_next_id(uint32_t key)	{
     struct id_elem *val = bpf_map_lookup_elem(&ids_map, &key);
     if(!val)

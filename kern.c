@@ -661,3 +661,69 @@ int BPF_PROG(msg_queue_msgrcv, struct kern_ipc_perm *msq, struct msg_msg *msg, s
     uses(RL_RCV_MSG_Q, current_task, mprov, tprov, cprov, NULL, mode);
     return 0;
 }
+
+SEC("lsm/shm_alloc_security")
+int BPF_PROG(shm_alloc_security, struct kern_ipc_perm *shp) {
+    union prov_elt *tprov, *cprov, *sprov;
+    struct task_struct *current_task;
+
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
+    if (!current_task)
+        return 0;
+    tprov = get_task_prov(current_task);
+    if (!tprov)
+      return 0;
+
+    cprov = get_cred_prov_from_task(current_task);
+    if (!cprov)
+      return 0;
+
+    sprov = get_ipc_prov(shp);
+    if (!sprov)
+        return 0;
+
+    generates(RL_SH_CREATE, current_task, cprov, tprov, sprov, NULL, 0);
+    return 0;
+}
+
+SEC("lsm/shm_free_security")
+int BPF_PROG(shm_free_security, struct kern_ipc_perm *shp) {
+    union prov_elt *sprov;
+
+    sprov = get_ipc_prov(shp);
+    if (!sprov)
+      return 0;
+
+    record_terminate(RL_FREED, sprov);
+    return 0;
+}
+
+#define	SHM_RDONLY	010000	/* read-only access */
+SEC("lsm/shm_shmat")
+int BPF_PROG(shm_shmat, struct kern_ipc_perm *shp, char *shmaddr, int shmflg) {
+    union prov_elt *tprov, *cprov, *sprov;
+    struct task_struct *current_task;
+
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
+    if (!current_task)
+        return 0;
+    tprov = get_task_prov(current_task);
+    if (!tprov)
+      return 0;
+
+    cprov = get_cred_prov_from_task(current_task);
+    if (!cprov)
+      return 0;
+
+    sprov = get_ipc_prov(shp);
+    if (!sprov)
+        return 0;
+
+    if (shmflg & SHM_RDONLY) {
+      uses(RL_SH_ATTACH_READ, current_task, sprov, tprov, cprov, NULL, shmflg);
+    } else {
+      uses(RL_SH_ATTACH_READ, current_task, sprov, tprov, cprov, NULL, shmflg);
+      generates(RL_SH_ATTACH_WRITE, current_task, cprov, tprov, sprov, NULL, shmflg);
+    }
+    return 0;
+}
