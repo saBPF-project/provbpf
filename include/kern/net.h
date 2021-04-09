@@ -200,8 +200,10 @@ static __always_inline void record_packet_content(struct sk_buff *skb, union pro
 
 	if (ptr_prov_pckcnt->pckcnt_info.length >= PATH_MAX) {
 		ptr_prov_pckcnt->pckcnt_info.truncated = PROV_TRUNCATED;
+		bpf_probe_read_kernel(ptr_prov_pckcnt->pckcnt_info.content, PATH_MAX, skb->head);
+	} else {
+		bpf_probe_read_kernel(ptr_prov_pckcnt->pckcnt_info.content, ptr_prov_pckcnt->pckcnt_info.length, skb->head);
 	}
-	__builtin_memcpy(&(ptr_prov_pckcnt->pckcnt_info.content), &skb_head, PATH_MAX);
 
 	record_relation(RL_PCK_CNT, ptr_prov_pckcnt, true, ptr_prov_pck, false, NULL, 0);
 }
