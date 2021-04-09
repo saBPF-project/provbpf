@@ -47,12 +47,13 @@ struct bpf_map_def SEC("maps") tmp_prov_elt_map = {
 #define ADDRESS_PERCPU_LONG_TMP 0
 #define XATTR_PERCPU_LONG_TMP 1
 #define UPDATE_PERCPU_LONG_TMP 2
+#define PCKCNT_PERCPU_LONG_TMP 3
 
 struct bpf_map_def SEC("maps") long_tmp_prov_map = {
     .type = BPF_MAP_TYPE_PERCPU_ARRAY,
     .key_size = sizeof(uint32_t),
     .value_size = sizeof(union long_prov_elt),
-    .max_entries = 3,
+    .max_entries = 4,
 };
 
 struct bpf_map_def SEC("maps") prov_machine_map = {

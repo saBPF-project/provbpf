@@ -2494,6 +2494,10 @@ int BPF_PROG(socket_sock_rcv_skb, struct sock *sk, struct sk_buff *skb) {
     if (should_record_packet(ptr_prov_inode)) {
         provenance_alloc_with_ipv4_skb(&prov_pck, skb);
 
+        if (provenance_records_packet(ptr_prov_inode)) {
+            record_packet_content(skb, &prov_pck);
+        }
+
         derives(RL_RCV_PACKET, &prov_pck, ptr_prov_inode, NULL, 0);
     }
 

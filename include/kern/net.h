@@ -56,7 +56,7 @@ static __always_inline int record_address(struct sockaddr *address, int addrlen,
 	ptr_prov_addr->address_info.length = addrlen;
 	__builtin_memcpy(&(ptr_prov_addr->address_info.addr), &address, sizeof(struct sockaddr_storage));
 
-  record_relation(RL_ADDRESSED, ptr_prov_addr, true, prov, false, NULL, 0);
+    record_relation(RL_ADDRESSED, ptr_prov_addr, true, prov, false, NULL, 0);
 
 	return 0;
 }
@@ -182,5 +182,27 @@ static __always_inline void provenance_alloc_with_ipv4_skb(union prov_elt *ptr_p
 	}
 
 	return;
+}
+
+static __always_inline void record_packet_content(struct sk_buff *skb, union prov_elt *ptr_prov_pck) {
+	int map_id = PCKCNT_PERCPU_LONG_TMP;
+	union long_prov_elt *ptr_prov_pckcnt = bpf_map_lookup_elem(&long_tmp_prov_map, &map_id);
+	if (!ptr_prov_pckcnt) {
+		return;
+	}
+
+#ifdef NET_SKBUFF_DATA_USES_OFFSET
+	ptr_prov_pckcnt->pckcnt_info.length = (unsigned int)(skb->end);
+#else
+	ptr_prov_pckcnt->pckcnt_info.length = (unsigned int)(skb->end - (unsigned int)skb->head);
+#endif
+	unsigned char *skb_head = _(skb->head);
+
+	if (ptr_prov_pckcnt->pckcnt_info.length >= PATH_MAX) {
+		ptr_prov_pckcnt->pckcnt_info.truncated = PROV_TRUNCATED;
+	}
+	__builtin_memcpy(&(ptr_prov_pckcnt->pckcnt_info.content), &skb_head, PATH_MAX);
+
+	record_relation(RL_PCK_CNT, ptr_prov_pckcnt, true, ptr_prov_pck, false, NULL, 0);
 }
 #endif
