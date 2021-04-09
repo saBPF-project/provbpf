@@ -16,7 +16,14 @@
 #ifndef __KERN_BPF_PROVENANCE_NET_H
 #define __KERN_BPF_PROVENANCE_NET_H
 
-#define ihlen(ih)    (ih->ihl * 4)
+#define _(P)                                                                   \
+	({                                                                     \
+		typeof(P) val = 0;                                             \
+		bpf_probe_read_kernel(&val, sizeof(val), &(P));                \
+		val;                                                           \
+	})
+
+#define IP_OFFSET	0x1FFF		/* "Fragment Offset" part	*/
 /*!
  * @brief Record the address provenance node that binds to the socket node.
  *
@@ -76,7 +83,7 @@ static __always_inline void *__skb_header_pointer(struct sk_buff *skb, int offse
 		return data + offset;
 
 	if (!skb ||
-	    bpf_skb_load_bytes(skb, offset, buffer, len) < 0)
+	    bpf_skb_load_bytes_btf(skb, offset, buffer, len) < 0)
 		return 0;
 
 	return buffer;
@@ -88,28 +95,91 @@ static __always_inline void *skb_header_pointer(struct sk_buff *skb, int offset,
 				    skb_headlen(skb), buffer);
 }
 
+static __always_inline void __extract_tcp_info(struct sk_buff *skb,
+					       struct iphdr *ih,
+						   uint8_t ihl,
+					       int offset,
+					       union prov_elt *ptr_prov_pck) {
+    struct tcphdr _tcph;
+   	struct tcphdr *th;
+   	int tcpoff;
+	uint16_t frag_off = _(ih->frag_off);
+
+	if (bpf_ntohs(frag_off) & IP_OFFSET)
+		return;
+
+	tcpoff = offset + ihl * 4;    // Point to tcp packet.
+	th = skb_header_pointer(skb, tcpoff, sizeof(_tcph), &_tcph);
+	if (!th)
+		return;
+
+	packet_identifier(ptr_prov_pck).snd_port = _(th->source);
+	packet_identifier(ptr_prov_pck).rcv_port = _(th->dest);
+	packet_identifier(ptr_prov_pck).seq = _(th->seq);
+}
+
+static __always_inline void __extract_udp_info(struct sk_buff *skb,
+					       struct iphdr *ih,
+						   uint8_t ihl,
+					       int offset,
+					       union prov_elt *ptr_prov_pck) {
+    struct udphdr _udph;
+   	struct udphdr *uh;
+   	int udpoff;
+	uint16_t frag_off = _(ih->frag_off);
+
+	if (bpf_ntohs(frag_off) & IP_OFFSET)
+		return;
+
+	udpoff = offset + ihl * 4;    // Point to tcp packet.
+	uh = skb_header_pointer(skb, udpoff, sizeof(_udph), &_udph);
+	if (!uh)
+		return;
+
+	packet_identifier(ptr_prov_pck).snd_port = _(uh->source);
+	packet_identifier(ptr_prov_pck).rcv_port = _(uh->dest);
+}
+
 static __always_inline void provenance_alloc_with_ipv4_skb(union prov_elt *ptr_prov_pck, struct sk_buff *skb) {
 	int offset;
 	struct iphdr _iph, *ih;
+	__builtin_memset(ptr_prov_pck, 0, sizeof(union prov_elt));
+	prov_init_node(ptr_prov_pck, ENT_PACKET);
 
 	offset = skb_network_offset(skb);
 	ih = skb_header_pointer(skb, offset, sizeof(_iph), &_iph);
 	if (!ih)
 		return;
 
-	if (ihlen(ih) < sizeof(_iph))
-		return;
+	uint8_t ihl = 0;
+	bpf_probe_read(&ihl, 1, ih);
 
-	// __builtin_memset(ptr_prov_pck, 0, sizeof(union prov_elt));
-    // prov_init_node(ptr_prov_pck, ENT_PACKET);
-	//
-	// // Collect IP element of prov identifier.
-	// // force parse endian casting
-	// packet_identifier(ptr_prov_pck).id = (uint16_t)ih->id;
-	// packet_identifier(ptr_prov_pck).snd_ip = (uint32_t)ih->saddr;
-	// packet_identifier(ptr_prov_pck).rcv_ip = (uint32_t)ih->daddr;
-	// packet_identifier(ptr_prov_pck).protocol = ih->protocol;
-	// packet_info(ptr_prov_pck).len = (size_t)ih->tot_len;
+#if defined(__LITTLE_ENDIAN_BITFIELD)
+	ihl = ihl >> 4;
+#elif defined (__BIG_ENDIAN_BITFIELD)
+	ihl = ihl & 0x0F;
+#endif
+
+	// Collect IP element of prov identifier.
+	// force parse endian casting
+	packet_identifier(ptr_prov_pck).id = _(ih->id);
+	packet_identifier(ptr_prov_pck).snd_ip = _(ih->saddr);
+	packet_identifier(ptr_prov_pck).rcv_ip = _(ih->daddr);
+	packet_identifier(ptr_prov_pck).protocol = _(ih->protocol);
+	packet_info(ptr_prov_pck).len = _(ih->tot_len);
+
+	switch (packet_identifier(ptr_prov_pck).protocol) {
+	case IPPROTO_TCP:
+		__extract_tcp_info(skb, ih, ihl,
+				   offset, ptr_prov_pck);
+		break;
+	case IPPROTO_UDP:
+		__extract_udp_info(skb, ih, ihl,
+				   offset, ptr_prov_pck);
+		break;
+	default:
+		break;
+	}
 
 	return;
 }

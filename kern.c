@@ -29,6 +29,12 @@
 #include "shared/id.h"
 #include "shared/policy.h"
 
+struct ipv4_flow_key_t {
+    u32 saddr;
+    u32 daddr;
+    u16 dport;
+};
+
 #include "kern/maps.h"
 #include "kern/common.h"
 #include "kern/node.h"
@@ -2485,13 +2491,51 @@ int BPF_PROG(socket_sock_rcv_skb, struct sock *sk, struct sk_buff *skb) {
     if (!ptr_prov_inode)
         return 0;
 
-    // if (should_record_packet(ptr_prov_inode)) {
-    //     provenance_alloc_with_ipv4_skb(&prov_pck, skb);
-    // }
+    if (should_record_packet(ptr_prov_inode)) {
+        provenance_alloc_with_ipv4_skb(&prov_pck, skb);
+
+        derives(RL_RCV_PACKET, &prov_pck, ptr_prov_inode, NULL, 0);
+    }
 
     return 0;
 }
 #endif
+
+
+// static __always_inline int trace_connect_return(struct pt_regs *ctx, short ipver)
+// {
+//     int ret = ctx->ax;
+//     u64 pid_tgid = bpf_get_current_pid_tgid();
+//     u32 pid = pid_tgid >> 32;
+//     u32 tid = pid_tgid;
+//     struct sock **skpp;
+//     skpp = bpf_map_lookup_elem(&kern_currsock_map, &tid);
+//     if (!skpp)
+//         return 0; // missed entry
+//
+//     if (ret != 0) { // failed to send SYNC packet, may not have populated
+//         bpf_map_delete_elem(&kern_currsock_map, &tid);
+//         return 0;
+//     }
+//     // pull in details
+//     struct sock *skp = *skpp;
+//     u16 lport = skp->__sk_common.skc_num;
+//     u16 dport = skp->__sk_common.skc_dport;
+//
+//     if (ipver == 4) {
+//
+//     // } else /* 6 */ {
+//     //     IPV6_CODE
+//     }
+//     bpf_map_delete_elem(&kern_currsock_map, &tid);
+//     // currsock.delete(&tid);
+//     return 0;
+// }
+//
+// SEC("kretprobe/tcp_v4_connect")
+// int kretprobe__traceconnect_v4_return(struct pt_regs *ctx) {
+//     return trace_connect_return(ctx, 4);
+// }
 
 #ifndef PROV_FILTER_SOCKET_SOCKETPAIR_OFF
 SEC("lsm/socket_socketpair")
