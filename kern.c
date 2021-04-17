@@ -58,63 +58,63 @@ char _license[] SEC("license") = "GPL";
  * Template is: SEC("lsm/HOOK_NAMES")
  */
 
- #ifndef PROV_FILTER_EGRESS_OFF
- SEC("classifier")
- int tc_egress(struct __sk_buff *skb) {
-    union prov_elt prov_pck;
-    prov_init_node(&prov_pck, ENT_PACKET);
-
-    void *data     = (void *)(long)skb->data;
-	void *data_end = (void *)(long)skb->data_end;
-    struct ethhdr *eth = data;
-
-    if (data + sizeof(*eth) > data_end) {
-        return TC_ACT_OK;
-    }
-
-    if (eth->h_proto == bpf_htons(ETH_P_IP)) {
-        struct iphdr *iph = data + sizeof(*eth);
-        if (data + sizeof(*eth) + sizeof(*iph) > data_end) {
-            return TC_ACT_OK;
-        }
-
-        /* Collect IP element of prov identifier. */
-        packet_identifier(&prov_pck).id = (uint16_t)iph->id;
-        packet_identifier(&prov_pck).snd_ip = (uint32_t)iph->saddr;
-        packet_identifier(&prov_pck).rcv_ip = (uint32_t)iph->daddr;
-        packet_identifier(&prov_pck).protocol = iph->protocol;
-        packet_info(&prov_pck).len = (size_t)iph->tot_len;
-
-
-        if (iph->protocol == IPPROTO_TCP) {
-            if (bpf_ntohs(iph->frag_off) & IP_OFFSET) {
-                return TC_ACT_OK;
-            }
-            struct tcphdr *tch = data + sizeof(*eth) + sizeof(*iph);
-            if (data + sizeof(*eth) + sizeof(*iph) + sizeof(*tch) > data_end) {
-                return TC_ACT_OK;
-            }
-
-            packet_identifier(&prov_pck).snd_port = (uint16_t)tch->source;
-            packet_identifier(&prov_pck).rcv_port = (uint16_t)tch->dest;
-            packet_identifier(&prov_pck).seq = (uint32_t)tch->seq;
-        } else if (iph->protocol == IPPROTO_UDP) {
-            if (bpf_ntohs(iph->frag_off) & IP_OFFSET) {
-                return TC_ACT_OK;
-            }
-            struct udphdr *udh = data + sizeof(*eth) + sizeof(*iph);
-            if (data + sizeof(*eth) + sizeof(*iph) + sizeof(*udh) > data_end) {
-                return TC_ACT_OK;
-            }
-
-            packet_identifier(&prov_pck).snd_port = (uint16_t)udh->source;
-            packet_identifier(&prov_pck).rcv_port = (uint16_t)udh->dest;
-        }
-    }
-
-    return TC_ACT_OK;
- }
- #endif
+ // #ifndef PROV_FILTER_EGRESS_OFF
+ // SEC("classifier")
+ // int tc_egress(struct __sk_buff *skb) {
+ //    union prov_elt prov_pck;
+ //    prov_init_node(&prov_pck, ENT_PACKET);
+ //
+ //    void *data     = (void *)(long)skb->data;
+	// void *data_end = (void *)(long)skb->data_end;
+ //    struct ethhdr *eth = data;
+ //
+ //    if (data + sizeof(*eth) > data_end) {
+ //        return TC_ACT_OK;
+ //    }
+ //
+ //    if (eth->h_proto == bpf_htons(ETH_P_IP)) {
+ //        struct iphdr *iph = data + sizeof(*eth);
+ //        if (data + sizeof(*eth) + sizeof(*iph) > data_end) {
+ //            return TC_ACT_OK;
+ //        }
+ //
+ //        /* Collect IP element of prov identifier. */
+ //        packet_identifier(&prov_pck).id = (uint16_t)iph->id;
+ //        packet_identifier(&prov_pck).snd_ip = (uint32_t)iph->saddr;
+ //        packet_identifier(&prov_pck).rcv_ip = (uint32_t)iph->daddr;
+ //        packet_identifier(&prov_pck).protocol = iph->protocol;
+ //        packet_info(&prov_pck).len = (size_t)iph->tot_len;
+ //
+ //
+ //        if (iph->protocol == IPPROTO_TCP) {
+ //            if (bpf_ntohs(iph->frag_off) & IP_OFFSET) {
+ //                return TC_ACT_OK;
+ //            }
+ //            struct tcphdr *tch = data + sizeof(*eth) + sizeof(*iph);
+ //            if (data + sizeof(*eth) + sizeof(*iph) + sizeof(*tch) > data_end) {
+ //                return TC_ACT_OK;
+ //            }
+ //
+ //            packet_identifier(&prov_pck).snd_port = (uint16_t)tch->source;
+ //            packet_identifier(&prov_pck).rcv_port = (uint16_t)tch->dest;
+ //            packet_identifier(&prov_pck).seq = (uint32_t)tch->seq;
+ //        } else if (iph->protocol == IPPROTO_UDP) {
+ //            if (bpf_ntohs(iph->frag_off) & IP_OFFSET) {
+ //                return TC_ACT_OK;
+ //            }
+ //            struct udphdr *udh = data + sizeof(*eth) + sizeof(*iph);
+ //            if (data + sizeof(*eth) + sizeof(*iph) + sizeof(*udh) > data_end) {
+ //                return TC_ACT_OK;
+ //            }
+ //
+ //            packet_identifier(&prov_pck).snd_port = (uint16_t)udh->source;
+ //            packet_identifier(&prov_pck).rcv_port = (uint16_t)udh->dest;
+ //        }
+ //    }
+ //
+ //    return TC_ACT_OK;
+ // }
+ // #endif
 
 /*!
  * @brief Record provenance when task_alloc is triggered.
@@ -2505,41 +2505,106 @@ int BPF_PROG(socket_sock_rcv_skb, struct sock *sk, struct sk_buff *skb) {
 }
 #endif
 
+#ifndef PROV_FILTER_IP_OUTPUT
+SEC("kprobe/ip_output")
+int bpf_prog1(struct pt_regs *ctx) {
+    union prov_elt prov_pck, *ptr_prov_current_task, *ptr_prov_inode;
+    struct iphdr *ih;
+    struct tcphdr *th;
+    struct udphdr *uh;
+    unsigned char *head;
+    uint16_t network_header, frag_off;
 
-// static __always_inline int trace_connect_return(struct pt_regs *ctx, short ipver)
-// {
-//     int ret = ctx->ax;
-//     u64 pid_tgid = bpf_get_current_pid_tgid();
-//     u32 pid = pid_tgid >> 32;
-//     u32 tid = pid_tgid;
-//     struct sock **skpp;
-//     skpp = bpf_map_lookup_elem(&kern_currsock_map, &tid);
-//     if (!skpp)
-//         return 0; // missed entry
-//
-//     if (ret != 0) { // failed to send SYNC packet, may not have populated
-//         bpf_map_delete_elem(&kern_currsock_map, &tid);
-//         return 0;
-//     }
-//     // pull in details
-//     struct sock *skp = *skpp;
-//     u16 lport = skp->__sk_common.skc_num;
-//     u16 dport = skp->__sk_common.skc_dport;
-//
-//     if (ipver == 4) {
-//
-//     // } else /* 6 */ {
-//     //     IPV6_CODE
-//     }
-//     bpf_map_delete_elem(&kern_currsock_map, &tid);
-//     // currsock.delete(&tid);
-//     return 0;
-// }
-//
-// SEC("kretprobe/tcp_v4_connect")
-// int kretprobe__traceconnect_v4_return(struct pt_regs *ctx) {
-//     return trace_connect_return(ctx, 4);
-// }
+    struct sk_buff *skb = (struct sk_buff *)(ctx->dx);
+
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
+
+    // BPF Verifier Error: unknown func bpf_task_storage_get#156
+    // ptr_prov_current_task = get_or_create_task_prov(current_task);
+    // if (!ptr_prov_current_task) {
+    //   return 0;
+    // }
+
+    if (true) {
+        // struct sock *sk = _(skb->sk);
+        // struct socket *sock = _(sk->sk_socket);
+        //
+        //
+        // if (!sock) {
+        //     return 0;
+        // }
+        // BPF Verifier Error: unknown func bpf_inode_from_sock#163
+        // ptr_prov_inode = get_or_create_inode_prov((struct inode *)bpf_inode_from_sock(sock));
+        // if (!ptr_prov_inode)
+        //     return 0;
+
+        // Get packet entries
+        network_header = _(skb->network_header);
+        head = _(skb->head);
+
+        ih = (struct iphdr *)(head + network_header);
+        if (!ih)
+            return 0;
+
+        uint8_t ihl = 0;
+    	bpf_probe_read(&ihl, 1, ih);
+
+    #if defined(__LITTLE_ENDIAN_BITFIELD)
+    	ihl = ihl >> 4;
+    #elif defined (__BIG_ENDIAN_BITFIELD)
+    	ihl = ihl & 0x0F;
+    #endif
+
+    packet_identifier(&prov_pck).snd_ip = _(ih->saddr);
+        if (packet_identifier(&prov_pck).snd_ip == 16777343) { /* Only filter connections having snd_ip == localhost (127.0.0.1) */
+            // Collect IP element of prov identifier.
+            // force parse endian casting
+            packet_identifier(&prov_pck).id = _(ih->id);
+            packet_identifier(&prov_pck).rcv_ip = _(ih->daddr);
+            packet_identifier(&prov_pck).protocol = _(ih->protocol);
+            packet_info(&prov_pck).len = _(ih->tot_len);
+
+            switch (packet_identifier(&prov_pck).protocol) {
+        	case IPPROTO_TCP:
+                frag_off = _(ih->frag_off);
+
+            	if (bpf_ntohs(frag_off) & IP_OFFSET)
+            		return 0;
+
+            	th = (struct tcphdr *)(head + network_header + ihl * 4);
+            	if (!th)
+            		return 0;
+
+            	packet_identifier(&prov_pck).snd_port = _(th->source);
+            	packet_identifier(&prov_pck).rcv_port = _(th->dest);
+            	packet_identifier(&prov_pck).seq = _(th->seq);
+
+        		break;
+        	case IPPROTO_UDP:
+            	frag_off = _(ih->frag_off);
+
+            	if (bpf_ntohs(frag_off) & IP_OFFSET)
+            		return 0;
+
+            	uh = (struct udphdr *)(head + network_header + ihl * 4);
+            	if (!uh)
+            		return 0;
+
+            	packet_identifier(&prov_pck).snd_port = _(uh->source);
+            	packet_identifier(&prov_pck).rcv_port = _(uh->dest);
+
+        		break;
+        	default:
+        		break;
+        	}
+        }
+
+        // derives(RL_SND_PACKET, ptr_prov_inode, &prov_pck, NULL, 0);
+    }
+
+    return 0;
+}
+#endif
 
 #ifndef PROV_FILTER_SOCKET_SOCKETPAIR_OFF
 SEC("lsm/socket_socketpair")
