@@ -82,10 +82,6 @@ static __always_inline void *__skb_header_pointer(struct sk_buff *skb, int offse
 	if (hlen - offset >= len)
 		return data + offset;
 
-	if (!skb ||
-	    bpf_skb_load_bytes_btf(skb, offset, buffer, len) < 0)
-		return 0;
-
 	return buffer;
 }
 
@@ -196,14 +192,11 @@ static __always_inline void record_packet_content(struct sk_buff *skb, union pro
 #else
 	ptr_prov_pckcnt->pckcnt_info.length = (unsigned int)(skb->end - (unsigned int)skb->head);
 #endif
-	unsigned char *skb_head = _(skb->head);
 
 	if (ptr_prov_pckcnt->pckcnt_info.length >= PATH_MAX) {
 		ptr_prov_pckcnt->pckcnt_info.truncated = PROV_TRUNCATED;
-		bpf_probe_read_kernel(ptr_prov_pckcnt->pckcnt_info.content, PATH_MAX, skb->head);
-	} else {
-		bpf_probe_read_kernel(ptr_prov_pckcnt->pckcnt_info.content, ptr_prov_pckcnt->pckcnt_info.length, skb->head);
 	}
+	bpf_probe_read_kernel_str(ptr_prov_pckcnt->pckcnt_info.content, PATH_MAX, skb->head);
 
 	record_relation(RL_PCK_CNT, ptr_prov_pckcnt, true, ptr_prov_pck, false, NULL, 0);
 }

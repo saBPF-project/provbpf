@@ -2505,7 +2505,7 @@ int BPF_PROG(socket_sock_rcv_skb, struct sock *sk, struct sk_buff *skb) {
 }
 #endif
 
-#ifndef PROV_FILTER_IP_OUTPUT
+#ifndef PROV_FILTER_IP_OUTPUT_OFF
 SEC("kprobe/ip_output")
 int bpf_prog1(struct pt_regs *ctx) {
     union prov_elt prov_pck, *ptr_prov_current_task, *ptr_prov_inode;

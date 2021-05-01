@@ -1,8 +1,8 @@
 prepare:
 	mkdir -p ~/build
-	cd ~/build/provbpf-kernel && git checkout skb_load_bytes
-	cd ~/build/provbpf-kernel && $(MAKE) prepare
-	cd ~/build/provbpf-kernel && $(MAKE) config
+	cd ~/build && git clone https://github.com/tfjmp/provbpf-kernel.git
+	cd ~/build/provbpf-kernel && $(MAKE) prepare_camflow
+	cd ~/build/provbpf-kernel && $(MAKE) config_camflow
 	cd ~/build/provbpf-kernel && $(MAKE) build
 	cd ~/build/provbpf-kernel && $(MAKE) install
 
@@ -19,10 +19,7 @@ btf_circle:
 
 kern:
 	clang -O2 -Wall \
-	-DPROV_FILTER_INODE_FREE_SECURITY_OFF \
-	-DPROV_FILTER_SOCKET_SOCK_RCV_SKB_OFF \
-	-DPROV_FILTER_UNIX_MAY_SEND_OFF \
-	-DPROV_FILTER_KERNEL_READ_FILE_OFF \
+	-DPROV_FILTER_IP_OUTPUT_OFF \
 	-DPROV_FILTER_FILE_PERMISSION_OFF \
 	-DPROV_FILTER_SOCKET_SENDMSG_OFF \
 	-D__KERNEL__ -D__ASM_SYSREG_H \
