@@ -706,7 +706,7 @@ int BPF_PROG(shm_shmat, struct kern_ipc_perm *shp, char *shmaddr, int shmflg) {
 
     current_task = (struct task_struct *)bpf_get_current_task_btf();
     if (!current_task)
-        return 0;
+      return 0;
     tprov = get_task_prov(current_task);
     if (!tprov)
       return 0;
@@ -725,5 +725,47 @@ int BPF_PROG(shm_shmat, struct kern_ipc_perm *shp, char *shmaddr, int shmflg) {
       uses(RL_SH_ATTACH_READ, current_task, sprov, tprov, cprov, NULL, shmflg);
       generates(RL_SH_ATTACH_WRITE, current_task, cprov, tprov, sprov, NULL, shmflg);
     }
+    return 0;
+}
+
+SEC("lsm/bprm_creds_for_exec")
+int BPF_PROG(bprm_creds_for_exec, struct linux_binprm *bprm) {
+    union prov_elt *cprov, *iprov;
+
+    cprov = get_cred_prov(bprm->cred);
+    if (!cprov)
+      return 0;
+
+    iprov = get_inode_prov(bprm->file->f_inode);
+    if (!iprov)
+      return 0;
+
+    derives(RL_EXEC, iprov, cprov, NULL, 0);
+
+    return 0;
+}
+
+SEC("lsm/bprm_committing_creds")
+int BPF_PROG(bprm_committing_creds, struct linux_binprm *bprm) {
+    union prov_elt *tprov, *cprov, *ncprov;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
+
+
+		current_task = (struct task_struct *)bpf_get_current_task_btf();
+    if (!current_task)
+      return 0;
+    tprov = get_task_prov(current_task);
+    if (!tprov)
+      return 0;
+
+    cprov = get_cred_prov_from_task(current_task);
+    if (!cprov)
+      return 0;
+
+    ncprov = get_cred_prov(bprm->cred);
+    if (!ncprov)
+      return 0;
+
+    generates(RL_EXEC_TASK, current_task, cprov, tprov, ncprov, NULL, 0);
     return 0;
 }
