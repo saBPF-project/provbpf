@@ -42,77 +42,98 @@ char _license[] SEC("license") = "GPL";
 
 SEC("lsm/task_alloc")
 int BPF_PROG(task_alloc, struct task_struct *task, unsigned long clone_flags) {
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
-    union prov_elt *tprov, *tnprov;
+  struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
+  union prov_elt *tprov, *tnprov;
 
-    if (!current_task)
-        return 0;
+  if (!current_task)
+      return 0;
 
-    tprov = get_task_prov(current_task);
-    if (!tprov)
-        return 0;
+  tprov = get_task_prov(current_task);
+  if (!tprov)
+      return 0;
 
-    tnprov = get_task_prov(task);
-    if(!tnprov)
-        return 0;
+  tnprov = get_task_prov(task);
+  if(!tnprov)
+      return 0;
 
-    informs(RL_CLONE, tprov, tnprov, NULL, clone_flags);
-    return 0;
+  informs(RL_CLONE, tprov, tnprov, NULL, clone_flags);
+  return 0;
 }
 
 SEC("lsm/task_free")
 int BPF_PROG(task_free, struct task_struct *task) {
-    union prov_elt *tprov;
+  union prov_elt *tprov;
 
-    tprov = get_task_prov(task);
-    if (!tprov) // something is wrong
-        return 0;
+  tprov = get_task_prov(task);
+  if (!tprov) // something is wrong
+      return 0;
 
-    /* Record task terminate */
-    record_terminate(RL_TERMINATE_TASK, tprov);
-    return 0;
+  /* Record task terminate */
+  record_terminate(RL_TERMINATE_TASK, tprov);
+  return 0;
 }
 
 SEC("lsm/task_fix_setuid")
 int BPF_PROG(task_fix_setuid, struct cred *new, const struct cred *old, int flags) {
-    union prov_elt *cprov, *oprov, *tprov;
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
+  union prov_elt *cprov, *oprov, *tprov;
+  struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
 
-		cprov = get_cred_prov(new);
-    if (!cprov)
-      return 0;
-
-		oprov = get_cred_prov((struct cred*)old);
-    if (!oprov)
-      return 0;
-
-		tprov = get_task_prov(current_task);
-    if (!tprov)
-      return 0;
-
-    generates(RL_SETUID, current_task, oprov, tprov, cprov, NULL, flags);
+	cprov = get_cred_prov(new);
+  if (!cprov)
     return 0;
+
+	oprov = get_cred_prov((struct cred*)old);
+  if (!oprov)
+    return 0;
+
+	tprov = get_task_prov(current_task);
+  if (!tprov)
+    return 0;
+
+  generates(RL_SETUID, current_task, oprov, tprov, cprov, NULL, flags);
+  return 0;
 }
 
 SEC("lsm/task_fix_setgid")
 int BPF_PROG(task_fix_setgid, struct cred *new, const struct cred *old, int flags) {
-    union prov_elt *cprov, *oprov, *tprov;
-    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
+  union prov_elt *cprov, *oprov, *tprov;
+  struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
 
-		cprov = get_cred_prov(new);
-    if (!cprov)
-      return 0;
+	tprov = get_task_prov(current_task);
+	if (!tprov)
+		return 0;
 
-		oprov = get_cred_prov((struct cred*)old);
-    if (!oprov)
-      return 0;
+	cprov = get_cred_prov(new);
+	if (!cprov)
+	  return 0;
 
-		tprov = get_task_prov(current_task);
-    if (!tprov)
-      return 0;
+	oprov = get_cred_prov((struct cred*)old);
+	if (!oprov)
+	  return 0;
 
-    generates(RL_SETGID, current_task, oprov, tprov, cprov, NULL, flags);
+	generates(RL_SETGID, current_task, oprov, tprov, cprov, NULL, flags);
+	return 0;
+}
+
+SEC("lsm/task_getpgid")
+int BPF_PROG(task_getpgid, struct task_struct *p) {
+	union prov_elt *nprov, *tprov, *cprov;
+	struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
+
+	tprov = get_task_prov(current_task);
+	if (!tprov)
+		return 0;
+
+	cprov = get_cred_prov_from_task(current_task);
+	if (!cprov)
+		return 0;
+
+	nprov = get_cred_prov_from_task(p);
+  if (!nprov)
     return 0;
+
+  uses(RL_GETGID, current_task, nprov, tprov, cprov, NULL, 0);
+  return 0;
 }
 
 SEC("lsm/cred_free")
