@@ -94,6 +94,27 @@ int BPF_PROG(task_fix_setuid, struct cred *new, const struct cred *old, int flag
     return 0;
 }
 
+SEC("lsm/task_fix_setgid")
+int BPF_PROG(task_fix_setgid, struct cred *new, const struct cred *old, int flags) {
+    union prov_elt *cprov, *oprov, *tprov;
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task_btf();
+
+		cprov = get_cred_prov(new);
+    if (!cprov)
+      return 0;
+
+		oprov = get_cred_prov((struct cred*)old);
+    if (!oprov)
+      return 0;
+
+		tprov = get_task_prov(current_task);
+    if (!tprov)
+      return 0;
+
+    generates(RL_SETGID, current_task, oprov, tprov, cprov, NULL, flags);
+    return 0;
+}
+
 SEC("lsm/cred_free")
 int BPF_PROG(cred_free, struct cred *cred) {
     union prov_elt *cprov;
