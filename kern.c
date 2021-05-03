@@ -428,6 +428,31 @@ int BPF_PROG(file_receive, struct file *file) {
     return 0;
 }
 
+SEC("lsm/file_lock")
+int BPF_PROG(file_lock, struct file *file, unsigned int cmd) {
+    union prov_elt *tprov, *cprov, *iprov;
+    struct task_struct *current_task;
+
+    if (is_inode_dir(file->f_inode))
+        return 0;
+
+    current_task = (struct task_struct *)bpf_get_current_task_btf();
+    tprov = get_task_prov(current_task);
+    if (!tprov)
+        return 0;
+
+    cprov = get_cred_prov_from_task(current_task);
+    if (!cprov)
+        return 0;
+
+    iprov = get_inode_prov(file->f_inode);
+    if (!iprov)
+      return 0;
+
+    generates(RL_FILE_LOCK, current_task, cprov, tprov, iprov, file, cmd);
+    return 0;
+}
+
 SEC("lsm/mmap_file")
 int BPF_PROG(mmap_file, struct file *file, unsigned long reqprot, unsigned long prot, unsigned long flags) {
     union prov_elt *tprov, *cprov, *iprov;
