@@ -880,7 +880,6 @@ int BPF_PROG(bprm_creds_for_exec, struct linux_binprm *bprm) {
       return 0;
 
     derives(RL_EXEC, iprov, cprov, NULL, 0);
-
     return 0;
 }
 
