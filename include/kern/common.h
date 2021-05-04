@@ -21,6 +21,13 @@
 
 #define NULL ((void *)0)
 
+#define _(P)                                                     \
+({                                                               \
+	typeof(P) val = 0;                                             \
+	bpf_probe_read_kernel(&val, sizeof(val), &(P));                \
+	val;                                                           \
+})
+
 static __always_inline uint64_t prov_next_id(uint32_t key)	{
     struct id_elem *val = bpf_map_lookup_elem(&ids_map, &key);
     if(!val)

@@ -907,3 +907,24 @@ int BPF_PROG(bprm_committing_creds, struct linux_binprm *bprm) {
     generates(RL_EXEC_TASK, current_task, cprov, tprov, ncprov, NULL, 0);
     return 0;
 }
+
+SEC("lsm/socket_sock_rcv_skb")
+int BPF_PROG(socket_sock_rcv_skb, struct sock *sk, struct sk_buff *skb) {
+    union prov_elt *iprov, pprov;
+		struct socket *sock;
+
+    if (sk->__sk_common.skc_family != PF_INET)
+        return 0;
+
+    sock = sk->sk_socket;
+    if (!sock)
+        return 0;
+
+    iprov = get_inode_prov((struct inode *)bpf_inode_from_sock(sock));
+    if (!iprov)
+        return 0;
+
+    init_ipv4_prov(&pprov, skb);
+    derives(RL_RCV_PACKET, &pprov, iprov, NULL, 0);
+    return 0;
+}
