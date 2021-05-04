@@ -58,64 +58,6 @@ char _license[] SEC("license") = "GPL";
  * Template is: SEC("lsm/HOOK_NAMES")
  */
 
- // #ifndef PROV_FILTER_EGRESS_OFF
- // SEC("classifier")
- // int tc_egress(struct __sk_buff *skb) {
- //    union prov_elt prov_pck;
- //    prov_init_node(&prov_pck, ENT_PACKET);
- //
- //    void *data     = (void *)(long)skb->data;
-	// void *data_end = (void *)(long)skb->data_end;
- //    struct ethhdr *eth = data;
- //
- //    if (data + sizeof(*eth) > data_end) {
- //        return TC_ACT_OK;
- //    }
- //
- //    if (eth->h_proto == bpf_htons(ETH_P_IP)) {
- //        struct iphdr *iph = data + sizeof(*eth);
- //        if (data + sizeof(*eth) + sizeof(*iph) > data_end) {
- //            return TC_ACT_OK;
- //        }
- //
- //        /* Collect IP element of prov identifier. */
- //        packet_identifier(&prov_pck).id = (uint16_t)iph->id;
- //        packet_identifier(&prov_pck).snd_ip = (uint32_t)iph->saddr;
- //        packet_identifier(&prov_pck).rcv_ip = (uint32_t)iph->daddr;
- //        packet_identifier(&prov_pck).protocol = iph->protocol;
- //        packet_info(&prov_pck).len = (size_t)iph->tot_len;
- //
- //
- //        if (iph->protocol == IPPROTO_TCP) {
- //            if (bpf_ntohs(iph->frag_off) & IP_OFFSET) {
- //                return TC_ACT_OK;
- //            }
- //            struct tcphdr *tch = data + sizeof(*eth) + sizeof(*iph);
- //            if (data + sizeof(*eth) + sizeof(*iph) + sizeof(*tch) > data_end) {
- //                return TC_ACT_OK;
- //            }
- //
- //            packet_identifier(&prov_pck).snd_port = (uint16_t)tch->source;
- //            packet_identifier(&prov_pck).rcv_port = (uint16_t)tch->dest;
- //            packet_identifier(&prov_pck).seq = (uint32_t)tch->seq;
- //        } else if (iph->protocol == IPPROTO_UDP) {
- //            if (bpf_ntohs(iph->frag_off) & IP_OFFSET) {
- //                return TC_ACT_OK;
- //            }
- //            struct udphdr *udh = data + sizeof(*eth) + sizeof(*iph);
- //            if (data + sizeof(*eth) + sizeof(*iph) + sizeof(*udh) > data_end) {
- //                return TC_ACT_OK;
- //            }
- //
- //            packet_identifier(&prov_pck).snd_port = (uint16_t)udh->source;
- //            packet_identifier(&prov_pck).rcv_port = (uint16_t)udh->dest;
- //        }
- //    }
- //
- //    return TC_ACT_OK;
- // }
- // #endif
-
 /*!
  * @brief Record provenance when task_alloc is triggered.
  *
