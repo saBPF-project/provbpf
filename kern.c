@@ -1635,6 +1635,7 @@ int BPF_PROG(file_ioctl, struct file *file, unsigned int cmd, unsigned long arg)
 }
 #endif
 
+#ifndef PROV_FILTER_FILE_SEND_SIGIOTASK_OFF
 SEC("lsm/file_send_sigiotask")
 int BPF_PROG(file_send_sigiotask, struct task_struct *task, struct fown_struct *fown, int signum) {
     struct file *file = container_of(fown, struct file, f_owner);
@@ -1665,6 +1666,7 @@ int BPF_PROG(file_send_sigiotask, struct task_struct *task, struct fown_struct *
 
     return 0;
 }
+#endif
 
 /*!
  * @brief Record provenance when msg_msg_alloc_security hook is triggered.
