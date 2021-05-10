@@ -129,7 +129,6 @@ static inline void __add_ipv4(uint32_t ip, uint32_t port){
 }
 
 static inline void __add_ipv4_attribute(const char* name, const uint32_t ip, const uint32_t port, bool comma){
-  char tmp[64];
   __add_attribute(name, comma);
   strncat(buffer, "\"", BUFFER_LENGTH);
   __add_ipv4(ip, port);

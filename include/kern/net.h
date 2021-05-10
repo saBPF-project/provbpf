@@ -16,6 +16,8 @@
 #ifndef __KERN_BPF_PROVENANCE_NET_H
 #define __KERN_BPF_PROVENANCE_NET_H
 
+#include <bpf/bpf_endian.h>
+
 /*!
  * @brief Record the address provenance node that binds to the socket node.
  *
@@ -37,20 +39,152 @@
  * record_relation function.
  *
  */
-static __always_inline int record_address(struct sockaddr *address, int addrlen, union prov_elt *prov) {
+#define AF_UNIX 1
+#define AF_INET 2
+#define AF_INET6 10
+
+#define PF_INET		AF_INET
+
+#define IP_OFFSET	0x1FFF		/* "Fragment Offset" part	*/
+
+static __always_inline void record_address(struct sockaddr *address, int addrlen, union prov_elt *prov) {
 	int map_id = ADDRESS_PERCPU_LONG_TMP;
-	union long_prov_elt *ptr_prov_addr = bpf_map_lookup_elem(&long_tmp_prov_map, &map_id);
-	if (!ptr_prov_addr) {
-		return 0;
+	union long_prov_elt *aprov = bpf_map_lookup_elem(&long_tmp_prov_map, &map_id);
+	if (!aprov)
+		return;
+
+	prov_init_node((union prov_elt *)aprov, ENT_ADDR);
+
+    // copy each type of address
+    // TODO expand to more types
+	if (address->sa_family == AF_INET)
+        bpf_probe_read_kernel(aprov->address_info.addr, sizeof(struct sockaddr_in), address);
+    else if (address->sa_family == AF_INET)
+        bpf_probe_read_kernel(aprov->address_info.addr, sizeof(struct sockaddr_in6), address);
+    else if (address->sa_family == AF_UNIX)
+        bpf_probe_read_kernel(aprov->address_info.addr, sizeof(struct sockaddr_un), address);
+    else
+        bpf_probe_read_kernel(aprov->address_info.addr, sizeof(struct sockaddr), address);
+
+    __record_relation_ls(RL_ADDRESSED, aprov, prov, NULL, 0);
+}
+
+static __always_inline unsigned int skb_headlen(struct sk_buff *skb)
+{
+	return skb->len - skb->data_len;
+}
+
+static __always_inline unsigned char *skb_network_header(struct sk_buff *skb)
+{
+	return skb->head + skb->network_header;
+}
+
+static __always_inline int skb_network_offset(struct sk_buff *skb)
+{
+	return skb_network_header(skb) - skb->data;
+}
+
+static __always_inline void *__skb_header_pointer(struct sk_buff *skb, int offset,
+		     int len, void *data, int hlen, void *buffer)
+{
+	if (hlen - offset >= len)
+		return data + offset;
+
+	return buffer;
+}
+
+static __always_inline void *skb_header_pointer(struct sk_buff *skb, int offset, int len, void *buffer)
+{
+	return __skb_header_pointer(skb, offset, len, skb->data,
+				    skb_headlen(skb), buffer);
+}
+
+static __always_inline void __extract_tcp_info(struct sk_buff *skb,
+					       struct iphdr *ih,
+						   uint8_t ihl,
+					       int offset,
+					       union prov_elt *pprov) {
+  struct tcphdr _tcph;
+ 	struct tcphdr *th;
+ 	int tcpoff;
+	uint16_t frag_off = _(ih->frag_off);
+
+	if (bpf_ntohs(frag_off) & IP_OFFSET)
+		return;
+
+	tcpoff = offset + ihl * 4;    // Point to tcp packet.
+	th = skb_header_pointer(skb, tcpoff, sizeof(_tcph), &_tcph);
+	if (!th)
+		return;
+
+	packet_identifier(pprov).snd_port = _(th->source);
+	packet_identifier(pprov).rcv_port = _(th->dest);
+	packet_identifier(pprov).seq = _(th->seq);
+}
+
+static __always_inline void __extract_udp_info(struct sk_buff *skb,
+					       struct iphdr *ih,
+						   uint8_t ihl,
+					       int offset,
+					       union prov_elt *pprov) {
+  struct udphdr _udph;
+ 	struct udphdr *uh;
+ 	int udpoff;
+	uint16_t frag_off = _(ih->frag_off);
+
+	if (bpf_ntohs(frag_off) & IP_OFFSET)
+		return;
+
+	udpoff = offset + ihl * 4;    // Point to tcp packet.
+	uh = skb_header_pointer(skb, udpoff, sizeof(_udph), &_udph);
+	if (!uh)
+		return;
+
+	packet_identifier(pprov).snd_port = _(uh->source);
+	packet_identifier(pprov).rcv_port = _(uh->dest);
+}
+
+static __always_inline void init_ipv4_prov(union prov_elt *pprov, struct sk_buff *skb) {
+	int offset;
+	struct iphdr _iph, *ih;
+	uint8_t ihl = 0;
+
+	__builtin_memset(pprov, 0, sizeof(union prov_elt));
+	prov_init_node(pprov, ENT_PACKET);
+
+	offset = skb_network_offset(skb);
+	ih = skb_header_pointer(skb, offset, sizeof(_iph), &_iph);
+	if (!ih)
+		return;
+
+	bpf_probe_read(&ihl, 1, ih);
+
+#if defined(__LITTLE_ENDIAN_BITFIELD)
+	ihl = ihl >> 4;
+#elif defined (__BIG_ENDIAN_BITFIELD)
+	ihl = ihl & 0x0F;
+#endif
+
+	// Collect IP element of prov identifier.
+	// force parse endian casting
+	packet_identifier(pprov).id = _(ih->id);
+	packet_identifier(pprov).snd_ip = _(ih->saddr);
+	packet_identifier(pprov).rcv_ip = _(ih->daddr);
+	packet_identifier(pprov).protocol = _(ih->protocol);
+	packet_info(pprov).len = _(ih->tot_len);
+
+	switch (packet_identifier(pprov).protocol) {
+		case IPPROTO_TCP:
+			__extract_tcp_info(skb, ih, ihl,
+					   offset, pprov);
+			break;
+		case IPPROTO_UDP:
+			__extract_udp_info(skb, ih, ihl,
+					   offset, pprov);
+			break;
+		default:
+			break;
 	}
-	prov_init_node((union prov_elt *)ptr_prov_addr, ENT_ADDR);
-
-	ptr_prov_addr->address_info.length = addrlen;
-	__builtin_memcpy(&(ptr_prov_addr->address_info.addr), &address, sizeof(struct sockaddr_storage));
-
-  record_relation(RL_ADDRESSED, ptr_prov_addr, true, prov, false, NULL, 0);
-
-	return 0;
 }
 
 #endif

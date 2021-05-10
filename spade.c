@@ -161,24 +161,15 @@ char* derived_to_spade_json(struct relation_struct* e) {
 
 char* proc_to_spade_json(struct proc_prov_struct* n) {
   NODE_START("Entity");
-  __add_uint32_attribute("uid", n->uid, true);
-  __add_uint32_attribute("gid", n->gid, true);
-  __add_uint32_attribute("tgid", n->tgid, true);
-  __add_uint32_attribute("utsns", n->utsns, true);
-  __add_uint32_attribute("ipcns", n->ipcns, true);
-  __add_uint32_attribute("mntns", n->mntns, true);
-  __add_uint32_attribute("pidns", n->pidns, true);
-  __add_uint32_attribute("netns", n->netns, true);
-  __add_uint32_attribute("cgroupns", n->cgroupns, true);
-  __add_uint32_attribute("secid", n->secid, true);
+  __add_uint32_attribute("pid", n->pid, true);
   NODE_END();
   return buffer;
 }
 
 char* task_to_spade_json(struct task_prov_struct* n) {
   NODE_START("Activity");
+  __add_uint32_attribute("tid", n->tid, true);
   __add_uint32_attribute("pid", n->pid, true);
-  __add_uint32_attribute("vpid", n->vpid, true);
   __add_uint64_attribute("utime", n->utime, true);
   __add_uint64_attribute("stime", n->stime, true);
   __add_uint64_attribute("vm", n->vm, true);
@@ -248,7 +239,7 @@ char* addr_to_spade_json(struct address_struct* n) {
   char host[NI_MAXHOST];
   char serv[NI_MAXSERV];
   int err;
-  struct sockaddr *ad = (struct sockaddr*)&(n->addr);
+  struct sockaddr *ad = (struct sockaddr*)(n->addr);
 
   NODE_START("Entity");
   if(ad->sa_family == AF_INET){
@@ -277,7 +268,7 @@ char* addr_to_spade_json(struct address_struct* n) {
     __add_string_attribute("type", "AF_UNIX", true);
     __add_string_attribute("path", ((struct sockaddr_un*)ad)->sun_path, true);
   }else{
-    err = getnameinfo(ad, n->length, host, NI_MAXHOST, serv, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
+    err = getnameinfo(ad, sizeof(struct sockaddr), host, NI_MAXHOST, serv, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
     __add_int32_attribute("type", ad->sa_family, true);
     if (err < 0) {
       __add_string_attribute("host", "could not resolve", true);
@@ -301,20 +292,6 @@ char* pathname_to_spade_json(struct file_name_struct* n) {
       n->name[i]='/';
   }
   __add_string_attribute("pathname", n->name, true);
-  NODE_END();
-  return buffer;
-}
-
-char* iattr_to_spade_json(struct iattr_prov_struct* n) {
-  NODE_START("Entity");
-  __add_uint32hex_attribute("valid", n->valid, true);
-  __add_uint32hex_attribute("mode", n->mode, true);
-  __add_uint32_attribute("uid", n->uid, true);
-  __add_uint32_attribute("gid", n->gid, true);
-  __add_int64_attribute("size", n->size, true);
-  __add_int64_attribute("atime", n->atime, true);
-  __add_int64_attribute("ctime", n->ctime, true);
-  __add_int64_attribute("mtime", n->mtime, true);
   NODE_END();
   return buffer;
 }
@@ -373,7 +350,6 @@ char* arg_to_spade_json(struct arg_struct* n) {
 }
 
 char* machine_to_spade_json(struct machine_struct* n){
-  char tmp[256];
   NODE_START("Entity");
   __add_string_attribute("u_sysname", n->utsname.sysname, true);
   __add_string_attribute("u_nodename", n->utsname.nodename, true);
@@ -427,7 +403,6 @@ static pthread_mutex_t l_flush =  PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 
 void flush_spade_json(){
   bool should_flush=false;
-  char* tmp;
 
   pthread_mutex_lock(&l_flush);
   if(!writing_out){

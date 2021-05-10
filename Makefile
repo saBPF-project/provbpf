@@ -1,18 +1,15 @@
-build_libbpf:
-	cd ~ && git clone https://github.com/libbpf/libbpf
-	cd ~/libbpf/src && make
-	cd ~/libbpf/src && sudo $(MAKE) install
+prepare:
+	mkdir -p ~/build
+	cd ~/build && git clone https://github.com/tfjmp/provbpf-kernel.git
+	cd ~/build/provbpf-kernel && git checkout dentry_path
+	cd ~/build/provbpf-kernel && $(MAKE) prepare
+	cd ~/build/provbpf-kernel && $(MAKE) config
+	cd ~/build/provbpf-kernel && $(MAKE) build
+	cd ~/build/provbpf-kernel && $(MAKE) install
 
-build_kernel:
-	cd ~ && git clone -b f32 --single-branch git://git.kernel.org/pub/scm/linux/kernel/git/jwboyer/fedora.git
-	cd ~/fedora && $(MAKE) olddefconfig
-	cd ~/fedora && sed -i -e "s/CONFIG_LSM=\"yama,loadpin,safesetid,integrity,selinux,smack,tomoyo,apparmor\"/CONFIG_LSM=\"yama,loadpin,safesetid,integrity,selinux,smack,tomoyo,apparmor,bpf\"/g" .config
-	cd ~/fedora && sed -i -e "s/# CONFIG_BPF_LSM is not set/CONFIG_BPF_LSM=y/g" .config
-	cd ~/fedora && $(MAKE) -j16
-	cd ~/fedora && sudo $(MAKE) modules_install
-	cd ~/fedora && sudo $(MAKE) install
-
-prepare: build_libbpf build_kernel
+delete_dependency:
+	rm -rf ~/build/linux-stable
+	rm -rf ~/build/provbpf-kernel
 
 btf:
 	bpftool btf dump file /sys/kernel/btf/vmlinux format c > include/kern/vmlinux.h
@@ -32,20 +29,20 @@ kern:
 	-Wno-address-of-packed-member -Wno-tautological-compare \
 	-Wno-unknown-warning-option \
 	-Iinclude \
-	-target bpf -c kern.c -o provbpf.o
+	-target bpf -g -c kern.c -o provbpf.o
 
 skel:
 	bpftool gen skeleton provbpf.o > include/usr/provbpf.skel.h
 
 usr:
-	clang utils.c -o utils.o -Iinclude -c
-	clang types.c -o types.o -Iinclude -c
-	clang spade.c -o spade.o -Iinclude -c
-	clang w3c.c -o w3c.o -Iinclude -c
-	clang record.c -o record.o -Iinclude -c
-	clang configuration.c -o configuration.o -Iinclude -c
-	clang id.c -o id.o -Iinclude -c
-	clang service.c -o service.o -Iinclude -c
+	clang -Wall utils.c -o utils.o -Iinclude -c
+	clang -Wall types.c -o types.o -Iinclude -c
+	clang -Wall spade.c -o spade.o -Iinclude -c
+	clang -Wall w3c.c -o w3c.o -Iinclude -c
+	clang -Wall record.c -o record.o -Iinclude -c
+	clang -Wall configuration.c -o configuration.o -Iinclude -c
+	clang -Wall id.c -o id.o -Iinclude -c
+	clang -Wall service.c -o service.o -Iinclude -c
 	clang -o provbpfd \
 	service.o \
 	record.o \
@@ -96,16 +93,19 @@ start:
 stop:
 	sudo systemctl stop provbpfd.service
 
+status:
+	sudo systemctl status provbpfd.service
+
 uninstall:
 	sudo systemctl stop provbpfd.service
 	sudo systemctl disable provbpfd.service
-	rm -f /etc/provbpf.ini
-	rm -f /usr/bin/provbpfd
-	rm -f /etc/systemd/system/provbpfd.service
+	sudo rm -f /etc/provbpf.ini
+	sudo rm -f /usr/bin/provbpfd
+	sudo rm -f /etc/systemd/system/provbpfd.service
 
 run:
 	rm -rf audit.log
-	sudo ./provbpfd
+	sudo provbpfd
 
 run_valgrind: usr_dbg
 	rm -rf audit.log

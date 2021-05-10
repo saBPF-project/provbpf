@@ -18,47 +18,39 @@
 
 // NOTE: ring buffer reference:
 // https://elixir.bootlin.com/linux/v5.8/source/tools/testing/selftests/bpf/progs/test_ringbuf.c
-struct bpf_map_def SEC("maps") r_buf = {
-    .type = BPF_MAP_TYPE_RINGBUF,
-    /* NOTE: The minimum size seems to be 1 << 12.
-     * Any value smaller than this results in
-     * runtime error. */
-    .max_entries = 4096 * 64,
-};
+struct {
+	__uint(type, BPF_MAP_TYPE_RINGBUF);
+	/* NOTE: The minimum size seems to be 1 << 12.
+         * Any value smaller than this results in
+         * runtime error. */
+	__uint(max_entries, 1 << 18);
+} r_buf SEC(".maps");
 
-struct bpf_map_def SEC("maps") policy_map = {
-    .type = BPF_MAP_TYPE_ARRAY,
-    .key_size = sizeof(uint32_t),
-    .value_size = sizeof(struct capture_policy),
-    .max_entries = 1,
-};
+struct {
+	__uint(type, BPF_MAP_TYPE_ARRAY);
+	__type(key, uint32_t);
+	__type(value, struct capture_policy);
+	__uint(max_entries, 1);
+} policy_map SEC(".maps");
 
-#define INODE_PERCPU_TMP 0
-#define RELATION_PERCPU_TMP 1
+#define RELATION_PERCPU_TMP 0
 
 struct bpf_map_def SEC("maps") tmp_prov_elt_map = {
     .type = BPF_MAP_TYPE_PERCPU_ARRAY,
     .key_size = sizeof(uint32_t),
     .value_size = sizeof(union prov_elt),
-    .max_entries = 2,
+    .max_entries = 1,
 };
 
 #define ADDRESS_PERCPU_LONG_TMP 0
 #define XATTR_PERCPU_LONG_TMP 1
-#define UPDATE_PERCPU_LONG_TMP 2
+#define PATH_PERCPU_LONG_TMP 2
 
 struct bpf_map_def SEC("maps") long_tmp_prov_map = {
     .type = BPF_MAP_TYPE_PERCPU_ARRAY,
     .key_size = sizeof(uint32_t),
     .value_size = sizeof(union long_prov_elt),
     .max_entries = 3,
-};
-
-struct bpf_map_def SEC("maps") task_map = {
-    .type = BPF_MAP_TYPE_HASH,
-    .key_size = sizeof(uint64_t),
-    .value_size = sizeof(union prov_elt),
-    .max_entries = 4096, // TODO: set as big as possible; real size is dynamically adjusted
 };
 
 struct bpf_map_def SEC("maps") prov_machine_map = {
@@ -68,40 +60,40 @@ struct bpf_map_def SEC("maps") prov_machine_map = {
     .max_entries = 1,
 };
 
-struct bpf_map_def SEC("maps") inode_map = {
-    .type = BPF_MAP_TYPE_HASH,
-    .key_size = sizeof(uint64_t),
-    .value_size = sizeof(union prov_elt),
-    .max_entries = 4096, // TODO: set as big as possible; real size is dynamically adjusted
-};
+struct {
+	__uint(type, BPF_MAP_TYPE_INODE_STORAGE);
+	__uint(map_flags, BPF_F_NO_PREALLOC);
+	__type(key, int);
+	__type(value, struct provenance_holder);
+} inode_storage_map SEC(".maps");
 
-struct bpf_map_def SEC("maps") cred_map = {
-    .type = BPF_MAP_TYPE_HASH,
-    .key_size = sizeof(uint64_t),
-    .value_size = sizeof(union prov_elt),
-    .max_entries = 4096, // TODO: set as big as possible; real size is dynamically adjusted
-};
+struct {
+	__uint(type, BPF_MAP_TYPE_TASK_STORAGE);
+	__uint(map_flags, BPF_F_NO_PREALLOC);
+	__type(key, int);
+	__type(value, struct provenance_holder);
+} task_storage_map SEC(".maps");
 
-struct bpf_map_def SEC("maps") iattr_map = {
-    .type = BPF_MAP_TYPE_HASH,
-    .key_size = sizeof(uint64_t),
-    .value_size = sizeof(union prov_elt),
-    .max_entries = 4096, // TODO: set as big as possible; real size is dynamically adjusted
-};
+struct {
+	__uint(type, BPF_MAP_TYPE_CRED_STORAGE);
+	__uint(map_flags, BPF_F_NO_PREALLOC);
+	__type(key, int);
+	__type(value, struct provenance_holder);
+} cred_storage_map SEC(".maps");
 
-struct bpf_map_def SEC("maps") msg_msg_map = {
-    .type = BPF_MAP_TYPE_HASH,
-    .key_size = sizeof(uint64_t),
-    .value_size = sizeof(union prov_elt),
-    .max_entries = 4096, // TODO: set as big as possible; real size is dynamically adjusted
-};
+struct {
+	__uint(type, BPF_MAP_TYPE_MSG_STORAGE);
+	__uint(map_flags, BPF_F_NO_PREALLOC);
+	__type(key, int);
+	__type(value, struct provenance_holder);
+} msg_storage_map SEC(".maps");
 
-struct bpf_map_def SEC("maps") kern_ipc_perm_map = {
-    .type = BPF_MAP_TYPE_HASH,
-    .key_size = sizeof(uint64_t),
-    .value_size = sizeof(union prov_elt),
-    .max_entries = 4096, // TODO: set as big as possible; real size is dynamically adjusted
-};
+struct {
+	__uint(type, BPF_MAP_TYPE_IPC_STORAGE);
+	__uint(map_flags, BPF_F_NO_PREALLOC);
+	__type(key, int);
+	__type(value, struct provenance_holder);
+} ipc_storage_map SEC(".maps");
 
 struct bpf_map_def SEC("maps") ids_map = {
     .type = BPF_MAP_TYPE_ARRAY,

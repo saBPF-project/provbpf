@@ -21,21 +21,24 @@
 #include <bpf/bpf.h>
 #include <sys/resource.h>
 #include <sys/types.h>
+#include <sys/syscall.h>
 #include <sys/utsname.h>
 #include <signal.h>
+#include <errno.h>
 
 #include "shared/prov_struct.h"
 #include "shared/id.h"
+#include "shared/prov_types.h"
 
 #include "usr/provbpf.skel.h"
 #include "usr/record.h"
 #include "usr/configuration.h"
 
+#ifndef __NR_pidfd_open
+#define __NR_pidfd_open 434   /* System call # on most architectures */
+#endif
 
-#define DM_AGENT                                0x1000000000000000UL
-/* NODE IS LONG*/
-#define ND_LONG                                 0x0400000000000000UL
-#define AGT_MACHINE                             (DM_AGENT | ND_LONG | (0x0000000000000001ULL << 4))
+static struct provbpf *skel = NULL;
 
 /* Callback function called whenever a new ring
  * buffer entry is polled from the buffer. */
@@ -52,7 +55,7 @@ static int buf_process_entry(void *ctx, void *data, size_t len) {
     return 0;
 }
 
-void set_id(struct provbpf *skel, uint32_t index, uint64_t value) {
+static void set_id(struct provbpf *skel, uint32_t index, uint64_t value) {
     int map_fd;
     struct id_elem id;
     map_fd = bpf_object__find_map_fd_by_name(skel->obj, "ids_map");
@@ -60,7 +63,7 @@ void set_id(struct provbpf *skel, uint32_t index, uint64_t value) {
     bpf_map_update_elem(map_fd, &index, &id, BPF_ANY);
 }
 
-static __always_inline uint64_t prov_next_id(uint32_t key, struct provbpf *skel)	{
+static uint64_t prov_next_id(uint32_t key, struct provbpf *skel)	{
     int map_fd = bpf_object__find_map_fd_by_name(skel->obj, "ids_map");
     if (map_fd < 0) {
       syslog(LOG_ERR, "ProvBPF: Failed loading ids_map (%d).", map_fd);
@@ -78,22 +81,8 @@ static __always_inline uint64_t prov_next_id(uint32_t key, struct provbpf *skel)
     return val.id;
 }
 
-static __always_inline uint64_t prov_get_id(uint32_t key, struct provbpf *skel) {
-    int map_fd = bpf_object__find_map_fd_by_name(skel->obj, "ids_map");
-    if (map_fd < 0) {
-      syslog(LOG_ERR, "ProvBPF: Failed loading ids_map (%d).", map_fd);
-      return 0;
-    }
-
-    struct id_elem val;
-    int res = bpf_map_lookup_elem(map_fd, &key, &val);
-    if (res == -1)
-        return 0;
-    return val.id;
-}
-
 /* djb2 hash implementation by Dan Bernstein */
-static inline uint64_t djb2_hash(const char *str)
+static uint64_t djb2_hash(const char *str)
 {
 	uint64_t hash = 5381;
 	int c = *str;
@@ -105,9 +94,7 @@ static inline uint64_t djb2_hash(const char *str)
 	return hash;
 }
 
-static struct provbpf *skel = NULL;
-
-void sig_handler(int sig) {
+static void sig_handler(int sig) {
     if (sig == SIGTERM) {
         syslog(LOG_INFO, "ProvBPF: Received termination signal...");
         provbpf__destroy(skel);
@@ -117,14 +104,127 @@ void sig_handler(int sig) {
     }
 }
 
+static void update_rlimit(void) {
+    int err;
+    struct rlimit r = {RLIM_INFINITY, RLIM_INFINITY};
+
+    err = setrlimit(RLIMIT_MEMLOCK, &r);
+    if (err) {
+        syslog(LOG_ERR, "ProvBPF: Error while setting rlimit %d.", err);
+        exit(err);
+    }
+}
+
+static int init_machine_info(void) {
+    int err, map_fd;
+    struct utsname buffer;
+    union long_prov_elt prov_machine;
+    unsigned int key = 0;
+
+    memset(&prov_machine, 0, sizeof(union long_prov_elt));
+
+    /* we set parameters before attaching programs */
+    set_id(skel, BOOT_ID_INDEX, get_boot_id());
+    set_id(skel, MACHINE_ID_INDEX, get_machine_id());
+
+    // set provenance metadata
+    prov_machine.node_info.identifier.node_id.type = AGT_MACHINE;
+    prov_machine.node_info.identifier.node_id.id = prov_next_id(NODE_ID_INDEX, skel);
+    prov_machine.node_info.identifier.node_id.id = djb2_hash(PROVBPF_COMMIT);
+    prov_machine.node_info.identifier.node_id.boot_id = get_boot_id();
+    prov_machine.node_info.identifier.node_id.machine_id = get_machine_id();
+    prov_machine.node_info.identifier.node_id.version = 0;
+
+    // set release version
+    prov_machine.machine_info.cam_major = PROVBPF_VERSION_MAJOR;
+    prov_machine.machine_info.cam_minor = PROVBPF_VERSION_MINOR;
+    prov_machine.machine_info.cam_patch = PROVBPF_VERSION_PATCH;
+
+    // set git commit hash
+    memcpy(&(prov_machine.machine_info.commit), PROVBPF_COMMIT, PROV_COMMIT_MAX_LENGTH);
+
+    // retrieve and set utsname
+    err = uname(&buffer);
+    if (err<0) {
+        syslog(LOG_ERR, "ProvBPF: Error while calling uname %d.", errno);
+        return err;
+    }
+    memcpy(&(prov_machine.machine_info.utsname), &buffer, sizeof(struct new_utsname));
+
+    map_fd = bpf_object__find_map_fd_by_name(skel->obj, "prov_machine_map");
+    bpf_map_update_elem(map_fd, &key, &prov_machine, BPF_ANY);
+
+    return 0;
+}
+
+static int init_policy(void) {
+    int map_fd;
+    struct capture_policy prov_policy;
+    unsigned int key = 0;
+
+    memset(&prov_policy, 0, sizeof(struct capture_policy));
+
+  	prov_policy.should_duplicate = false;
+  	prov_policy.should_compress_node = true;
+  	prov_policy.should_compress_edge = true;
+
+    map_fd = bpf_object__find_map_fd_by_name(skel->obj, "policy_map");
+    bpf_map_update_elem(map_fd, &key, &prov_policy, BPF_ANY);
+
+    return 0;
+}
+
+static int opaque_service(void) {
+    pid_t current_pid = getpid();
+    int pidfd = syscall(__NR_pidfd_open, current_pid, 0);
+    union prov_elt prov;
+    int search_map_fd, err;
+
+    printf("Current pid %d\n", current_pid);
+
+    // load the map for tasks
+    syslog(LOG_INFO, "ProvBPF: Searching task_storage_map for current process...");
+    search_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "task_storage_map");
+    if (search_map_fd < 0) {
+        syslog(LOG_ERR, "ProvBPF: Failed loading task_storage_map (%d).", search_map_fd);
+        return search_map_fd;
+    }
+
+    // search the current process thread
+    err = bpf_map_lookup_elem(search_map_fd, &pidfd, &prov);
+    if (err > -1) {
+        if (prov.task_info.pid == current_pid) {
+            set_opaque(&prov);
+            bpf_map_update_elem(search_map_fd, &pidfd, &prov, BPF_EXIST);
+            syslog(LOG_INFO, "ProvBPF: Done searching. Current process pid: %d has been set opaque.", current_pid);
+        }
+    }
+    close(search_map_fd);
+
+    // load the map for creds
+    syslog(LOG_INFO, "ProvBPF: Searching cred_storage_map for current process...");
+    search_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "cred_storage_map");
+    if (search_map_fd < 0) {
+      syslog(LOG_ERR, "ProvBPF: Failed loading cred_storage_map (%d).", search_map_fd);
+      return search_map_fd;
+    }
+
+    err = bpf_map_lookup_elem(search_map_fd, &pidfd, &prov);
+    if (err > -1) {
+        if (prov.proc_info.pid == current_pid) {
+            set_opaque(&prov);
+            bpf_map_update_elem(search_map_fd, &pidfd, &prov, BPF_EXIST);
+            syslog(LOG_INFO, "ProvBPF: Done searching. Current cred pid: %d has been set opaque...", current_pid);
+        }
+    }
+    close(search_map_fd);
+
+    return 0;
+}
+
 int main(void) {
     struct ring_buffer *ringbuf = NULL;
-    int err, map_fd, search_map_fd, res;
-    struct rlimit r = {RLIM_INFINITY, RLIM_INFINITY};
-    unsigned int key = 0, value;
-    uint64_t search_map_key, prev_search_map_key;
-    union prov_elt search_map_value;
-    pid_t current_pid;
+    int err, map_fd;
 
     syslog(LOG_INFO, "ProvBPF: Starting...");
 
@@ -138,84 +238,40 @@ int main(void) {
     read_config();
 
     syslog(LOG_INFO, "ProvBPF: Setting rlimit...");
-    err = setrlimit(RLIMIT_MEMLOCK, &r);
-    if (err) {
-        syslog(LOG_ERR, "ProvBPF: Error while setting rlimit %d.", err);
-        return err;
-    }
+    update_rlimit();
 
     syslog(LOG_INFO, "ProvBPF: Open and loading...");
     skel = provbpf__open_and_load();
     if (!skel) {
-        syslog(LOG_ERR, "ProvBPF: Failed loading ...");
-        syslog(LOG_ERR, "ProvBPF: Kernel doesn't support this program type.");
+        syslog(LOG_ERR, "ProvBPF: Failed loading bpf skeleton.");
         goto close_prog;
     }
 
-    /* we set parameters before attaching programs */
-    // TODO copy existing CamFlow code to get those values.
-    set_id(skel, BOOT_ID_INDEX, get_boot_id());
-    set_id(skel, MACHINE_ID_INDEX, get_machine_id());
-
-    // Initialize provenance policy
-    struct capture_policy prov_policy;
-    memset(&prov_policy, 0, sizeof(struct capture_policy));
-
-    syslog(LOG_INFO, "ProvBPF: policy initialization started...");
-    prov_policy.prov_enabled = true;
-  	prov_policy.should_duplicate = false;
-  	prov_policy.should_compress_node = true;
-  	prov_policy.should_compress_edge = true;
-#ifdef CONFIG_SECURITY_PROVENANCE_BOOT
-  	prov_policy.prov_all = true;
-#else
-  	prov_policy.prov_all = false;
-#endif
-
-    map_fd = bpf_object__find_map_fd_by_name(skel->obj, "policy_map");
-    bpf_map_update_elem(map_fd, &key, &prov_policy, BPF_ANY);
-    syslog(LOG_INFO, "ProvBPF: policy initialization finished.");
-
-    syslog(LOG_INFO, "ProvBPF: prov_machine initialization started...");
-    union long_prov_elt prov_machine;
-    memset(&prov_machine, 0, sizeof(union long_prov_elt));
-
-    prov_machine.machine_info.cam_major = PROVBPF_VERSION_MAJOR;
-    prov_machine.machine_info.cam_minor = PROVBPF_VERSION_MINOR;
-    prov_machine.machine_info.cam_patch = PROVBPF_VERSION_PATCH;
-
-    __builtin_memcpy(&(prov_machine.machine_info.commit), PROVBPF_COMMIT, PROV_COMMIT_MAX_LENGTH);
-
-    prov_machine.node_info.identifier.node_id.type = AGT_MACHINE;
-    prov_machine.node_info.identifier.node_id.id = prov_next_id(NODE_ID_INDEX, skel);
-    prov_machine.node_info.identifier.node_id.boot_id = prov_get_id(BOOT_ID_INDEX, skel);
-    prov_machine.node_info.identifier.node_id.machine_id = prov_get_id(MACHINE_ID_INDEX, skel);
-    prov_machine.node_info.identifier.node_id.version = 1;
-
-    struct utsname buffer;
-
-    int result = uname(&buffer);
-
-    if (result == -1) {
-        syslog(LOG_ERR, "ProvBPF: Something went wrong..."); // TODO improve error description
-        return 0;
+    syslog(LOG_INFO, "ProvBPF: initializing machine information...");
+    err = init_machine_info();
+    if(err) {
+        syslog(LOG_ERR, "ProvBPF: Failed initializing machine information.");
+        goto close_prog;
     }
 
-    __builtin_memcpy(&(prov_machine.machine_info.utsname), &buffer, sizeof(struct new_utsname));
-
-    prov_machine.node_info.identifier.node_id.id = djb2_hash(PROVBPF_COMMIT);
-    prov_machine.node_info.identifier.node_id.boot_id = get_boot_id();
-    prov_machine.node_info.identifier.node_id.machine_id = get_machine_id();
-
-    map_fd = bpf_object__find_map_fd_by_name(skel->obj, "prov_machine_map");
-    bpf_map_update_elem(map_fd, &key, &prov_machine, BPF_ANY);
-
-    syslog(LOG_INFO, "ProvBPF: prov_machine initialization ended.");
+    syslog(LOG_INFO, "ProvBPF: initializing policy...");
+    err = init_policy();
+    if(err) {
+        syslog(LOG_ERR, "ProvBPF: Failed initializing policy.");
+        goto close_prog;
+    }
 
     syslog(LOG_INFO, "ProvBPF: Attaching BPF programs...");
     err = provbpf__attach(skel);
     if (err) {
         syslog(LOG_ERR, "ProvBPF: Failed attaching %d.", err);
+        goto close_prog;
+    }
+
+    syslog(LOG_INFO, "ProvBPF: masking service...");
+    err = opaque_service();
+    if(err) {
+        syslog(LOG_ERR, "ProvBPF: Failed masking service.");
         goto close_prog;
     }
 
@@ -230,53 +286,7 @@ int main(void) {
     /* Create a new ring buffer handle in the userspace.
      * buf_process_entry is the callback function that
      * process the entry in the ring buffer. */
-    prov_init();
-
-    current_pid = getpid();
-
-    syslog(LOG_INFO, "ProvBPF: Searching task_map for current process...");
-    search_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "task_map");
-    if (search_map_fd < 0) {
-      syslog(LOG_ERR, "ProvBPF: Failed loading task_map (%d).", search_map_fd);
-      goto close_prog;
-    }
-
-    search_map_key = prev_search_map_key = -1;
-    while (bpf_map_get_next_key(search_map_fd, &prev_search_map_key, &search_map_key) == 0) {
-      res = bpf_map_lookup_elem(search_map_fd, &search_map_key, &search_map_value);
-      if (res > -1) {
-          if (search_map_value.task_info.pid == current_pid) {
-            set_opaque(&search_map_value);
-            bpf_map_update_elem(search_map_fd, &search_map_key, &search_map_value, BPF_EXIST);
-            break;
-          }
-      }
-      prev_search_map_key = search_map_key;
-    }
-    close(search_map_fd);
-    syslog(LOG_INFO, "ProvBPF: Done searching. Current process pid: %d has been set opaque...", current_pid);
-
-    syslog(LOG_INFO, "ProvBPF: Searching cred_map for current cred...");
-    search_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "cred_map");
-    if (search_map_fd < 0) {
-      syslog(LOG_INFO, "ProvBPF: Failed loading task_map (%d).", search_map_fd);
-      goto close_prog;
-    }
-
-    search_map_key = -1;
-    while (bpf_map_get_next_key(search_map_fd, &prev_search_map_key, &search_map_key) == 0) {
-      res = bpf_map_lookup_elem(search_map_fd, &search_map_key, &search_map_value);
-      if (res > -1) {
-          if (search_map_value.proc_info.tgid == current_pid) {
-            set_opaque(&search_map_value);
-            bpf_map_update_elem(search_map_fd, &search_map_key, &search_map_value, BPF_EXIST);
-            syslog(LOG_INFO, "ProvBPF: Done searching. Current cred tgid: %d has been set opaque...", current_pid);
-            break;
-          }
-      }
-      prev_search_map_key = search_map_key;
-    }
-    close(search_map_fd);
+    prov_record_init();
 
     ringbuf = ring_buffer__new(map_fd, buf_process_entry, NULL, NULL);
     syslog(LOG_INFO, "ProvBPF: Start polling forever...");

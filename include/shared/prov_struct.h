@@ -25,13 +25,14 @@
 #include <sys/socket.h>
 #include <linux/limits.h>
 #include <linux/utsname.h>
+#include <bpf/bpf.h>
 #endif
 
 #define xstr(s)         str(s)
 #define str(s)          # s
 
 #define PROVBPF_VERSION_MAJOR           0
-#define PROVBPF_VERSION_MINOR           2
+#define PROVBPF_VERSION_MINOR           3
 #define PROVBPF_VERSION_PATCH           0
 #define PROVBPF_VERSION_STR             "v"xstr (PROVBPF_VERSION_MAJOR)	\
 	"."xstr (PROVBPF_VERSION_MINOR)					\
@@ -49,7 +50,8 @@
 #define relation_identifier(relation)           ((relation)->relation_info.identifier.relation_id)
 #define get_prov_identifier(node)               ((node)->node_info.identifier)
 #define packet_identifier(packet)               ((packet)->pck_info.identifier.packet_id)
-#define packet_info(packet)                                                                                     ((packet)->pck_info)
+#define packet_info(packet)                     ((packet)->pck_info)
+#define node_lock(node)                        ((node)->node_info.lock)
 #define node_secid(node)                        ((node)->node_info.secid)
 #define node_uid(node)                          ((node)->node_info.uid)
 #define node_gid(node)                          ((node)->node_info.gid)
@@ -89,7 +91,10 @@ struct packet_identifier {
 	uint32_t seq;
 };
 
-#define PROV_IDENTIFIER_BUFFER_LENGTH    sizeof(struct node_identifier)
+#define MAX2(a,b) ((a>b)?(a):(b))
+#define MAX3(a,b,c) MAX2(MAX2(a,b),c)
+
+#define PROV_IDENTIFIER_BUFFER_LENGTH    MAX3(sizeof(struct node_identifier), sizeof(struct relation_identifier), sizeof(struct packet_identifier))
 
 union prov_identifier {
 	struct node_identifier node_id;
@@ -112,10 +117,10 @@ union prov_identifier {
 #define clear_opaque(node)                      prov_clear_flag(node, OPAQUE_BIT)
 #define provenance_is_opaque(node)              prov_check_flag(node, OPAQUE_BIT)
 
-#define PROPAGATE_BIT           2
-#define set_propagate(node)                     prov_set_flag(node, PROPAGATE_BIT)
-#define clear_propagate(node)                   prov_clear_flag(node, PROPAGATE_BIT)
-#define provenance_does_propagate(node)         prov_check_flag(node, PROPAGATE_BIT)
+#define NAMED_BIT           2
+#define set_named(node)                     prov_set_flag(node, NAMED_BIT)
+#define clear_named(node)                   prov_clear_flag(node, NAMED_BIT)
+#define provenance_is_named(node)           prov_check_flag(node, NAMED_BIT)
 
 #define RECORD_PACKET_BIT       3
 #define set_record_packet(node)                 prov_set_flag(node, RECORD_PACKET_BIT)
@@ -137,7 +142,10 @@ union prov_identifier {
 #define clear_saved(node)                       prov_clear_flag(node, SAVED_BIT)
 #define provenance_is_saved(node)               prov_check_flag(node, SAVED_BIT)
 
-
+#define RECORDED_BIT			7
+#define set_prov_recorded(node)						prov_set_flag(node, RECORDED_BIT)
+#define clear_prov_recorded(node)					prov_clear_flag(node, RECORDED_BIT)
+#define provenance_is_recorded(node)			prov_check_flag(node, RECORDED_BIT)
 
 #define basic_elements          union prov_identifier identifier; uint32_t epoch; uint32_t nepoch; uint32_t internal_flag; uint64_t jiffies; uint64_t taint
 #define shared_node_elements    uint64_t previous_id; uint64_t previous_type; uint32_t k_version; uint32_t secid; uint32_t uid; uint32_t gid; void *var_ptr
@@ -166,20 +174,14 @@ struct node_struct {
 struct proc_prov_struct {
 	basic_elements;
 	shared_node_elements;
-	uint32_t tgid;
-	uint32_t utsns;
-	uint32_t ipcns;
-	uint32_t mntns;
-	uint32_t pidns;
-	uint32_t netns;
-	uint32_t cgroupns;
+	uint32_t pid;
 };
 
 struct task_prov_struct {
 	basic_elements;
 	shared_node_elements;
+	uint32_t tid;
 	uint32_t pid;
-	uint32_t vpid;
 	/* usec */
 	uint64_t utime;
 	uint64_t stime;
@@ -188,6 +190,12 @@ struct task_prov_struct {
 	uint64_t rss;
 	uint64_t hw_vm;
 	uint64_t hw_rss;
+	uint32_t utsns;
+	uint32_t ipcns;
+	uint32_t mntns;
+	uint32_t pidns;
+	uint32_t netns;
+	uint32_t cgroupns;
 };
 
 #define PROV_SBUUID_LEN 16
@@ -197,17 +205,6 @@ struct inode_prov_struct {
 	uint64_t ino;
 	uint16_t mode;
 	uint8_t sb_uuid[PROV_SBUUID_LEN];
-};
-
-struct iattr_prov_struct {
-	basic_elements;
-	shared_node_elements;
-	uint32_t valid;
-	uint16_t mode;
-	int64_t size;
-	int64_t atime;
-	int64_t ctime;
-	int64_t mtime;
 };
 
 struct msg_msg_struct {
@@ -245,7 +242,6 @@ union prov_elt {
 	struct shm_struct shm_info;
 	struct sb_struct sb_info;
 	struct pck_struct pck_info;
-	struct iattr_prov_struct iattr_info;
 };
 
 struct file_name_struct {
@@ -258,8 +254,8 @@ struct file_name_struct {
 struct address_struct {
 	basic_elements;
 	shared_node_elements;
+	uint8_t addr[PATH_MAX*2];
 	size_t length;
-	struct sockaddr_storage addr;
 };
 
 #define PROV_TRUNCATED    1
@@ -285,7 +281,6 @@ struct xattr_prov_struct {
 	basic_elements;
 	shared_node_elements;
 	char name[PROV_XATTR_NAME_SIZE];
-	uint8_t value[PROV_XATTR_VALUE_SIZE];
 	size_t size;
 };
 
@@ -311,13 +306,17 @@ union long_prov_elt {
 	struct shm_struct shm_info;
 	struct sb_struct sb_info;
 	struct pck_struct pck_info;
-	struct iattr_prov_struct iattr_info;
 	struct file_name_struct file_name_info;
 	struct arg_struct arg_info;
 	struct address_struct address_info;
 	struct pckcnt_struct pckcnt_info;
 	struct xattr_prov_struct xattr_info;
 	struct machine_struct machine_info;
+};
+
+struct provenance_holder {
+    union prov_elt prov;
+    struct bpf_spin_lock lock;
 };
 
 typedef union long_prov_elt prov_entry_t;

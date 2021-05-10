@@ -284,7 +284,6 @@ void append_derived(char* json_element){
 static __thread char id[PROV_ID_STR_LEN];
 static __thread char sender[PROV_ID_STR_LEN];
 static __thread char receiver[PROV_ID_STR_LEN];
-static __thread char parent_id[PROV_ID_STR_LEN];
 
 #define RELATION_PREP_IDs(e) ID_ENCODE(e->identifier.buffer, PROV_IDENTIFIER_BUFFER_LENGTH, id, PROV_ID_STR_LEN);\
                         ID_ENCODE(e->snd.buffer, PROV_IDENTIFIER_BUFFER_LENGTH, sender, PROV_ID_STR_LEN);\
@@ -415,16 +414,7 @@ char* proc_to_json(struct proc_prov_struct* n){
   char tmp[33];
   NODE_PREP_IDs(n);
   __node_start(id, &(n->identifier.node_id), n->taint, n->jiffies, n->epoch);
-  __add_uint32_attribute("cf:uid", n->uid, true);
-  __add_uint32_attribute("cf:gid", n->gid, true);
-  __add_uint32_attribute("cf:tgid", n->tgid, true);
-  __add_uint32_attribute("cf:utsns", n->utsns, true);
-  __add_uint32_attribute("cf:ipcns", n->ipcns, true);
-  __add_uint32_attribute("cf:mntns", n->mntns, true);
-  __add_uint32_attribute("cf:pidns", n->pidns, true);
-  __add_uint32_attribute("cf:netns", n->netns, true);
-  __add_uint32_attribute("cf:cgroupns", n->cgroupns, true);
-  __add_uint32_attribute("cf:secid", n->secid, true);
+  __add_uint32_attribute("cf:pid", n->pid, true);
   __add_label_attribute("process", utoa(n->identifier.node_id.version, tmp, DECIMAL), true);
   __close_json_entry(buffer);
   return buffer;
@@ -434,8 +424,8 @@ char* task_to_json(struct task_prov_struct* n){
   char tmp[33];
   NODE_PREP_IDs(n);
   __node_start(id, &(n->identifier.node_id), n->taint, n->jiffies, n->epoch);
+  __add_uint32_attribute("cf:tid", n->tid, true);
   __add_uint32_attribute("cf:pid", n->pid, true);
-  __add_uint32_attribute("cf:vpid", n->vpid, true);
   __add_uint64_attribute("cf:utime", n->utime, true);
   __add_uint64_attribute("cf:stime", n->stime, true);
   __add_uint64_attribute("cf:vm", n->vm, true);
@@ -447,15 +437,6 @@ char* task_to_json(struct task_prov_struct* n){
   __close_json_entry(buffer);
   return buffer;
 }
-
-static const char STR_UNKNOWN[]= "unknown";
-static const char STR_BLOCK_SPECIAL[]= "block special";
-static const char STR_CHAR_SPECIAL[]= "char special";
-static const char STR_DIRECTORY[]= "directory";
-static const char STR_FIFO[]= "fifo";
-static const char STR_LINK[]= "link";
-static const char STR_FILE[]= "file";
-static const char STR_SOCKET[]= "socket";
 
 char* inode_to_json(struct inode_prov_struct* n){
   char uuid[UUID_STR_SIZE];
@@ -469,23 +450,6 @@ char* inode_to_json(struct inode_prov_struct* n){
   __add_uint32_attribute("cf:ino", n->ino, true);
   __add_string_attribute("cf:uuid", uuid_to_str(n->sb_uuid, uuid, UUID_STR_SIZE), true);
   __add_label_attribute(node_id_to_str(n->identifier.node_id.type), utoa(n->identifier.node_id.version, tmp, DECIMAL), true);
-  __close_json_entry(buffer);
-  return buffer;
-}
-
-char* iattr_to_json(struct iattr_prov_struct* n){
-  char tmp[65];
-  NODE_PREP_IDs(n);
-  __node_start(id, &(n->identifier.node_id), n->taint, n->jiffies, n->epoch);
-  __add_uint32hex_attribute("cf:valid", n->valid, true);
-  __add_uint32hex_attribute("cf:mode", n->mode, true);
-  __add_uint32_attribute("cf:uid", n->uid, true);
-  __add_uint32_attribute("cf:gid", n->gid, true);
-  __add_int64_attribute("cf:size", n->size, true);
-  __add_int64_attribute("cf:atime", n->atime, true);
-  __add_int64_attribute("cf:ctime", n->ctime, true);
-  __add_int64_attribute("cf:mtime", n->mtime, true);
-  __add_label_attribute("iattr", utoa(n->identifier.node_id.id, tmp, DECIMAL), true);
   __close_json_entry(buffer);
   return buffer;
 }
@@ -590,7 +554,7 @@ char* sockaddr_to_json(char* buf, size_t blen, struct sockaddr_storage* addr, si
   }else if(ad->sa_family == AF_UNIX){
     snprintf(buf, blen, "{\"type\":\"AF_UNIX\", \"path\":\"%s\"}", ((struct sockaddr_un*)addr)->sun_path);
   }else{
-    err = getnameinfo(ad, length, host, NI_MAXHOST, serv, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
+    err = getnameinfo(ad, sizeof(struct sockaddr), host, NI_MAXHOST, serv, NI_MAXSERV, NI_NUMERICHOST | NI_NUMERICSERV);
     if (err < 0)
       snprintf(buf, blen, "{\"type\":%d, \"host\":\"%s\", \"service\":\"%s\", \"error\":\"%s\"}", ad->sa_family, "could not resolve", "could not resolve", gai_strerror(err));
     else
@@ -634,8 +598,8 @@ char* addr_to_json(struct address_struct* n){
   char addr_info[PATH_MAX+1024];
   NODE_PREP_IDs(n);
   __node_start(id, &(n->identifier.node_id), n->taint, n->jiffies, n->epoch);
-  __add_json_attribute("cf:address", sockaddr_to_json(addr_info, PATH_MAX+1024, &n->addr, n->length), true);
-  __add_label_attribute("address", sockaddr_to_label(addr_info, PATH_MAX+1024, &n->addr, n->length), true);
+  __add_json_attribute("cf:address", sockaddr_to_json(addr_info, PATH_MAX+1024, (struct sockaddr_storage*)n->addr, n->length), true);
+  __add_label_attribute("address", sockaddr_to_label(addr_info, PATH_MAX+1024, (struct sockaddr_storage*)n->addr, n->length), true);
   __close_json_entry(buffer);
   return buffer;
 }
@@ -687,7 +651,6 @@ char* arg_to_json(struct arg_struct* n){
 }
 
 char* machine_to_json(struct machine_struct* m){
-  char tmp[256];
   NODE_PREP_IDs(m);
   __node_start(id, &(m->identifier.node_id), m->taint, m->jiffies, m->epoch);
   __add_string_attribute("cf:u_sysname", m->utsname.sysname, true);

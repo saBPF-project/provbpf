@@ -18,27 +18,21 @@
 
 #include "kern/node.h"
 
-static __always_inline union prov_elt* get_or_create_kern_ipc_perm_prov(struct kern_ipc_perm *shp) {
-    if (!shp) {
+static __always_inline union prov_elt* get_ipc_prov(struct kern_ipc_perm *shp) {
+    struct provenance_holder *prov_holder;
+    union prov_elt* prov;
+
+    if (!shp)
       return NULL;
-    }
 
-    union prov_elt prov_tmp;
-    uint64_t key = get_key(shp);
-    union prov_elt *prov_on_map = bpf_map_lookup_elem(&kern_ipc_perm_map, &key);
-    // provenance is already tracked
-    if (prov_on_map) {
-      // update the kern_ipc_perm's provenance since it may have changed
-      prov_on_map->shm_info.mode = shp->mode;
-    } else {
-      // a new kern_ipc_perm
-      __builtin_memset(&prov_tmp, 0, sizeof(union prov_elt));
-      prov_init_node(&prov_tmp, ENT_SHM);
-      prov_tmp.shm_info.mode = shp->mode;
-      bpf_map_update_elem(&kern_ipc_perm_map, &key, &prov_tmp, BPF_NOEXIST);
-      prov_on_map = bpf_map_lookup_elem(&kern_ipc_perm_map, &key);
+    prov_holder = bpf_ipc_storage_get(&ipc_storage_map, shp, 0, BPF_LOCAL_STORAGE_GET_F_CREATE);
+    if (!prov_holder)
+      return NULL;
+    prov = &prov_holder->prov;
+    if (!__set_initalized(prov)) {
+        prov_init_node(prov, ENT_SHM);
     }
-    return prov_on_map;
+    prov->shm_info.mode = shp->mode;
+    return prov;
 }
-
 #endif

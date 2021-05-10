@@ -34,8 +34,7 @@ static struct provenance_ops prov_ops;
 extern configuration __config;
 
 void init( void ){
-  pid_t tid = gettid();
-  syslog(LOG_INFO, "Init audit thread (%d)", (int) tid);
+  return;
 }
 
 void log_error(char* error){
@@ -58,7 +57,6 @@ struct provenance_ops null_ops = {
   .log_packet=NULL,
   .log_address=NULL,
   .log_file_name=NULL,
-  .log_iattr=NULL,
   .log_xattr=NULL,
   .log_packet_content=NULL,
   .log_arg=NULL,
@@ -122,11 +120,6 @@ void w3c_file_name(struct file_name_struct* f_name){
   append_entity(pathname_to_json(f_name));
 }
 
-void w3c_iattr(struct iattr_prov_struct* iattr){
-  append_entity(iattr_to_json(iattr));
-}
-
-
 void w3c_xattr(struct xattr_prov_struct* xattr){
   append_entity(xattr_to_json(xattr));
 }
@@ -159,7 +152,6 @@ struct provenance_ops w3c_ops = {
   .log_packet=&w3c_packet,
   .log_address=&w3c_address,
   .log_file_name=&w3c_file_name,
-  .log_iattr=&w3c_iattr,
   .log_xattr=&w3c_xattr,
   .log_packet_content=&w3c_packet_content,
   .log_arg=&w3c_arg,
@@ -223,11 +215,6 @@ void spade_file_name(struct file_name_struct* f_name){
   spade_json_append(pathname_to_spade_json(f_name));
 }
 
-void spade_iattr(struct iattr_prov_struct* iattr){
-  spade_json_append(iattr_to_spade_json(iattr));
-}
-
-
 void spade_xattr(struct xattr_prov_struct* xattr){
   spade_json_append(xattr_to_spade_json(xattr));
 }
@@ -260,7 +247,6 @@ struct provenance_ops spade_ops = {
   .log_packet=&spade_packet,
   .log_address=&spade_address,
   .log_file_name=&spade_file_name,
-  .log_iattr=&spade_iattr,
   .log_xattr=&spade_xattr,
   .log_packet_content=&spade_packet_content,
   .log_arg=&spade_arg,
@@ -325,10 +311,6 @@ void node_record(union prov_elt *msg){
     case ENT_PACKET:
       if(prov_ops.log_packet!=NULL)
         prov_ops.log_packet(&(msg->pck_info));
-      break;
-    case ENT_IATTR:
-      if(prov_ops.log_iattr!=NULL)
-        prov_ops.log_iattr(&(msg->iattr_info));
       break;
     default:
       syslog(LOG_ERR, "ProvBPF: unknown node type %lu.", prov_type(msg));
@@ -395,7 +377,7 @@ static inline void log_to_terminal(char* json){
     printf("%s\n", json);
 }
 
-void prov_init() {
+void prov_record_init() {
     if (__config.output == CF_BPF_LOG) {
         /* setup log file */
         syslog(LOG_INFO, "ProvBPF: Log file %s.", __config.log_path);
