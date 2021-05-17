@@ -73,7 +73,7 @@ run_nginx:
 	phoronix-test-suite benchmark pts/nginx-1.2.2
 
 run_mcperf:
-	phoronix-test-suite benchmark pts/mcperf-1.3.0
+	phoronix-test-suite benchmark pts/mcperf-1.4.0
 
 run_phpbench:
 	phoronix-test-suite benchmark pts/phpbench-1.1.6
