@@ -1,0 +1,101 @@
+
+                 L M B E N C H  3 . 0   S U M M A R Y
+                 ------------------------------------
+		 (Alpha software, do not distribute)
+
+Basic system parameters
+------------------------------------------------------------------------------
+Host                 OS Description              Mhz  tlb  cache  mem   scal
+                                                     pages line   par   load
+                                                           bytes  
+--------- ------------- ----------------------- ---- ----- ----- ------ ----
+lmbench_v  Linux 5.11.2        x86_64-linux-gnu 4285                       1
+lmbench_v  Linux 5.11.2        x86_64-linux-gnu 4285                       1
+
+Processor, Processes - times in microseconds - smaller is better
+------------------------------------------------------------------------------
+Host                 OS  Mhz null null      open slct sig  sig  fork exec sh  
+                             call  I/O stat clos TCP  inst hndl proc proc proc
+--------- ------------- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+lmbench_v  Linux 5.11.2 4285                                                  
+lmbench_v  Linux 5.11.2 4285                                                  
+
+Basic integer operations - times in nanoseconds - smaller is better
+-------------------------------------------------------------------
+Host                 OS  intgr intgr  intgr  intgr  intgr  
+                          bit   add    mul    div    mod   
+--------- ------------- ------ ------ ------ ------ ------ 
+lmbench_v  Linux 5.11.2                                   
+lmbench_v  Linux 5.11.2                                   
+
+Basic uint64 operations - times in nanoseconds - smaller is better
+------------------------------------------------------------------
+Host                 OS int64  int64  int64  int64  int64  
+                         bit    add    mul    div    mod   
+--------- ------------- ------ ------ ------ ------ ------ 
+lmbench_v  Linux 5.11.2                                   
+lmbench_v  Linux 5.11.2                                   
+
+Basic float operations - times in nanoseconds - smaller is better
+-----------------------------------------------------------------
+Host                 OS  float  float  float  float
+                         add    mul    div    bogo
+--------- ------------- ------ ------ ------ ------ 
+lmbench_v  Linux 5.11.2                            
+lmbench_v  Linux 5.11.2                            
+
+Basic double operations - times in nanoseconds - smaller is better
+------------------------------------------------------------------
+Host                 OS  double double double double
+                         add    mul    div    bogo
+--------- ------------- ------  ------ ------ ------ 
+lmbench_v  Linux 5.11.2                            
+lmbench_v  Linux 5.11.2                            
+
+Context switching - times in microseconds - smaller is better
+-------------------------------------------------------------------------
+Host                 OS  2p/0K 2p/16K 2p/64K 8p/16K 8p/64K 16p/16K 16p/64K
+                         ctxsw  ctxsw  ctxsw ctxsw  ctxsw   ctxsw   ctxsw
+--------- ------------- ------ ------ ------ ------ ------ ------- -------
+lmbench_v  Linux 5.11.2 1.4500 1.4700 1.7300 1.9000 2.2400 2.19000 2.73000
+lmbench_v  Linux 5.11.2 1.3500 1.4800 1.7800 1.9300 1.6300 2.21000 3.37000
+
+*Local* Communication latencies in microseconds - smaller is better
+---------------------------------------------------------------------
+Host                 OS 2p/0K  Pipe AF     UDP  RPC/   TCP  RPC/ TCP
+                        ctxsw       UNIX         UDP         TCP conn
+--------- ------------- ----- ----- ---- ----- ----- ----- ----- ----
+lmbench_v  Linux 5.11.2 1.450             11.2        13.8        34.
+lmbench_v  Linux 5.11.2 1.350             11.0        13.9        48.
+
+*Remote* Communication latencies in microseconds - smaller is better
+---------------------------------------------------------------------
+Host                 OS   UDP  RPC/  TCP   RPC/ TCP
+                               UDP         TCP  conn
+--------- ------------- ----- ----- ----- ----- ----
+lmbench_v  Linux 5.11.2                             
+lmbench_v  Linux 5.11.2                             
+
+File & VM system latencies in microseconds - smaller is better
+-------------------------------------------------------------------------------
+Host                 OS   0K File      10K File     Mmap    Prot   Page   100fd
+                        Create Delete Create Delete Latency Fault  Fault  selct
+--------- ------------- ------ ------ ------ ------ ------- ----- ------- -----
+lmbench_v  Linux 5.11.2   15.2   11.3   23.9   13.8   65.6K                    
+lmbench_v  Linux 5.11.2   15.1   11.2   23.4   13.7   66.1K                    
+
+*Local* Communication bandwidths in MB/s - bigger is better
+-----------------------------------------------------------------------------
+Host                OS  Pipe AF    TCP  File   Mmap  Bcopy  Bcopy  Mem   Mem
+                             UNIX      reread reread (libc) (hand) read write
+--------- ------------- ---- ---- ---- ------ ------ ------ ------ ---- -----
+lmbench_v  Linux 5.11.2 5617 11.K 5848 8893.4  14.8K 9024.9 6411.7 14.K 9122.
+lmbench_v  Linux 5.11.2 5456 10.K 8003 8918.5  14.7K 9001.1 6368.0 14.K 9041.
+
+Memory latencies in nanoseconds - smaller is better
+    (WARNING - may not be correct, check graphs)
+------------------------------------------------------------------------------
+Host                 OS   Mhz   L1 $   L2 $    Main mem    Rand mem    Guesses
+--------- -------------   ---   ----   ----    --------    --------    -------
+lmbench_v  Linux 5.11.2  4285     -      -           -    Bad mhz?
+lmbench_v  Linux 5.11.2  4285     -      -           -    Bad mhz?

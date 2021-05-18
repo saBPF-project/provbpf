@@ -43,7 +43,7 @@ run_lmbench:
 	mkdir -p results
 	cd build/lmbench && make results
 	cd build/lmbench && make rerun
-	cd build/lmbench/results/ && make > ../../../results/lmbench.txt
+	#cd build/lmbench/results/ && make > ../../../results/lmbench.txt
 
 run_unixbench:
 	@echo "Running unixbench..."
