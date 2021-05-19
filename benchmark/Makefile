@@ -58,7 +58,7 @@ run_postmark:
 	cd build/postmark && ./postmark
 
 run_kernel:
-	 phoronix-test-suite benchmark pts/build-linux-kernel-1.10.2
+	 phoronix-test-suite benchmark pts/build-linux-kernel-1.11.0
 
 run_R:
 	phoronix-test-suite benchmark pts/rbenchmark-1.0.3
@@ -82,7 +82,7 @@ run_pybench:
 	phoronix-test-suite benchmark pts/pybench-1.1.3
 
 run_redis:
-	phoronix-test-suite benchmark pts/redis-1.3.0
+	phoronix-test-suite benchmark pts/redis-1.3.1
 
 run_pgbench:
 	phoronix-test-suite benchmark pts/pgbench-1.10.1
