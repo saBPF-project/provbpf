@@ -1,0 +1,125 @@
+
+                 L M B E N C H  3 . 0   S U M M A R Y
+                 ------------------------------------
+		 (Alpha software, do not distribute)
+
+Basic system parameters
+------------------------------------------------------------------------------
+Host                 OS Description              Mhz  tlb  cache  mem   scal
+                                                     pages line   par   load
+                                                           bytes  
+--------- ------------- ----------------------- ---- ----- ----- ------ ----
+provbpf1  Linux 5.11.2p        x86_64-linux-gnu 2138                       1
+provbpf2  Linux 5.11.2p        x86_64-linux-gnu 2138                       1
+vanilla1   Linux 5.11.2        x86_64-linux-gnu 2139                       1
+vanilla2   Linux 5.11.2        x86_64-linux-gnu 2139                       1
+
+Processor, Processes - times in microseconds - smaller is better
+------------------------------------------------------------------------------
+Host                 OS  Mhz null null      open slct sig  sig  fork exec sh  
+                             call  I/O stat clos TCP  inst hndl proc proc proc
+--------- ------------- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+provbpf1  Linux 5.11.2p 2138                                                  
+provbpf2  Linux 5.11.2p 2138                                                  
+vanilla1   Linux 5.11.2 2139                                                  
+vanilla2   Linux 5.11.2 2139                                                  
+
+Basic integer operations - times in nanoseconds - smaller is better
+-------------------------------------------------------------------
+Host                 OS  intgr intgr  intgr  intgr  intgr  
+                          bit   add    mul    div    mod   
+--------- ------------- ------ ------ ------ ------ ------ 
+provbpf1  Linux 5.11.2p                                   
+provbpf2  Linux 5.11.2p                                   
+vanilla1   Linux 5.11.2                                   
+vanilla2   Linux 5.11.2                                   
+
+Basic uint64 operations - times in nanoseconds - smaller is better
+------------------------------------------------------------------
+Host                 OS int64  int64  int64  int64  int64  
+                         bit    add    mul    div    mod   
+--------- ------------- ------ ------ ------ ------ ------ 
+provbpf1  Linux 5.11.2p                                   
+provbpf2  Linux 5.11.2p                                   
+vanilla1   Linux 5.11.2                                   
+vanilla2   Linux 5.11.2                                   
+
+Basic float operations - times in nanoseconds - smaller is better
+-----------------------------------------------------------------
+Host                 OS  float  float  float  float
+                         add    mul    div    bogo
+--------- ------------- ------ ------ ------ ------ 
+provbpf1  Linux 5.11.2p                            
+provbpf2  Linux 5.11.2p                            
+vanilla1   Linux 5.11.2                            
+vanilla2   Linux 5.11.2                            
+
+Basic double operations - times in nanoseconds - smaller is better
+------------------------------------------------------------------
+Host                 OS  double double double double
+                         add    mul    div    bogo
+--------- ------------- ------  ------ ------ ------ 
+provbpf1  Linux 5.11.2p                            
+provbpf2  Linux 5.11.2p                            
+vanilla1   Linux 5.11.2                            
+vanilla2   Linux 5.11.2                            
+
+Context switching - times in microseconds - smaller is better
+-------------------------------------------------------------------------
+Host                 OS  2p/0K 2p/16K 2p/64K 8p/16K 8p/64K 16p/16K 16p/64K
+                         ctxsw  ctxsw  ctxsw ctxsw  ctxsw   ctxsw   ctxsw
+--------- ------------- ------ ------ ------ ------ ------ ------- -------
+provbpf1  Linux 5.11.2p 2.1300 2.0500 2.5400 3.1700 3.1800 3.06000 3.39000
+provbpf2  Linux 5.11.2p 2.0100 2.2100 2.3100 2.8000 2.9800 3.23000 3.34000
+vanilla1   Linux 5.11.2 2.4300 2.4300 2.9000 2.8000 2.8100 2.96000 3.39000
+vanilla2   Linux 5.11.2 2.3300 2.5400 2.3100 2.8300 2.6000 2.95000 3.30000
+
+*Local* Communication latencies in microseconds - smaller is better
+---------------------------------------------------------------------
+Host                 OS 2p/0K  Pipe AF     UDP  RPC/   TCP  RPC/ TCP
+                        ctxsw       UNIX         UDP         TCP conn
+--------- ------------- ----- ----- ---- ----- ----- ----- ----- ----
+provbpf1  Linux 5.11.2p 2.130                                        
+provbpf2  Linux 5.11.2p 2.010                                        
+vanilla1   Linux 5.11.2 2.430             13.1        15.4        27.
+vanilla2   Linux 5.11.2 2.330             12.9        15.3        32.
+
+*Remote* Communication latencies in microseconds - smaller is better
+---------------------------------------------------------------------
+Host                 OS   UDP  RPC/  TCP   RPC/ TCP
+                               UDP         TCP  conn
+--------- ------------- ----- ----- ----- ----- ----
+provbpf1  Linux 5.11.2p                             
+provbpf2  Linux 5.11.2p                             
+vanilla1   Linux 5.11.2                             
+vanilla2   Linux 5.11.2                             
+
+File & VM system latencies in microseconds - smaller is better
+-------------------------------------------------------------------------------
+Host                 OS   0K File      10K File     Mmap    Prot   Page   100fd
+                        Create Delete Create Delete Latency Fault  Fault  selct
+--------- ------------- ------ ------ ------ ------ ------- ----- ------- -----
+provbpf1  Linux 5.11.2p   13.1   13.0   20.6   16.3   96.0K                    
+provbpf2  Linux 5.11.2p   13.1   12.6   20.7   14.8   95.9K                    
+vanilla1   Linux 5.11.2   10.7   10.5   16.9   12.8   95.8K                    
+vanilla2   Linux 5.11.2 9.9142   12.0   16.2   14.1  104.4K                    
+
+*Local* Communication bandwidths in MB/s - bigger is better
+-----------------------------------------------------------------------------
+Host                OS  Pipe AF    TCP  File   Mmap  Bcopy  Bcopy  Mem   Mem
+                             UNIX      reread reread (libc) (hand) read write
+--------- ------------- ---- ---- ---- ------ ------ ------ ------ ---- -----
+provbpf1  Linux 5.11.2p 5401 12.K      8788.7  15.1K 8374.6 6293.8 14.K 9088.
+provbpf2  Linux 5.11.2p 5371 12.K      8765.2  14.9K 8391.3 6298.6 14.K 9085.
+vanilla1   Linux 5.11.2 5361 12.K 7462 8869.5  15.0K 9190.0 6247.6 14.K 9052.
+vanilla2   Linux 5.11.2 5242 13.K 7645 8933.9  14.9K 8188.5 6298.3 14.K 9053.
+
+Memory latencies in nanoseconds - smaller is better
+    (WARNING - may not be correct, check graphs)
+------------------------------------------------------------------------------
+Host                 OS   Mhz   L1 $   L2 $    Main mem    Rand mem    Guesses
+--------- -------------   ---   ----   ----    --------    --------    -------
+provbpf1  Linux 5.11.2p  2138     -      -           -    Bad mhz?
+provbpf2  Linux 5.11.2p  2138     -      -           -    Bad mhz?
+vanilla1   Linux 5.11.2  2139     -      -           -    Bad mhz?
+vanilla2   Linux 5.11.2  2139     -      -           -    Bad mhz?
