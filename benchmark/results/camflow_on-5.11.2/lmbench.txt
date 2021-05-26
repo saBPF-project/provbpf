@@ -11,6 +11,10 @@ Host                 OS Description              Mhz  tlb  cache  mem   scal
 --------- ------------- ----------------------- ---- ----- ----- ------ ----
 camflow1  Linux 5.11.2c        x86_64-linux-gnu 2023                       1
 camflow2  Linux 5.11.2c        x86_64-linux-gnu 2023                       1
+camflow3  Linux 5.11.2c        x86_64-linux-gnu 1984                       1
+camflow4  Linux 5.11.2c        x86_64-linux-gnu 1984                       1
+nocamflow Linux 5.11.2c        x86_64-linux-gnu 2135                       1
+nocamflow Linux 5.11.2c        x86_64-linux-gnu 2135                       1
 provbpf1  Linux 5.11.2p        x86_64-linux-gnu 2138                       1
 provbpf2  Linux 5.11.2p        x86_64-linux-gnu 2138                       1
 vanilla1   Linux 5.11.2        x86_64-linux-gnu 2139                       1
@@ -23,6 +27,10 @@ Host                 OS  Mhz null null      open slct sig  sig  fork exec sh
 --------- ------------- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 camflow1  Linux 5.11.2c 2023                                                  
 camflow2  Linux 5.11.2c 2023                                                  
+camflow3  Linux 5.11.2c 1984                                                  
+camflow4  Linux 5.11.2c 1984                                                  
+nocamflow Linux 5.11.2c 2135                                                  
+nocamflow Linux 5.11.2c 2135                                                  
 provbpf1  Linux 5.11.2p 2138                                                  
 provbpf2  Linux 5.11.2p 2138                                                  
 vanilla1   Linux 5.11.2 2139                                                  
@@ -35,6 +43,10 @@ Host                 OS  intgr intgr  intgr  intgr  intgr
 --------- ------------- ------ ------ ------ ------ ------ 
 camflow1  Linux 5.11.2c                                   
 camflow2  Linux 5.11.2c                                   
+camflow3  Linux 5.11.2c                                   
+camflow4  Linux 5.11.2c                                   
+nocamflow Linux 5.11.2c                                   
+nocamflow Linux 5.11.2c                                   
 provbpf1  Linux 5.11.2p                                   
 provbpf2  Linux 5.11.2p                                   
 vanilla1   Linux 5.11.2                                   
@@ -47,6 +59,10 @@ Host                 OS int64  int64  int64  int64  int64
 --------- ------------- ------ ------ ------ ------ ------ 
 camflow1  Linux 5.11.2c                                   
 camflow2  Linux 5.11.2c                                   
+camflow3  Linux 5.11.2c                                   
+camflow4  Linux 5.11.2c                                   
+nocamflow Linux 5.11.2c                                   
+nocamflow Linux 5.11.2c                                   
 provbpf1  Linux 5.11.2p                                   
 provbpf2  Linux 5.11.2p                                   
 vanilla1   Linux 5.11.2                                   
@@ -59,6 +75,10 @@ Host                 OS  float  float  float  float
 --------- ------------- ------ ------ ------ ------ 
 camflow1  Linux 5.11.2c                            
 camflow2  Linux 5.11.2c                            
+camflow3  Linux 5.11.2c                            
+camflow4  Linux 5.11.2c                            
+nocamflow Linux 5.11.2c                            
+nocamflow Linux 5.11.2c                            
 provbpf1  Linux 5.11.2p                            
 provbpf2  Linux 5.11.2p                            
 vanilla1   Linux 5.11.2                            
@@ -71,6 +91,10 @@ Host                 OS  double double double double
 --------- ------------- ------  ------ ------ ------ 
 camflow1  Linux 5.11.2c                            
 camflow2  Linux 5.11.2c                            
+camflow3  Linux 5.11.2c                            
+camflow4  Linux 5.11.2c                            
+nocamflow Linux 5.11.2c                            
+nocamflow Linux 5.11.2c                            
 provbpf1  Linux 5.11.2p                            
 provbpf2  Linux 5.11.2p                            
 vanilla1   Linux 5.11.2                            
@@ -83,6 +107,10 @@ Host                 OS  2p/0K 2p/16K 2p/64K 8p/16K 8p/64K 16p/16K 16p/64K
 --------- ------------- ------ ------ ------ ------ ------ ------- -------
 camflow1  Linux 5.11.2c 2.2800 2.5900 2.6200 3.7700 4.1100 4.51000 5.36000
 camflow2  Linux 5.11.2c 2.3500 2.3900 2.9900 3.4100 4.1200 4.97000 5.57000
+camflow3  Linux 5.11.2c 2.5000 2.5300 2.8600 3.7000 4.0900 4.64000 5.14000
+camflow4  Linux 5.11.2c 2.3800 2.2700 3.1800 3.8300 3.7700 5.09000 5.54000
+nocamflow Linux 5.11.2c 1.9800 2.1600 2.2000 2.6600 2.9700 3.16000 3.28000
+nocamflow Linux 5.11.2c 2.2900 2.1100 2.4500 2.6600 2.9800 2.94000 3.14000
 provbpf1  Linux 5.11.2p 2.1300 2.0500 2.5400 3.1700 3.1800 3.06000 3.39000
 provbpf2  Linux 5.11.2p 2.0100 2.2100 2.3100 2.8000 2.9800 3.23000 3.34000
 vanilla1   Linux 5.11.2 2.4300 2.4300 2.9000 2.8000 2.8100 2.96000 3.39000
@@ -95,6 +123,10 @@ Host                 OS 2p/0K  Pipe AF     UDP  RPC/   TCP  RPC/ TCP
 --------- ------------- ----- ----- ---- ----- ----- ----- ----- ----
 camflow1  Linux 5.11.2c 2.280                                        
 camflow2  Linux 5.11.2c 2.350                                        
+camflow3  Linux 5.11.2c 2.500                                        
+camflow4  Linux 5.11.2c 2.380                                        
+nocamflow Linux 5.11.2c 1.980                                        
+nocamflow Linux 5.11.2c 2.290                                        
 provbpf1  Linux 5.11.2p 2.130                                        
 provbpf2  Linux 5.11.2p 2.010                                        
 vanilla1   Linux 5.11.2 2.430             13.1        15.4        27.
@@ -107,6 +139,10 @@ Host                 OS   UDP  RPC/  TCP   RPC/ TCP
 --------- ------------- ----- ----- ----- ----- ----
 camflow1  Linux 5.11.2c                             
 camflow2  Linux 5.11.2c                             
+camflow3  Linux 5.11.2c                             
+camflow4  Linux 5.11.2c                             
+nocamflow Linux 5.11.2c                             
+nocamflow Linux 5.11.2c                             
 provbpf1  Linux 5.11.2p                             
 provbpf2  Linux 5.11.2p                             
 vanilla1   Linux 5.11.2                             
@@ -119,6 +155,10 @@ Host                 OS   0K File      10K File     Mmap    Prot   Page   100fd
 --------- ------------- ------ ------ ------ ------ ------- ----- ------- -----
 camflow1  Linux 5.11.2c   21.4   22.9   39.7   29.2  115.3K                    
 camflow2  Linux 5.11.2c   21.0   23.8   41.8   31.2  113.1K                    
+camflow3  Linux 5.11.2c   29.7   21.0   41.7   30.7  113.5K                    
+camflow4  Linux 5.11.2c   20.7   21.1   41.5   27.5  107.2K                    
+nocamflow Linux 5.11.2c   14.5   13.3   21.5   16.7   94.8K                    
+nocamflow Linux 5.11.2c   14.0   14.4   21.0   16.1   93.5K                    
 provbpf1  Linux 5.11.2p   13.1   13.0   20.6   16.3   96.0K                    
 provbpf2  Linux 5.11.2p   13.1   12.6   20.7   14.8   95.9K                    
 vanilla1   Linux 5.11.2   10.7   10.5   16.9   12.8   95.8K                    
@@ -131,6 +171,10 @@ Host                OS  Pipe AF    TCP  File   Mmap  Bcopy  Bcopy  Mem   Mem
 --------- ------------- ---- ---- ---- ------ ------ ------ ------ ---- -----
 camflow1  Linux 5.11.2c 4435 6407      6766.3  13.3K 8572.0 5995.5 13.K 8389.
 camflow2  Linux 5.11.2c 4440 6345      6634.8  13.5K 8592.0 5963.2 13.K 8401.
+camflow3  Linux 5.11.2c 4485 6571      6955.4  13.5K 8549.8 6001.9 13.K 8515.
+camflow4  Linux 5.11.2c 4553 6633      6991.4  13.6K 8608.7 5992.4 13.K 8468.
+nocamflow Linux 5.11.2c 5294 11.K      8450.2  14.4K 8861.4 6362.9 13.K 9019.
+nocamflow Linux 5.11.2c 5198 11.K      8556.6  14.9K 8891.9 6354.3 13.K 9021.
 provbpf1  Linux 5.11.2p 5401 12.K      8788.7  15.1K 8374.6 6293.8 14.K 9088.
 provbpf2  Linux 5.11.2p 5371 12.K      8765.2  14.9K 8391.3 6298.6 14.K 9085.
 vanilla1   Linux 5.11.2 5361 12.K 7462 8869.5  15.0K 9190.0 6247.6 14.K 9052.
@@ -143,6 +187,10 @@ Host                 OS   Mhz   L1 $   L2 $    Main mem    Rand mem    Guesses
 --------- -------------   ---   ----   ----    --------    --------    -------
 camflow1  Linux 5.11.2c  2023     -      -           -    Bad mhz?
 camflow2  Linux 5.11.2c  2023     -      -           -    Bad mhz?
+camflow3  Linux 5.11.2c  1984     -      -           -    Bad mhz?
+camflow4  Linux 5.11.2c  1984     -      -           -    Bad mhz?
+nocamflow Linux 5.11.2c  2135     -      -           -    Bad mhz?
+nocamflow Linux 5.11.2c  2135     -      -           -    Bad mhz?
 provbpf1  Linux 5.11.2p  2138     -      -           -    Bad mhz?
 provbpf2  Linux 5.11.2p  2138     -      -           -    Bad mhz?
 vanilla1   Linux 5.11.2  2139     -      -           -    Bad mhz?
