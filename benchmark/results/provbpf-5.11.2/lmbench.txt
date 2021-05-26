@@ -9,117 +9,261 @@ Host                 OS Description              Mhz  tlb  cache  mem   scal
                                                      pages line   par   load
                                                            bytes  
 --------- ------------- ----------------------- ---- ----- ----- ------ ----
+camflow1  Linux 5.11.2c        x86_64-linux-gnu 2023                       1
+camflow2  Linux 5.11.2c        x86_64-linux-gnu 2023                       1
+camflow3  Linux 5.11.2c        x86_64-linux-gnu 2000                       1
+camflow4  Linux 5.11.2c        x86_64-linux-gnu 2000                       1
+camflow5  Linux 5.11.2c        x86_64-linux-gnu 2000                       1
+camflow6  Linux 5.11.2c        x86_64-linux-gnu 2000                       1
+nocamflow Linux 5.11.2c        x86_64-linux-gnu 2135                       1
+nocamflow Linux 5.11.2c        x86_64-linux-gnu 2135                       1
 provbpf1  Linux 5.11.2p        x86_64-linux-gnu 2138                       1
 provbpf2  Linux 5.11.2p        x86_64-linux-gnu 2138                       1
+provbpf3  Linux 5.11.2p        x86_64-linux-gnu 2000                       1
+provbpf4  Linux 5.11.2p        x86_64-linux-gnu 2000                       1
 vanilla1   Linux 5.11.2        x86_64-linux-gnu 2139                       1
 vanilla2   Linux 5.11.2        x86_64-linux-gnu 2139                       1
+vanilla3   Linux 5.11.2        x86_64-linux-gnu 2000                       1
+vanilla4   Linux 5.11.2        x86_64-linux-gnu 2000                       1
 
 Processor, Processes - times in microseconds - smaller is better
 ------------------------------------------------------------------------------
 Host                 OS  Mhz null null      open slct sig  sig  fork exec sh  
                              call  I/O stat clos TCP  inst hndl proc proc proc
 --------- ------------- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+camflow1  Linux 5.11.2c 2023                                                  
+camflow2  Linux 5.11.2c 2023                                                  
+camflow3  Linux 5.11.2c 2000                                                  
+camflow4  Linux 5.11.2c 2000                                                  
+camflow5  Linux 5.11.2c 2000                                                  
+camflow6  Linux 5.11.2c 2000                                                  
+nocamflow Linux 5.11.2c 2135                                                  
+nocamflow Linux 5.11.2c 2135                                                  
 provbpf1  Linux 5.11.2p 2138                                                  
 provbpf2  Linux 5.11.2p 2138                                                  
+provbpf3  Linux 5.11.2p 2000                                                  
+provbpf4  Linux 5.11.2p 2000                                                  
 vanilla1   Linux 5.11.2 2139                                                  
 vanilla2   Linux 5.11.2 2139                                                  
+vanilla3   Linux 5.11.2 2000                                                  
+vanilla4   Linux 5.11.2 2000                                                  
 
 Basic integer operations - times in nanoseconds - smaller is better
 -------------------------------------------------------------------
 Host                 OS  intgr intgr  intgr  intgr  intgr  
                           bit   add    mul    div    mod   
 --------- ------------- ------ ------ ------ ------ ------ 
+camflow1  Linux 5.11.2c                                   
+camflow2  Linux 5.11.2c                                   
+camflow3  Linux 5.11.2c                                   
+camflow4  Linux 5.11.2c                                   
+camflow5  Linux 5.11.2c                                   
+camflow6  Linux 5.11.2c                                   
+nocamflow Linux 5.11.2c                                   
+nocamflow Linux 5.11.2c                                   
 provbpf1  Linux 5.11.2p                                   
 provbpf2  Linux 5.11.2p                                   
+provbpf3  Linux 5.11.2p                                   
+provbpf4  Linux 5.11.2p                                   
 vanilla1   Linux 5.11.2                                   
 vanilla2   Linux 5.11.2                                   
+vanilla3   Linux 5.11.2                                   
+vanilla4   Linux 5.11.2                                   
 
 Basic uint64 operations - times in nanoseconds - smaller is better
 ------------------------------------------------------------------
 Host                 OS int64  int64  int64  int64  int64  
                          bit    add    mul    div    mod   
 --------- ------------- ------ ------ ------ ------ ------ 
+camflow1  Linux 5.11.2c                                   
+camflow2  Linux 5.11.2c                                   
+camflow3  Linux 5.11.2c                                   
+camflow4  Linux 5.11.2c                                   
+camflow5  Linux 5.11.2c                                   
+camflow6  Linux 5.11.2c                                   
+nocamflow Linux 5.11.2c                                   
+nocamflow Linux 5.11.2c                                   
 provbpf1  Linux 5.11.2p                                   
 provbpf2  Linux 5.11.2p                                   
+provbpf3  Linux 5.11.2p                                   
+provbpf4  Linux 5.11.2p                                   
 vanilla1   Linux 5.11.2                                   
 vanilla2   Linux 5.11.2                                   
+vanilla3   Linux 5.11.2                                   
+vanilla4   Linux 5.11.2                                   
 
 Basic float operations - times in nanoseconds - smaller is better
 -----------------------------------------------------------------
 Host                 OS  float  float  float  float
                          add    mul    div    bogo
 --------- ------------- ------ ------ ------ ------ 
+camflow1  Linux 5.11.2c                            
+camflow2  Linux 5.11.2c                            
+camflow3  Linux 5.11.2c                            
+camflow4  Linux 5.11.2c                            
+camflow5  Linux 5.11.2c                            
+camflow6  Linux 5.11.2c                            
+nocamflow Linux 5.11.2c                            
+nocamflow Linux 5.11.2c                            
 provbpf1  Linux 5.11.2p                            
 provbpf2  Linux 5.11.2p                            
+provbpf3  Linux 5.11.2p                            
+provbpf4  Linux 5.11.2p                            
 vanilla1   Linux 5.11.2                            
 vanilla2   Linux 5.11.2                            
+vanilla3   Linux 5.11.2                            
+vanilla4   Linux 5.11.2                            
 
 Basic double operations - times in nanoseconds - smaller is better
 ------------------------------------------------------------------
 Host                 OS  double double double double
                          add    mul    div    bogo
 --------- ------------- ------  ------ ------ ------ 
+camflow1  Linux 5.11.2c                            
+camflow2  Linux 5.11.2c                            
+camflow3  Linux 5.11.2c                            
+camflow4  Linux 5.11.2c                            
+camflow5  Linux 5.11.2c                            
+camflow6  Linux 5.11.2c                            
+nocamflow Linux 5.11.2c                            
+nocamflow Linux 5.11.2c                            
 provbpf1  Linux 5.11.2p                            
 provbpf2  Linux 5.11.2p                            
+provbpf3  Linux 5.11.2p                            
+provbpf4  Linux 5.11.2p                            
 vanilla1   Linux 5.11.2                            
 vanilla2   Linux 5.11.2                            
+vanilla3   Linux 5.11.2                            
+vanilla4   Linux 5.11.2                            
 
 Context switching - times in microseconds - smaller is better
 -------------------------------------------------------------------------
 Host                 OS  2p/0K 2p/16K 2p/64K 8p/16K 8p/64K 16p/16K 16p/64K
                          ctxsw  ctxsw  ctxsw ctxsw  ctxsw   ctxsw   ctxsw
 --------- ------------- ------ ------ ------ ------ ------ ------- -------
+camflow1  Linux 5.11.2c 2.2800 2.5900 2.6200 3.7700 4.1100 4.51000 5.36000
+camflow2  Linux 5.11.2c 2.3500 2.3900 2.9900 3.4100 4.1200 4.97000 5.57000
+camflow3  Linux 5.11.2c 1.5000 0.5200 2.5400 1.3300 3.7600 2.15000 5.87000
+camflow4  Linux 5.11.2c 2.2100 1.7400 2.3800 3.0200 3.4200 3.28000 4.85000
+camflow5  Linux 5.11.2c 2.2700 2.9200 2.5300 3.4700 3.7200 4.61000 5.12000
+camflow6  Linux 5.11.2c 2.1800 2.4300 1.8500 2.9500 4.0700 4.69000 5.05000
+nocamflow Linux 5.11.2c 1.9800 2.1600 2.2000 2.6600 2.9700 3.16000 3.28000
+nocamflow Linux 5.11.2c 2.2900 2.1100 2.4500 2.6600 2.9800 2.94000 3.14000
 provbpf1  Linux 5.11.2p 2.1300 2.0500 2.5400 3.1700 3.1800 3.06000 3.39000
 provbpf2  Linux 5.11.2p 2.0100 2.2100 2.3100 2.8000 2.9800 3.23000 3.34000
+provbpf3  Linux 5.11.2p 1.5200 2.0700 2.7400 2.5500 4.9100 3.02000 4.46000
+provbpf4  Linux 5.11.2p 1.5100 2.3000 2.9700 5.6800   71.3 3.74000    75.5
 vanilla1   Linux 5.11.2 2.4300 2.4300 2.9000 2.8000 2.8100 2.96000 3.39000
 vanilla2   Linux 5.11.2 2.3300 2.5400 2.3100 2.8300 2.6000 2.95000 3.30000
+vanilla3   Linux 5.11.2 1.9900 2.3200 2.0000 2.7000 2.6600 2.91000 3.17000
+vanilla4   Linux 5.11.2 2.2100 2.0900 2.3900 5.0800 2.6300 2.97000 3.10000
 
 *Local* Communication latencies in microseconds - smaller is better
 ---------------------------------------------------------------------
 Host                 OS 2p/0K  Pipe AF     UDP  RPC/   TCP  RPC/ TCP
                         ctxsw       UNIX         UDP         TCP conn
 --------- ------------- ----- ----- ---- ----- ----- ----- ----- ----
+camflow1  Linux 5.11.2c 2.280                                        
+camflow2  Linux 5.11.2c 2.350                                        
+camflow3  Linux 5.11.2c 1.500                                        
+camflow4  Linux 5.11.2c 2.210                                        
+camflow5  Linux 5.11.2c 2.270                                        
+camflow6  Linux 5.11.2c 2.180                                        
+nocamflow Linux 5.11.2c 1.980                                        
+nocamflow Linux 5.11.2c 2.290                                        
 provbpf1  Linux 5.11.2p 2.130                                        
 provbpf2  Linux 5.11.2p 2.010                                        
+provbpf3  Linux 5.11.2p 1.520                                        
+provbpf4  Linux 5.11.2p 1.510                                        
 vanilla1   Linux 5.11.2 2.430             13.1        15.4        27.
 vanilla2   Linux 5.11.2 2.330             12.9        15.3        32.
+vanilla3   Linux 5.11.2 1.990                                        
+vanilla4   Linux 5.11.2 2.210                                        
 
 *Remote* Communication latencies in microseconds - smaller is better
 ---------------------------------------------------------------------
 Host                 OS   UDP  RPC/  TCP   RPC/ TCP
                                UDP         TCP  conn
 --------- ------------- ----- ----- ----- ----- ----
+camflow1  Linux 5.11.2c                             
+camflow2  Linux 5.11.2c                             
+camflow3  Linux 5.11.2c                             
+camflow4  Linux 5.11.2c                             
+camflow5  Linux 5.11.2c                             
+camflow6  Linux 5.11.2c                             
+nocamflow Linux 5.11.2c                             
+nocamflow Linux 5.11.2c                             
 provbpf1  Linux 5.11.2p                             
 provbpf2  Linux 5.11.2p                             
+provbpf3  Linux 5.11.2p                             
+provbpf4  Linux 5.11.2p                             
 vanilla1   Linux 5.11.2                             
 vanilla2   Linux 5.11.2                             
+vanilla3   Linux 5.11.2                             
+vanilla4   Linux 5.11.2                             
 
 File & VM system latencies in microseconds - smaller is better
 -------------------------------------------------------------------------------
 Host                 OS   0K File      10K File     Mmap    Prot   Page   100fd
                         Create Delete Create Delete Latency Fault  Fault  selct
 --------- ------------- ------ ------ ------ ------ ------- ----- ------- -----
+camflow1  Linux 5.11.2c   21.4   22.9   39.7   29.2  115.3K                    
+camflow2  Linux 5.11.2c   21.0   23.8   41.8   31.2  113.1K                    
+camflow3  Linux 5.11.2c   17.5   18.3   28.5   19.3  102.2K                    
+camflow4  Linux 5.11.2c   19.8   19.7   28.5   19.8  111.6K                    
+camflow5  Linux 5.11.2c   19.7   19.4   29.2   21.5  111.1K                    
+camflow6  Linux 5.11.2c   19.0   20.9   32.6   20.6  114.0K                    
+nocamflow Linux 5.11.2c   14.5   13.3   21.5   16.7   94.8K                    
+nocamflow Linux 5.11.2c   14.0   14.4   21.0   16.1   93.5K                    
 provbpf1  Linux 5.11.2p   13.1   13.0   20.6   16.3   96.0K                    
 provbpf2  Linux 5.11.2p   13.1   12.6   20.7   14.8   95.9K                    
+provbpf3  Linux 5.11.2p   13.2   11.3   19.8   14.0  150.6K                    
+provbpf4  Linux 5.11.2p   13.0   11.5   19.6   14.0  154.7K                    
 vanilla1   Linux 5.11.2   10.7   10.5   16.9   12.8   95.8K                    
 vanilla2   Linux 5.11.2 9.9142   12.0   16.2   14.1  104.4K                    
+vanilla3   Linux 5.11.2   12.2   13.6   15.6   12.7  126.2K                    
+vanilla4   Linux 5.11.2   12.0   13.8   15.3   13.3  129.1K                    
 
 *Local* Communication bandwidths in MB/s - bigger is better
 -----------------------------------------------------------------------------
 Host                OS  Pipe AF    TCP  File   Mmap  Bcopy  Bcopy  Mem   Mem
                              UNIX      reread reread (libc) (hand) read write
 --------- ------------- ---- ---- ---- ------ ------ ------ ------ ---- -----
+camflow1  Linux 5.11.2c 4435 6407      6766.3  13.3K 8572.0 5995.5 13.K 8389.
+camflow2  Linux 5.11.2c 4440 6345      6634.8  13.5K 8592.0 5963.2 13.K 8401.
+camflow3  Linux 5.11.2c 4717 6593      7587.1  13.5K 8587.9 5950.0 13.K 8479.
+camflow4  Linux 5.11.2c 4556 6620      7532.9  13.5K 8620.6 5969.6 13.K 8452.
+camflow5  Linux 5.11.2c 4449 6361      7431.2  13.6K 8588.4 5954.1 13.K 8392.
+camflow6  Linux 5.11.2c 4409 6301      7498.4  13.5K 8599.0 5972.3 13.K 8494.
+nocamflow Linux 5.11.2c 5294 11.K      8450.2  14.4K 8861.4 6362.9 13.K 9019.
+nocamflow Linux 5.11.2c 5198 11.K      8556.6  14.9K 8891.9 6354.3 13.K 9021.
 provbpf1  Linux 5.11.2p 5401 12.K      8788.7  15.1K 8374.6 6293.8 14.K 9088.
 provbpf2  Linux 5.11.2p 5371 12.K      8765.2  14.9K 8391.3 6298.6 14.K 9085.
+provbpf3  Linux 5.11.2p 5412 12.K      8826.1  15.1K 6855.6 5936.8 14.K 9096.
+provbpf4  Linux 5.11.2p 5555 12.K      8841.1  14.9K 6884.1 5966.4 14.K 9090.
 vanilla1   Linux 5.11.2 5361 12.K 7462 8869.5  15.0K 9190.0 6247.6 14.K 9052.
 vanilla2   Linux 5.11.2 5242 13.K 7645 8933.9  14.9K 8188.5 6298.3 14.K 9053.
+vanilla3   Linux 5.11.2 5281 12.K      8520.6  14.8K 6830.8 6022.2 13.K 8905.
+vanilla4   Linux 5.11.2 5351 12.K      8566.7  14.8K 7899.1 6101.6 13.K 8859.
 
 Memory latencies in nanoseconds - smaller is better
     (WARNING - may not be correct, check graphs)
 ------------------------------------------------------------------------------
 Host                 OS   Mhz   L1 $   L2 $    Main mem    Rand mem    Guesses
 --------- -------------   ---   ----   ----    --------    --------    -------
+camflow1  Linux 5.11.2c  2023     -      -           -    Bad mhz?
+camflow2  Linux 5.11.2c  2023     -      -           -    Bad mhz?
+camflow3  Linux 5.11.2c  2000     -      -           -    Bad mhz?
+camflow4  Linux 5.11.2c  2000     -      -           -    Bad mhz?
+camflow5  Linux 5.11.2c  2000     -      -           -    Bad mhz?
+camflow6  Linux 5.11.2c  2000     -      -           -    Bad mhz?
+nocamflow Linux 5.11.2c  2135     -      -           -    Bad mhz?
+nocamflow Linux 5.11.2c  2135     -      -           -    Bad mhz?
 provbpf1  Linux 5.11.2p  2138     -      -           -    Bad mhz?
 provbpf2  Linux 5.11.2p  2138     -      -           -    Bad mhz?
+provbpf3  Linux 5.11.2p  2000     -      -           -    Bad mhz?
+provbpf4  Linux 5.11.2p  2000     -      -           -    Bad mhz?
 vanilla1   Linux 5.11.2  2139     -      -           -    Bad mhz?
 vanilla2   Linux 5.11.2  2139     -      -           -    Bad mhz?
+vanilla3   Linux 5.11.2  2000     -      -           -    Bad mhz?
+vanilla4   Linux 5.11.2  2000     -      -           -    Bad mhz?
