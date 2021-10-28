@@ -1,7 +1,6 @@
 # camflow-bpf
 
-Use this [vagrant VM](https://github.com/CamFlow/vagrant/tree/master/dev-fedora).
-No need to build CamFlow.
+Use this [vagrant VM](https://github.com/saBPF-project/provbpf-vagrant).
 
 ## Setting things up
 
@@ -24,6 +23,8 @@ Delete the dependencies' build folders:
 ```
 make delete_dependency
 ```
+
+You should reboot the machine and make sure you boot under the correct kernel.
 
 ## Building and running
 
